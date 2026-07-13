@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 import { PageHeader } from '@/components/page-header';
@@ -11,16 +11,7 @@ export const metadata: Metadata = {
 export default function DashboardPage() {
   return (
     <div className="dashboard-page">
-      <PageHeader
-        title="Dashboard"
-        eyebrow="Today · 14 July 2026"
-        action={
-          <Link className="outline-blue-button" href="/chat">
-            <Sparkles size={16} aria-hidden="true" />
-            Start collecting
-          </Link>
-        }
-      />
+      <PageHeader title="Dashboard" eyebrow="Today · 14 July 2026" />
 
       <section className="dashboard-hero" aria-labelledby="attention-title">
         <h2 id="attention-title">good morning, Alex. what needs attention?</h2>

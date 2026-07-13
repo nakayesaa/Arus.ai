@@ -548,7 +548,6 @@ svg {
 
 .primary-button,
 .control-button,
-.outline-blue-button,
 .chip,
 .button {
   display: inline-flex;
@@ -585,22 +584,6 @@ svg {
 .primary-button:hover,
 .button-primary:hover {
   background: #ffffff;
-}
-
-.outline-blue-button {
-  height: 33px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  color: var(--text-soft);
-  background: transparent;
-  box-shadow: none;
-  font-weight: 600;
-}
-
-.outline-blue-button:hover {
-  color: var(--blue);
-  background: transparent;
 }
 
 /* Dashboard */
