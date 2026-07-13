@@ -1,33 +1,26 @@
 :root {
   color-scheme: dark;
-  --canvas: #090a0a;
-  --workspace: #151616;
-  --sidebar: #1c1d1d;
-  --surface: #1a1b1b;
-  --surface-raised: #202121;
-  --surface-hover: #2a2b2b;
-  --surface-soft: #242525;
-  --border: #303131;
-  --border-soft: #282929;
-  --text: #f2f3f3;
-  --text-soft: #d2d3d3;
-  --muted: #9b9d9e;
-  --muted-dark: #656869;
-  --blue: #3994ff;
-  --blue-strong: #1976e8;
+  --canvas: #020304;
+  --workspace: #090b0c;
+  --sidebar: #0d1011;
+  --surface: #101314;
+  --surface-raised: #171a1b;
+  --surface-hover: #1c2021;
+  --surface-soft: #1e2223;
+  --border: #25292b;
+  --border-soft: #1d2122;
+  --text: #f2f4f3;
+  --text-soft: #c9cecd;
+  --muted: #888f91;
+  --muted-dark: #596164;
+  --blue: #5aa6f5;
+  --blue-strong: #347fc9;
   --green: #70d0ad;
   --amber: #e5ae58;
   --red: #f0756d;
   --violet: #9e89ff;
-  --shadow: 0 18px 50px rgb(0 0 0 / 24%);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  --shadow: 0 34px 90px rgb(0 0 0 / 52%), 0 1px 0 rgb(255 255 255 / 3%);
+  font-family: 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
 }
 
 * {
@@ -44,7 +37,8 @@ body {
   overflow: hidden;
   color: var(--text);
   background:
-    radial-gradient(circle at 28% -20%, rgb(41 110 116 / 18%), transparent 34%),
+    radial-gradient(circle at 18% -8%, rgb(35 91 113 / 17%), transparent 28%),
+    radial-gradient(circle at 82% -18%, rgb(255 255 255 / 7%), transparent 25%),
     var(--canvas);
   font-size: 14px;
 }
@@ -93,7 +87,7 @@ svg {
   grid-template-columns: 250px minmax(0, 1fr);
   border: 1px solid var(--border);
   border-radius: 21px;
-  background: var(--workspace);
+  background: linear-gradient(145deg, #101314 0%, var(--workspace) 62%);
   box-shadow: var(--shadow);
   transition: grid-template-columns 180ms ease;
 }
@@ -112,7 +106,9 @@ svg {
   overflow: hidden;
   color: var(--muted);
   border-right: 1px solid var(--border);
-  background: var(--sidebar);
+  background:
+    radial-gradient(circle at 15% 0%, rgb(255 255 255 / 4%), transparent 24%),
+    linear-gradient(180deg, #111415 0%, var(--sidebar) 72%);
   opacity: 1;
   transition:
     opacity 140ms ease,
@@ -202,7 +198,7 @@ svg {
   border: 1px solid #3a3b3b;
   border-radius: 10px;
   color: var(--muted);
-  background: #1d1e1e;
+  background: var(--surface);
 }
 
 .sidebar-search span {
@@ -445,7 +441,10 @@ svg {
   height: calc(100vh - 30px);
   min-height: 0;
   overflow: auto;
-  background: var(--workspace);
+  background:
+    radial-gradient(circle at 72% -14%, rgb(255 255 255 / 4%), transparent 28%),
+    radial-gradient(circle at 18% -10%, rgb(38 99 126 / 9%), transparent 25%),
+    linear-gradient(145deg, #0c0f10 0%, var(--workspace) 66%);
 }
 
 .sidebar-open-button {
@@ -476,8 +475,8 @@ svg {
   margin: 0;
   color: var(--text);
   font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-weight: 680;
+  letter-spacing: -0.035em;
 }
 
 .page-context {
@@ -524,7 +523,7 @@ svg {
 .control-button,
 .button-secondary {
   color: #b8baba;
-  background: #1a1b1b;
+  background: var(--surface);
 }
 
 .control-button:hover,
@@ -535,7 +534,7 @@ svg {
 
 .primary-button,
 .button-primary {
-  color: #151616;
+  color: #090b0c;
   border-color: #f0f2f2;
   background: #f0f2f2;
   font-weight: 650;
@@ -576,10 +575,9 @@ svg {
 .dashboard-hero h2 {
   margin: 0 0 32px;
   color: #f2f1ed;
-  font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(28px, 3vw, 38px);
-  font-weight: 400;
-  letter-spacing: -0.045em;
+  font-weight: 520;
+  letter-spacing: -0.05em;
 }
 
 .priority-card {
@@ -589,16 +587,22 @@ svg {
   align-items: center;
   gap: 24px;
   padding: 24px 20px 24px 24px;
-  border: 1px solid #2778c6;
+  border: 1px solid #285f91;
   border-radius: 22px;
-  background: #1d1e1e;
-  box-shadow: 0 20px 40px rgb(0 0 0 / 20%);
+  background:
+    radial-gradient(circle at 90% 120%, rgb(58 132 193 / 9%), transparent 35%),
+    linear-gradient(145deg, #121516, #0e1112);
+  box-shadow:
+    0 25px 55px rgb(0 0 0 / 29%),
+    inset 0 1px 0 rgb(255 255 255 / 3%);
   text-align: left;
 }
 
 .priority-card:hover {
   border-color: var(--blue);
-  background: #202121;
+  background:
+    radial-gradient(circle at 90% 120%, rgb(58 132 193 / 14%), transparent 35%),
+    #121516;
 }
 
 .priority-copy {
@@ -654,7 +658,7 @@ svg {
   padding: 0 18px;
   border-radius: 22px;
   color: #aeb0b1;
-  background: #191a1a;
+  background: #0f1213;
 }
 
 .chip:hover {
@@ -715,10 +719,9 @@ svg {
 .chat-intro h2 {
   margin: 0;
   color: #f2f1ed;
-  font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(29px, 3vw, 39px);
-  font-weight: 400;
-  letter-spacing: -0.045em;
+  font-weight: 520;
+  letter-spacing: -0.05em;
 }
 
 .chat-intro > span:last-child {
@@ -738,7 +741,7 @@ svg {
   border-radius: 21px;
   background:
     radial-gradient(circle at 88% 110%, rgb(38 118 190 / 11%), transparent 32%),
-    #191b1c;
+    #101314;
   box-shadow:
     0 24px 55px rgb(0 0 0 / 25%),
     inset 0 1px 0 rgb(255 255 255 / 3%);
@@ -990,12 +993,12 @@ svg {
 .data-table th {
   height: 41px;
   color: #777a7b;
-  background: #151616;
-  font-weight: 450;
+  background: var(--workspace);
+  font-weight: 520;
 }
 
 .data-table tbody tr:hover {
-  background: #191a1a;
+  background: #0f1213;
 }
 
 .data-table .check-column {
@@ -1177,7 +1180,8 @@ svg {
   padding: 20px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #191a1a;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 1.8%), transparent 46%), #0e1112;
 }
 
 .panel h2,
@@ -1385,7 +1389,7 @@ svg {
   padding: 14px;
   border: 1px solid var(--border-soft);
   border-radius: 9px;
-  background: #1d1e1e;
+  background: var(--surface);
 }
 
 .mini-metric span,
@@ -1412,8 +1416,9 @@ svg {
   place-items: center;
   padding: 24px;
   background:
-    radial-gradient(circle at 50% 20%, rgb(30 106 164 / 13%), transparent 31%),
-    #0e0f0f;
+    radial-gradient(circle at 50% 16%, rgb(38 103 144 / 14%), transparent 28%),
+    radial-gradient(circle at 72% 0%, rgb(255 255 255 / 5%), transparent 22%),
+    var(--canvas);
 }
 
 .login-card {
@@ -1421,8 +1426,9 @@ svg {
   padding: 32px;
   border: 1px solid var(--border);
   border-radius: 17px;
-  background: #191a1a;
-  box-shadow: 0 25px 70px rgb(0 0 0 / 32%);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 2.5%), transparent 42%), #0e1112;
+  box-shadow: 0 30px 80px rgb(0 0 0 / 52%);
 }
 
 .login-brand {
@@ -1457,10 +1463,9 @@ svg {
 
 .login-copy h1 {
   margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
   font-size: 29px;
-  font-weight: 400;
-  letter-spacing: -0.035em;
+  font-weight: 540;
+  letter-spacing: -0.045em;
 }
 
 .login-copy > span {
@@ -1492,7 +1497,7 @@ svg {
   border: 1px solid #3a3b3b;
   border-radius: 8px;
   color: var(--text);
-  background: #1d1e1e;
+  background: var(--surface);
 }
 
 .input::placeholder {
