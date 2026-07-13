@@ -1,12 +1,5 @@
 import type { Metadata } from 'next';
-import {
-  ArrowUp,
-  Database,
-  FileUp,
-  Paperclip,
-  Plus,
-  Sparkles,
-} from 'lucide-react';
+import { ArrowUp, Database, FileUp, Paperclip, Plus } from 'lucide-react';
 
 import { PageHeader } from '@/components/page-header';
 
@@ -33,10 +26,6 @@ export default function ChatPage() {
 
       <section className="chat-stage" aria-labelledby="chat-title">
         <div className="chat-intro">
-          <span className="chat-intro-icon" aria-hidden="true">
-            <Sparkles size={17} />
-          </span>
-          <p>Arus collection copilot</p>
           <h2 id="chat-title">what do you want to collect today?</h2>
           <span>
             Ask about your receivables, decide who to contact, or prepare the
