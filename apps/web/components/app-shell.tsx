@@ -12,6 +12,8 @@ import {
   FileText,
   LayoutDashboard,
   ListTodo,
+  LogOut,
+  MessageSquareText,
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
@@ -27,13 +29,13 @@ import { useState } from 'react';
 
 const navigation = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Chat', href: '/chat', icon: MessageSquareText },
   { label: 'Collection Queue', href: '/collection-queue', icon: ListTodo },
   { label: 'Invoices', href: '/invoices', icon: ReceiptText },
   { label: 'Debtors', href: '/debtors', icon: Building2 },
   { label: 'Import', href: '/import', icon: Upload },
   { label: 'Payments', href: '/payments', icon: CreditCard },
   { label: 'Reports', href: '/reports', icon: ChartNoAxesCombined },
-  { label: 'Settings', href: '/settings', icon: Settings },
 ] as const;
 
 const history = [
@@ -49,6 +51,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   return (
     <div
@@ -118,13 +121,50 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         <div className="sidebar-footer">
-          <button className="profile-switcher" type="button">
+          {profileOpen && (
+            <div className="profile-menu" role="menu">
+              <Link
+                className="profile-menu-item"
+                href="/settings"
+                role="menuitem"
+                onClick={() => setProfileOpen(false)}
+              >
+                <Settings size={15} />
+                <span>
+                  <strong>Settings</strong>
+                  <small>Organization and access</small>
+                </span>
+              </Link>
+              <button
+                className="profile-menu-item"
+                type="button"
+                role="menuitem"
+              >
+                <LogOut size={15} />
+                <span>
+                  <strong>Sign out</strong>
+                  <small>End this workspace session</small>
+                </span>
+              </button>
+            </div>
+          )}
+          <button
+            className="profile-switcher"
+            type="button"
+            onClick={() => setProfileOpen((open) => !open)}
+            aria-expanded={profileOpen}
+            aria-haspopup="menu"
+          >
             <span className="avatar avatar-alex">AN</span>
             <span className="profile-copy">
               <strong>Alex Nugraha</strong>
               <small>Demo Indonesia</small>
             </span>
-            <ChevronDown size={14} aria-hidden="true" />
+            <ChevronDown
+              className={profileOpen ? 'profile-chevron-open' : undefined}
+              size={14}
+              aria-hidden="true"
+            />
           </button>
           <button className="icon-button" type="button" aria-label="Dark theme">
             <Moon size={16} />

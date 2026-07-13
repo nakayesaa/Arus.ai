@@ -283,12 +283,67 @@ svg {
 }
 
 .sidebar-footer {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 7px;
   margin: auto 15px 0;
   padding: 18px 0 15px;
   border-top: 1px solid #2c2d2d;
+}
+
+.profile-menu {
+  position: absolute;
+  z-index: 30;
+  right: 39px;
+  bottom: 70px;
+  left: 0;
+  overflow: hidden;
+  padding: 5px;
+  border: 1px solid #393b3c;
+  border-radius: 11px;
+  background: #202223;
+  box-shadow: 0 18px 38px rgb(0 0 0 / 38%);
+}
+
+.profile-menu-item {
+  display: flex;
+  width: 100%;
+  min-height: 49px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 7px;
+  color: #8d9294;
+  background: transparent;
+  text-align: left;
+}
+
+.profile-menu-item:hover {
+  color: var(--text);
+  background: #2a2d2e;
+}
+
+.profile-menu-item > span {
+  min-width: 0;
+}
+
+.profile-menu-item strong,
+.profile-menu-item small {
+  display: block;
+}
+
+.profile-menu-item strong {
+  color: #dde0e1;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.profile-menu-item small {
+  margin-top: 3px;
+  color: #73787a;
+  font-size: 9px;
 }
 
 .profile-switcher {
@@ -307,6 +362,14 @@ svg {
 
 .profile-switcher:hover {
   background: var(--surface-raised);
+}
+
+.profile-switcher > svg {
+  transition: transform 160ms ease;
+}
+
+.profile-chevron-open {
+  transform: rotate(180deg);
 }
 
 .profile-copy {
