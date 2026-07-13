@@ -5,8 +5,6 @@ import {
   ChartNoAxesCombined,
   ChartSpline,
   ChevronDown,
-  CircleDollarSign,
-  Clock3,
   Command,
   CreditCard,
   FileText,
@@ -39,9 +37,11 @@ const navigation = [
 ] as const;
 
 const history = [
-  { label: 'Overdue above 30 days', href: '/invoices', icon: Clock3 },
-  { label: 'Broken promises', href: '/collection-queue', icon: FileText },
-  { label: 'High-value accounts', href: '/debtors', icon: CircleDollarSign },
+  { label: 'overdue-30-days.md', href: '/invoices' },
+  { label: 'broken-promises.md', href: '/collection-queue' },
+  { label: 'high-value-accounts.md', href: '/debtors' },
+  { label: 'weekly-collection-review.md', href: '/chat' },
+  { label: 'payment-allocation-check.md', href: '/payments' },
 ] as const;
 
 interface AppShellProps {
@@ -52,6 +52,7 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   return (
     <div
@@ -109,15 +110,30 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         <div className="sidebar-section sidebar-history">
-          <p className="sidebar-label">History</p>
-          <nav className="nav-list" aria-label="Saved views">
-            {history.map(({ label, href, icon: Icon }) => (
-              <Link className="nav-link history-link" href={href} key={label}>
-                <Icon size={16} strokeWidth={1.5} aria-hidden="true" />
-                <span>{label}</span>
-              </Link>
-            ))}
-          </nav>
+          <button
+            className={`history-toggle ${historyOpen ? 'history-toggle-open' : ''}`}
+            type="button"
+            onClick={() => setHistoryOpen((open) => !open)}
+            aria-expanded={historyOpen}
+            aria-controls="sidebar-history-list"
+          >
+            <span>History</span>
+            <ChevronDown size={15} aria-hidden="true" />
+          </button>
+          {historyOpen && (
+            <nav
+              className="nav-list history-scroll"
+              id="sidebar-history-list"
+              aria-label="Markdown history"
+            >
+              {history.map(({ label, href }) => (
+                <Link className="nav-link history-link" href={href} key={label}>
+                  <FileText size={14} strokeWidth={1.5} aria-hidden="true" />
+                  <span>{label}</span>
+                </Link>
+              ))}
+            </nav>
+          )}
         </div>
 
         <div className="sidebar-footer">

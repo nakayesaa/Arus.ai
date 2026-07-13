@@ -273,9 +273,54 @@ svg {
   margin-top: 24px;
 }
 
+.history-toggle {
+  display: flex;
+  width: 100%;
+  height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  color: #686f72;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.history-toggle:hover {
+  color: #a6acae;
+  background: rgb(255 255 255 / 2.5%);
+}
+
+.history-toggle svg {
+  transition: transform 160ms ease;
+}
+
+.history-toggle-open svg {
+  transform: rotate(180deg);
+}
+
+.history-scroll {
+  max-height: 137px;
+  margin-top: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #33383a transparent;
+  scrollbar-width: thin;
+}
+
 .history-link {
-  height: 39px;
+  height: 34px;
   color: #9fa1a2;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 10px;
+}
+
+.history-link svg {
+  color: #626a6d;
 }
 
 .sidebar-footer {
