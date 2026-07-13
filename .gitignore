@@ -4,6 +4,9 @@ coverage/
 .next/
 out/
 
+*.md
+!/README.md
+
 .env
 .env.*
 !.env.example
