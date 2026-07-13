@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
-import { ArrowRight, ChartSpline } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+
+import { ArusLogo } from '@/components/arus-logo';
 
 export const metadata: Metadata = { title: 'Login' };
 
@@ -8,13 +10,7 @@ export default function LoginPage() {
     <main className="login-shell">
       <section className="login-card" aria-labelledby="login-title">
         <div className="login-brand">
-          <span className="brand-mark" aria-hidden="true">
-            <ChartSpline size={22} strokeWidth={2.4} />
-          </span>
-          <span>
-            <strong>Arus</strong>
-            <small>Collections OS</small>
-          </span>
+          <ArusLogo className="login-arus-logo" />
         </div>
 
         <div className="login-copy">

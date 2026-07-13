@@ -3,7 +3,6 @@
 import {
   Building2,
   ChartNoAxesCombined,
-  ChartSpline,
   ChevronDown,
   Command,
   CreditCard,
@@ -24,6 +23,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+
+import { ArusLogo } from '@/components/arus-logo';
 
 const navigation = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -67,10 +68,7 @@ export function AppShell({ children }: AppShellProps) {
       <aside className="sidebar" aria-hidden={!sidebarOpen}>
         <div className="sidebar-brand-row">
           <Link className="sidebar-brand" href="/dashboard">
-            <span className="brand-mark" aria-hidden="true">
-              <ChartSpline size={20} strokeWidth={2.4} />
-            </span>
-            <strong>Arus</strong>
+            <ArusLogo className="sidebar-arus-logo" />
           </Link>
           <div className="sidebar-brand-actions">
             <button
