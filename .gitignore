@@ -10,6 +10,7 @@ out/
 
 *.log
 npm-debug.log*
+*.tsbuildinfo
 
 apps/api/src/generated/
 playwright-report/
