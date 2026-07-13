@@ -58,15 +58,11 @@ export function AppShell({ children }: AppShellProps) {
         <div className="sidebar-brand-row">
           <Link className="sidebar-brand" href="/dashboard">
             <span className="brand-mark" aria-hidden="true">
-              <ChartSpline size={22} strokeWidth={2.4} />
+              <ChartSpline size={20} strokeWidth={2.4} />
             </span>
-            <span>
-              <strong>Arus</strong>
-              <small>Collections OS</small>
-            </span>
+            <strong>Arus</strong>
           </Link>
           <div className="sidebar-brand-actions">
-            <ChevronDown size={15} aria-hidden="true" />
             <button
               className="icon-button sidebar-close-button"
               type="button"
