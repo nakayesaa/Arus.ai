@@ -31,7 +31,8 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
-    "smoke": "tsx scripts/smoke-test.ts"
+    "smoke": "tsx scripts/smoke-test.ts",
+    "backup": "./scripts/backup.sh"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
