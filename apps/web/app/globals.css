@@ -1581,6 +1581,10 @@ svg {
     grid-template-columns: 0 minmax(0, 1fr);
   }
 
+  .workspace {
+    grid-column: 2;
+  }
+
   .sidebar {
     position: absolute;
     z-index: 50;

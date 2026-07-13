@@ -23,7 +23,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const navigation = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -53,6 +53,12 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 940px)').matches) {
+      setSidebarOpen(false);
+    }
+  }, []);
 
   return (
     <div
