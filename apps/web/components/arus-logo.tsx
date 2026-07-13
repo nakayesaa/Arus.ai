@@ -4,10 +4,10 @@ export function ArusLogo({ className }: { className?: string }) {
   return (
     <span className={`arus-logo ${className ?? ''}`}>
       <Image
-        src="/brand/arus-logo.png"
+        src="/brand/arus-logo-transparent.png"
         alt="Arus"
-        width={240}
-        height={160}
+        width={2172}
+        height={724}
         priority
       />
     </span>
