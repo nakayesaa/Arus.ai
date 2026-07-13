@@ -43,20 +43,20 @@ Setelah startup:
 
 ## Daily commands
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Menjalankan API dan web menggunakan root `.env` |
-| `npm run build` | Generate Prisma Client lalu production-build seluruh workspace |
-| `npm run lint` | Menjalankan ESLint |
-| `npm run format:check` | Memeriksa format tanpa mengubah file |
-| `npm run typecheck` | Generate Prisma Client dan typecheck seluruh workspace/seed |
-| `npm run test:run` | Menjalankan seluruh test satu kali |
-| `npm run db:up` | Menyalakan local PostgreSQL |
-| `npm run db:down` | Menghentikan local services tanpa menghapus volume |
-| `npm run db:migrate` | Membuat/menerapkan development migration |
-| `npm run db:migrate:deploy` | Menerapkan migration yang sudah committed |
-| `npm run db:seed` | Menjalankan explicit synthetic demo seed |
-| `npm run db:studio` | Membuka Prisma Studio untuk local development |
+| Command                     | Purpose                                                        |
+| --------------------------- | -------------------------------------------------------------- |
+| `npm run dev`               | Menjalankan API dan web menggunakan root `.env`                |
+| `npm run build`             | Generate Prisma Client lalu production-build seluruh workspace |
+| `npm run lint`              | Menjalankan ESLint                                             |
+| `npm run format:check`      | Memeriksa format tanpa mengubah file                           |
+| `npm run typecheck`         | Generate Prisma Client dan typecheck seluruh workspace/seed    |
+| `npm run test:run`          | Menjalankan seluruh test satu kali                             |
+| `npm run db:up`             | Menyalakan local PostgreSQL                                    |
+| `npm run db:down`           | Menghentikan local services tanpa menghapus volume             |
+| `npm run db:migrate`        | Membuat/menerapkan development migration                       |
+| `npm run db:migrate:deploy` | Menerapkan migration yang sudah committed                      |
+| `npm run db:seed`           | Menjalankan explicit synthetic demo seed                       |
+| `npm run db:studio`         | Membuka Prisma Studio untuk local development                  |
 
 ## Repository map
 
