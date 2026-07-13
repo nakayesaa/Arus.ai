@@ -86,9 +86,9 @@ svg {
 
 .app-shell {
   display: grid;
-  width: calc(100vw - 16px);
-  min-height: calc(100vh - 16px);
-  margin: 8px;
+  width: calc(100vw - 28px);
+  min-height: calc(100vh - 28px);
+  margin: 14px;
   overflow: hidden;
   grid-template-columns: 250px minmax(0, 1fr);
   border: 1px solid var(--border);
@@ -106,7 +106,7 @@ svg {
   display: flex;
   width: 250px;
   min-width: 250px;
-  height: calc(100vh - 18px);
+  height: calc(100vh - 30px);
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
@@ -389,7 +389,7 @@ svg {
 .workspace {
   position: relative;
   min-width: 0;
-  height: calc(100vh - 18px);
+  height: calc(100vh - 30px);
   min-height: 0;
   overflow: auto;
   background: var(--workspace);
