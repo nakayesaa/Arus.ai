@@ -757,7 +757,7 @@ svg {
   min-height: 166px;
   margin-top: 31px;
   padding: 20px;
-  border: 1px solid #2778c6;
+  border: 1px solid var(--border);
   border-radius: 21px;
   background:
     radial-gradient(circle at 88% 110%, rgb(38 118 190 / 11%), transparent 32%),
@@ -769,10 +769,10 @@ svg {
 }
 
 .chat-composer:focus-within {
-  border-color: var(--blue);
+  border-color: #3a4042;
   box-shadow:
     0 26px 60px rgb(0 0 0 / 29%),
-    0 0 0 1px rgb(57 148 255 / 10%);
+    inset 0 1px 0 rgb(255 255 255 / 4%);
 }
 
 .chat-composer textarea {
@@ -788,6 +788,10 @@ svg {
 
 .chat-composer textarea::placeholder {
   color: #777b7d;
+}
+
+.chat-composer textarea:focus-visible {
+  outline: none;
 }
 
 .chat-composer-footer,
