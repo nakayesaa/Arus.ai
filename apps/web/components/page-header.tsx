@@ -1,9 +1,10 @@
+import { History } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 interface PageHeaderProps {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
-  description: string;
+  description?: string;
   action?: ReactNode;
 }
 
@@ -15,12 +16,17 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <header className="page-header">
-      <div>
-        <p className="eyebrow">{eyebrow}</p>
+      <div className="page-heading">
         <h1>{title}</h1>
-        <p className="page-description">{description}</p>
+        {eyebrow && (
+          <p className="page-context">
+            <History size={16} aria-hidden="true" />
+            {eyebrow}
+          </p>
+        )}
+        {description && <p className="page-description">{description}</p>}
       </div>
-      {action}
+      {action && <div className="page-actions">{action}</div>}
     </header>
   );
 }

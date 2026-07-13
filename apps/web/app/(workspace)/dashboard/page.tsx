@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 import { PageHeader } from '@/components/page-header';
@@ -8,47 +9,87 @@ export const metadata: Metadata = {
 };
 
 const metrics = [
-  ['Total AR', 'Rp 0'],
-  ['Total overdue', 'Rp 0'],
-  ['Collected this week', 'Rp 0'],
-  ['Broken promises', '0'],
+  {
+    label: 'Total AR',
+    value: 'Rp 3,42 M',
+    detail: '+8,4% from last month',
+    negative: false,
+  },
+  {
+    label: 'Total overdue',
+    value: 'Rp 1,84 M',
+    detail: '42 invoices need action',
+    negative: true,
+  },
+  {
+    label: 'Collected this week',
+    value: 'Rp 486 jt',
+    detail: '+12,7% from last week',
+    negative: false,
+  },
+  {
+    label: 'Broken promises',
+    value: '7',
+    detail: '3 high-value accounts',
+    negative: true,
+  },
 ] as const;
 
 export default function DashboardPage() {
   return (
-    <>
+    <div className="dashboard-page">
       <PageHeader
-        eyebrow="Overview"
         title="Dashboard"
-        description="Satu pandangan untuk exposure, collection progress, promise, dan dispute."
+        eyebrow="Today · 14 July 2026"
+        action={
+          <Link className="outline-blue-button" href="/collection-queue">
+            <Sparkles size={16} aria-hidden="true" />
+            Start collecting
+          </Link>
+        }
       />
 
-      <section className="metrics-grid" aria-label="Collection metrics">
-        {metrics.map(([label, value]) => (
-          <article className="card metric-card" key={label}>
-            <p className="metric-label">{label}</p>
-            <p className="metric-value">{value}</p>
+      <section className="dashboard-hero" aria-labelledby="attention-title">
+        <h2 id="attention-title">good morning, Alex. what needs attention?</h2>
+
+        <Link className="priority-card" href="/collection-queue">
+          <span className="priority-copy">
+            <small>Today&apos;s collection focus</small>
+            <strong>Rp 1,84 miliar overdue needs your attention</strong>
+            <p>
+              42 invoices across 18 debtors, prioritized by aging and promise
+              status.
+            </p>
+          </span>
+          <span className="priority-arrow" aria-hidden="true">
+            <ArrowRight size={22} />
+          </span>
+        </Link>
+
+        <nav className="dashboard-chips" aria-label="Quick views">
+          <Link className="chip" href="/invoices">
+            Review 12 newly overdue
+          </Link>
+          <Link className="chip" href="/collection-queue">
+            Chase 7 broken promises
+          </Link>
+          <Link className="chip" href="/debtors">
+            View high-value accounts
+          </Link>
+        </nav>
+      </section>
+
+      <section className="metric-strip" aria-label="Collection metrics">
+        {metrics.map(({ label, value, detail, negative }) => (
+          <article className="metric-item" key={label}>
+            <p>{label}</p>
+            <strong>{value}</strong>
+            <small className={negative ? 'negative' : undefined}>
+              {detail}
+            </small>
           </article>
         ))}
       </section>
-
-      <section className="dashboard-grid">
-        <article className="card card-body">
-          <h2>Aging breakdown</h2>
-          <p className="muted">
-            Aging totals akan muncul setelah invoice pertama berhasil diimpor.
-          </p>
-        </article>
-        <article className="card card-body">
-          <h2>Start operating</h2>
-          <p className="muted">
-            Gunakan canonical CSV untuk memuat receivable tanpa double-count.
-          </p>
-          <Link className="button" href="/import">
-            Import invoices
-          </Link>
-        </article>
-      </section>
-    </>
+    </div>
   );
 }
