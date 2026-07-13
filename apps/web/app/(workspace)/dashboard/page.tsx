@@ -15,7 +15,7 @@ export default function DashboardPage() {
         title="Dashboard"
         eyebrow="Today · 14 July 2026"
         action={
-          <Link className="outline-blue-button" href="/collection-queue">
+          <Link className="outline-blue-button" href="/chat">
             <Sparkles size={16} aria-hidden="true" />
             Start collecting
           </Link>
