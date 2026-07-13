@@ -484,19 +484,19 @@ svg {
 }
 
 .outline-blue-button {
-  height: 43px;
-  padding: 0 22px;
-  border-color: #237ce1;
-  border-radius: 24px;
-  color: #ffffff;
+  height: 33px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--text-soft);
   background: transparent;
-  box-shadow: 0 7px 18px rgb(22 103 199 / 20%);
-  font-weight: 650;
+  box-shadow: none;
+  font-weight: 600;
 }
 
 .outline-blue-button:hover {
-  border-color: var(--blue);
-  background: rgb(40 121 218 / 8%);
+  color: var(--blue);
+  background: transparent;
 }
 
 /* Dashboard */
@@ -597,59 +597,6 @@ svg {
 .chip:hover {
   color: var(--text);
   background: var(--surface-raised);
-}
-
-.metric-strip {
-  display: grid;
-  width: min(1080px, calc(100% - 48px));
-  margin: 66px auto 30px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: #181919;
-}
-
-.metric-item {
-  min-width: 0;
-  padding: 18px 20px;
-  border-right: 1px solid var(--border-soft);
-}
-
-.metric-item:last-child {
-  border-right: 0;
-}
-
-.metric-item p,
-.metric-item strong,
-.metric-item small {
-  display: block;
-  margin: 0;
-}
-
-.metric-item p {
-  margin-bottom: 9px;
-  color: #787b7c;
-  font-size: 12px;
-}
-
-.metric-item strong {
-  overflow: hidden;
-  color: #e9eaea;
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.metric-item small {
-  margin-top: 7px;
-  color: var(--green);
-  font-size: 10px;
-}
-
-.metric-item small.negative {
-  color: var(--red);
 }
 
 /* Dense list pages */
@@ -1341,18 +1288,6 @@ svg {
     padding-left: 55px;
   }
 
-  .metric-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .metric-item:nth-child(2) {
-    border-right: 0;
-  }
-
-  .metric-item:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--border-soft);
-  }
-
   .panel-span-4,
   .panel-span-5,
   .panel-span-6,
@@ -1416,22 +1351,6 @@ svg {
 
   .dashboard-chips {
     display: grid;
-  }
-
-  .metric-strip {
-    width: calc(100% - 28px);
-    margin-top: 38px;
-    grid-template-columns: 1fr;
-  }
-
-  .metric-item,
-  .metric-item:nth-child(2) {
-    border-right: 0;
-    border-bottom: 1px solid var(--border-soft);
-  }
-
-  .metric-item:last-child {
-    border-bottom: 0;
   }
 
   .data-topbar {

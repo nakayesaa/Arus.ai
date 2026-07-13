@@ -8,33 +8,6 @@ export const metadata: Metadata = {
   title: 'Dashboard',
 };
 
-const metrics = [
-  {
-    label: 'Total AR',
-    value: 'Rp 3,42 M',
-    detail: '+8,4% from last month',
-    negative: false,
-  },
-  {
-    label: 'Total overdue',
-    value: 'Rp 1,84 M',
-    detail: '42 invoices need action',
-    negative: true,
-  },
-  {
-    label: 'Collected this week',
-    value: 'Rp 486 jt',
-    detail: '+12,7% from last week',
-    negative: false,
-  },
-  {
-    label: 'Broken promises',
-    value: '7',
-    detail: '3 high-value accounts',
-    negative: true,
-  },
-] as const;
-
 export default function DashboardPage() {
   return (
     <div className="dashboard-page">
@@ -77,18 +50,6 @@ export default function DashboardPage() {
             View high-value accounts
           </Link>
         </nav>
-      </section>
-
-      <section className="metric-strip" aria-label="Collection metrics">
-        {metrics.map(({ label, value, detail, negative }) => (
-          <article className="metric-item" key={label}>
-            <p>{label}</p>
-            <strong>{value}</strong>
-            <small className={negative ? 'negative' : undefined}>
-              {detail}
-            </small>
-          </article>
-        ))}
       </section>
     </div>
   );
