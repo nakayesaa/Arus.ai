@@ -48,13 +48,17 @@ export function MembersManager({ currentUserId }: MembersManagerProps) {
     setPendingId('invite');
     const form = new FormData(formElement);
     try {
-      const member = await inviteMember({
-        name: String(form.get('name') ?? ''),
+      const result = await inviteMember({
         email: String(form.get('email') ?? ''),
         role: String(form.get('role') ?? 'OPERATOR') as MembershipRole,
       });
+      const { member } = result;
       setMembers((current) => replaceMember(current, member));
-      setNotice(`Invitation sent to ${member.email}.`);
+      setNotice(
+        result.delivery === 'EMAIL'
+          ? `Invitation sent to ${member.email}.`
+          : `Invitation saved locally for ${member.email}. Configure Resend to send real email.`,
+      );
       setInviteOpen(false);
       formElement.reset();
     } catch (requestError) {
@@ -87,13 +91,17 @@ export function MembersManager({ currentUserId }: MembersManagerProps) {
     setNotice(null);
     setPendingId(member.id);
     try {
-      const updated = await inviteMember({
+      const result = await inviteMember({
         email: member.email,
-        name: member.name,
         role: member.role,
       });
+      const updated = result.member;
       setMembers((current) => replaceMember(current, updated));
-      setNotice(`A fresh invitation was sent to ${updated.email}.`);
+      setNotice(
+        result.delivery === 'EMAIL'
+          ? `A fresh invitation was sent to ${updated.email}.`
+          : `A fresh invitation was saved locally for ${updated.email}.`,
+      );
     } catch (requestError) {
       setError(messageFor(requestError));
     } finally {
@@ -119,16 +127,6 @@ export function MembersManager({ currentUserId }: MembersManagerProps) {
 
       {inviteOpen && (
         <form className="member-invite-form" onSubmit={handleInvite}>
-          <label className="field">
-            Name
-            <input
-              className="input"
-              name="name"
-              minLength={2}
-              maxLength={200}
-              required
-            />
-          </label>
           <label className="field">
             Work email
             <input

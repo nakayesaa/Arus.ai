@@ -1,5 +1,9 @@
 import { apiRequest } from '@/lib/api-client/http';
-import type { DataEnvelope, MembershipRole } from '@/lib/auth/types';
+import type {
+  AuthSession,
+  DataEnvelope,
+  MembershipRole,
+} from '@/lib/auth/types';
 
 export interface Member {
   id: string;
@@ -20,15 +24,16 @@ export async function listMembers(): Promise<Member[]> {
 
 export async function inviteMember(input: {
   email: string;
-  name: string;
   role: MembershipRole;
-}): Promise<Member> {
-  const response = await apiRequest<DataEnvelope<Member>>('/api/members', {
+}): Promise<{ member: Member; delivery: 'EMAIL' | 'LOCAL_FILE' }> {
+  const response = await apiRequest<
+    DataEnvelope<Member> & { meta: { delivery: 'EMAIL' | 'LOCAL_FILE' } }
+  >('/api/members', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
-  return response.data;
+  return { member: response.data, delivery: response.meta.delivery };
 }
 
 export async function updateMember(
@@ -48,12 +53,18 @@ export async function updateMember(
 
 export async function acceptInvitation(
   token: string,
+  name: string,
   password: string,
-): Promise<void> {
-  await accountAction('/api/auth/invitations/accept', {
-    token,
-    password,
-  });
+): Promise<AuthSession> {
+  const response = await apiRequest<DataEnvelope<AuthSession>>(
+    '/api/auth/invitations/accept',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, name, password }),
+    },
+  );
+  return response.data;
 }
 
 export async function requestPasswordReset(email: string): Promise<string> {
@@ -79,7 +90,7 @@ export async function completePasswordReset(
 }
 
 async function accountAction(
-  path: '/api/auth/invitations/accept' | '/api/auth/password-reset/complete',
+  path: '/api/auth/password-reset/complete',
   body: { token: string; password: string },
 ): Promise<void> {
   await apiRequest<void>(path, {

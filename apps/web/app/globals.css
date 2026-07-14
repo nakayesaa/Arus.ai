@@ -1374,7 +1374,7 @@ svg {
   display: grid;
   margin-top: 18px;
   padding: 16px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) 120px auto;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
   align-items: end;
   gap: 10px;
   border: 1px solid var(--border);
