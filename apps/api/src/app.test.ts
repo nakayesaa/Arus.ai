@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createApp } from './app.js';
 import { loadEnvironment } from './config/env.js';
+import type { AuthServiceContract } from './services/auth.service.js';
 
 const environment = loadEnvironment({
   NODE_ENV: 'test',
@@ -14,8 +15,20 @@ const environment = loadEnvironment({
   LOG_LEVEL: 'silent',
 });
 
+const authService: AuthServiceContract = {
+  login: async () => {
+    throw new Error('Not used by application shell tests');
+  },
+  authenticate: async () => null,
+  logout: async () => undefined,
+};
+
 function testApp() {
-  return createApp({ environment, logger: pino({ level: 'silent' }) });
+  return createApp({
+    authService,
+    environment,
+    logger: pino({ level: 'silent' }),
+  });
 }
 
 describe('API application', () => {
