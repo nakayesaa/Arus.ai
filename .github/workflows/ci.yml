@@ -41,6 +41,7 @@ jobs:
       LOG_LEVEL: silent
       DATABASE_URL: postgresql://arus:arus_ci_only@localhost:5432/arus_ai_test?schema=public
       DIRECT_DATABASE_URL: postgresql://arus:arus_ci_only@localhost:5432/arus_ai_test?schema=public
+      SESSION_SECRET: ci-only-session-secret-with-at-least-32-characters
       DEMO_SEED_PASSWORD: ci-synthetic-password-only
 
     steps:
