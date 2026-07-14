@@ -21,12 +21,18 @@ export interface CreateInvitationInput {
   actorId: string;
   email: string;
   normalizedEmail: string;
-  name: string;
   role: MembershipRole;
   tokenHash: string;
   expiresAt: Date;
   now: Date;
   requestId: string;
+}
+
+export interface AcceptedInvitationSession {
+  sessionId: string;
+  user: { id: string; email: string; name: string };
+  organization: { id: string; name: string; timezone: string };
+  role: MembershipRole;
 }
 
 export interface UpdateMemberInput {
@@ -66,10 +72,13 @@ export interface AccountLifecycleRepository {
   updateMember(input: UpdateMemberInput): Promise<MemberRecord | null>;
   acceptInvitation(input: {
     tokenHash: string;
+    name: string;
     passwordHash: string;
+    sessionTokenHash: string;
+    sessionExpiresAt: Date;
     now: Date;
     requestId: string;
-  }): Promise<boolean>;
+  }): Promise<AcceptedInvitationSession | null>;
   createPasswordReset(input: {
     normalizedEmail: string;
     tokenHash: string;
@@ -135,7 +144,7 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
             action = 'MEMBER_INVITATION_RESENT';
             await transaction.user.update({
               where: { id: userId },
-              data: { email: input.email, name: input.name },
+              data: { email: input.email },
             });
             await transaction.membership.update({
               where: { id: membershipId },
@@ -151,7 +160,7 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
                 email: input.email,
                 normalizedEmail: input.normalizedEmail,
                 passwordHash: null,
-                name: input.name,
+                name: provisionalName(input.email),
                 isActive: false,
               },
             });
@@ -297,10 +306,13 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
 
   async acceptInvitation(input: {
     tokenHash: string;
+    name: string;
     passwordHash: string;
+    sessionTokenHash: string;
+    sessionExpiresAt: Date;
     now: Date;
     requestId: string;
-  }): Promise<boolean> {
+  }): Promise<AcceptedInvitationSession | null> {
     return this.database.$transaction(
       async (transaction) => {
         const token = await transaction.accountToken.findFirst({
@@ -312,7 +324,7 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
           },
         });
         if (!token) {
-          return false;
+          return null;
         }
         const consumed = await transaction.accountToken.updateMany({
           where: {
@@ -323,7 +335,7 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
           data: { consumedAt: input.now },
         });
         if (consumed.count !== 1) {
-          return false;
+          return null;
         }
 
         const membership = await transaction.membership.findUnique({
@@ -335,16 +347,26 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
           },
         });
         if (!membership || membership.acceptedAt !== null) {
-          return false;
+          return null;
         }
 
-        await transaction.user.update({
+        const user = await transaction.user.update({
           where: { id: token.userId },
-          data: { passwordHash: input.passwordHash, isActive: true },
+          data: {
+            name: input.name,
+            passwordHash: input.passwordHash,
+            isActive: true,
+          },
+          select: { id: true, email: true, name: true },
         });
-        await transaction.membership.update({
+        const activatedMembership = await transaction.membership.update({
           where: { id: membership.id },
           data: { isActive: true, acceptedAt: input.now },
+          include: {
+            organization: {
+              select: { id: true, name: true, timezone: true },
+            },
+          },
         });
         await transaction.accountToken.updateMany({
           where: {
@@ -355,17 +377,40 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
           },
           data: { consumedAt: input.now },
         });
-        await transaction.auditLog.create({
+        const session = await transaction.session.create({
           data: {
+            tokenHash: input.sessionTokenHash,
+            userId: token.userId,
             organizationId: token.organizationId,
-            actorId: token.userId,
-            action: 'MEMBER_INVITATION_ACCEPTED',
-            entityType: 'Membership',
-            entityId: membership.id,
-            requestId: input.requestId,
+            role: activatedMembership.role,
+            expiresAt: input.sessionExpiresAt,
           },
         });
-        return true;
+        await transaction.auditLog.createMany({
+          data: [
+            {
+              organizationId: token.organizationId,
+              actorId: token.userId,
+              action: 'MEMBER_INVITATION_ACCEPTED',
+              entityType: 'Membership',
+              entityId: membership.id,
+              requestId: input.requestId,
+            },
+            {
+              organizationId: token.organizationId,
+              actorId: token.userId,
+              action: 'USER_LOGIN_SUCCESS',
+              entityType: 'Session',
+              requestId: input.requestId,
+            },
+          ],
+        });
+        return {
+          sessionId: session.id,
+          user,
+          organization: activatedMembership.organization,
+          role: activatedMembership.role,
+        };
       },
       { isolationLevel: 'Serializable' },
     );
@@ -539,4 +584,8 @@ function isUniqueConstraintError(error: unknown): boolean {
     'code' in error &&
     error.code === 'P2002'
   );
+}
+
+function provisionalName(email: string): string {
+  return email.split('@', 1)[0]?.slice(0, 200) || 'Invited member';
 }

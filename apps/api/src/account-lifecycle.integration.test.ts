@@ -151,7 +151,6 @@ integrationDescribe('account lifecycle with PostgreSQL', () => {
       .set('Cookie', ownerCookie)
       .send({
         email: invitedEmail,
-        name: 'Invited Operator',
         role: 'OPERATOR',
       })
       .expect(201);
@@ -177,18 +176,29 @@ integrationDescribe('account lifecycle with PostgreSQL', () => {
 
   it('activates a pending member once and permits login', async () => {
     const invitationToken = emailSender.token('INVITATION');
+    const acceptance = await request(app)
+      .post('/api/auth/invitations/accept')
+      .set('Origin', environment.APP_ORIGIN)
+      .send({
+        token: invitationToken,
+        name: 'Invited Operator',
+        password: invitedPassword,
+      })
+      .expect(200);
+    invitedCookie =
+      (acceptance.headers['set-cookie']?.[0] ?? '').split(';', 1)[0] ?? '';
+    expect(invitedCookie).toMatch(/^arus_session=/);
+    expect(acceptance.body.data.user.name).toBe('Invited Operator');
     await request(app)
       .post('/api/auth/invitations/accept')
       .set('Origin', environment.APP_ORIGIN)
-      .send({ token: invitationToken, password: invitedPassword })
-      .expect(204);
-    await request(app)
-      .post('/api/auth/invitations/accept')
-      .set('Origin', environment.APP_ORIGIN)
-      .send({ token: invitationToken, password: invitedPassword })
+      .send({
+        token: invitationToken,
+        name: 'Invited Operator',
+        password: invitedPassword,
+      })
       .expect(400);
 
-    invitedCookie = await login(invitedEmail, invitedPassword);
     await request(app)
       .get('/api/auth/me')
       .set('Cookie', invitedCookie)

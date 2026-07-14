@@ -1,7 +1,9 @@
 import type { RequestHandler } from 'express';
 import { z } from 'zod';
 
+import type { Environment } from '../config/env.js';
 import { MembershipRole } from '../generated/prisma/enums.js';
+import { setSessionCookie } from '../lib/auth-cookie.js';
 import { HttpError, type ErrorFields } from '../lib/http-error.js';
 import { authenticatedContext } from '../middleware/authentication.js';
 import {
@@ -12,7 +14,6 @@ import {
 const inviteBodySchema = z
   .object({
     email: z.email().max(320),
-    name: z.string().trim().min(2).max(200),
     role: z.enum([MembershipRole.OWNER, MembershipRole.OPERATOR]),
   })
   .strict();
@@ -34,10 +35,18 @@ const tokenPasswordSchema = z
     password: z.string().min(12).max(128),
   })
   .strict();
+const invitationAcceptanceSchema = z
+  .object({
+    token: z.string().max(128),
+    name: z.string().trim().min(2).max(200),
+    password: z.string().min(12).max(128),
+  })
+  .strict();
 const resetRequestSchema = z.object({ email: z.email().max(320) }).strict();
 
 interface AccountLifecycleControllerOptions {
   lifecycleService: AccountLifecycleServiceContract;
+  environment: Pick<Environment, 'NODE_ENV' | 'EMAIL_DELIVERY_MODE'>;
 }
 
 export function createAccountLifecycleController(
@@ -69,7 +78,15 @@ export function createAccountLifecycleController(
         ...body,
         requestId: response.locals.requestId,
       });
-      response.status(201).json({ data: member });
+      response.status(201).json({
+        data: member,
+        meta: {
+          delivery:
+            options.environment.EMAIL_DELIVERY_MODE === 'resend'
+              ? 'EMAIL'
+              : 'LOCAL_FILE',
+        },
+      });
     } catch (error) {
       next(mapLifecycleError(error));
     }
@@ -94,12 +111,25 @@ export function createAccountLifecycleController(
 
   const acceptInvitation: RequestHandler = async (request, response, next) => {
     try {
-      const body = parse(tokenPasswordSchema, request.body);
-      await options.lifecycleService.acceptInvitation({
+      const body = parse(invitationAcceptanceSchema, request.body);
+      const result = await options.lifecycleService.acceptInvitation({
         ...body,
         requestId: response.locals.requestId,
       });
-      response.status(204).end();
+      setSessionCookie(
+        response,
+        options.environment,
+        result.token,
+        result.expiresAt,
+      );
+      response.status(200).json({
+        data: {
+          user: result.context.user,
+          organization: result.context.organization,
+          role: result.context.role,
+          expiresAt: result.expiresAt.toISOString(),
+        },
+      });
     } catch (error) {
       next(mapLifecycleError(error));
     }

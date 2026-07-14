@@ -8,6 +8,7 @@ import {
 import { hashAccountToken } from '../lib/account-token.js';
 import type { AccountEmail, AccountEmailSender } from '../lib/account-email.js';
 import type { PasswordHasher } from '../lib/password.js';
+import { hashSessionToken } from '../lib/session-token.js';
 import type {
   AccountLifecycleRepository,
   CreateInvitationInput,
@@ -23,6 +24,7 @@ import {
 
 const now = new Date('2026-07-15T03:00:00.000Z');
 const token = 'a'.repeat(43);
+const sessionToken = 'b'.repeat(43);
 const secret = 'test-session-secret-that-is-at-least-32-characters';
 const context: AuthContext = {
   sessionId: '30000000-0000-4000-8000-000000000001',
@@ -55,8 +57,12 @@ class FakeRepository implements AccountLifecycleRepository {
   invitationInput: CreateInvitationInput | null = null;
   updateInput: UpdateMemberInput | null = null;
   invitationAccepted = true;
-  invitationAcceptance: { tokenHash: string; passwordHash: string } | null =
-    null;
+  invitationAcceptance: {
+    tokenHash: string;
+    name: string;
+    passwordHash: string;
+    sessionTokenHash: string;
+  } | null = null;
   resetIdentity: PasswordResetIdentity | null = null;
   resetCreation: { normalizedEmail: string; tokenHash: string } | null = null;
   resetCompleted = true;
@@ -82,10 +88,28 @@ class FakeRepository implements AccountLifecycleRepository {
 
   async acceptInvitation(input: {
     tokenHash: string;
+    name: string;
     passwordHash: string;
-  }): Promise<boolean> {
+    sessionTokenHash: string;
+  }): Promise<{
+    sessionId: string;
+    user: { id: string; email: string; name: string };
+    organization: { id: string; name: string; timezone: string };
+    role: MembershipRole;
+  } | null> {
     this.invitationAcceptance = input;
-    return this.invitationAccepted;
+    return this.invitationAccepted
+      ? {
+          sessionId: '30000000-0000-4000-8000-000000000002',
+          user: {
+            id: member.userId,
+            email: member.email,
+            name: input.name,
+          },
+          organization: context.organization,
+          role: member.role,
+        }
+      : null;
   }
 
   async createPasswordReset(input: {
@@ -135,6 +159,7 @@ describe('AccountLifecycleService', () => {
       environment: {
         APP_ORIGIN: 'http://localhost:3000',
         SESSION_SECRET: secret,
+        SESSION_TTL_HOURS: 168,
         INVITATION_TTL_HOURS: 72,
         PASSWORD_RESET_TTL_MINUTES: 60,
       },
@@ -142,6 +167,7 @@ describe('AccountLifecycleService', () => {
       passwordHasher,
       clock: () => now,
       tokenFactory: () => token,
+      sessionTokenFactory: () => sessionToken,
     });
   });
 
@@ -149,7 +175,6 @@ describe('AccountLifecycleService', () => {
     const result = await service.inviteMember({
       context,
       email: ' Operator@Example.com ',
-      name: ' New Operator ',
       role: MembershipRole.OPERATOR,
       requestId: 'request-1',
     });
@@ -166,7 +191,7 @@ describe('AccountLifecycleService', () => {
     });
     expect(repository.invitationInput?.tokenHash).not.toBe(token);
     expect(emailSender.messages[0]?.actionUrl).toBe(
-      `http://localhost:3000/accept-invitation?token=${token}`,
+      `http://localhost:3000/welcome?token=${token}`,
     );
     expect(result.status).toBe('PENDING');
   });
@@ -178,7 +203,6 @@ describe('AccountLifecycleService', () => {
       service.inviteMember({
         context,
         email: member.email,
-        name: member.name,
         role: member.role,
         requestId: 'request-2',
       }),
@@ -212,6 +236,7 @@ describe('AccountLifecycleService', () => {
     await expect(
       service.acceptInvitation({
         token,
+        name: 'New Operator',
         password: 'too-short',
         requestId: 'request-4',
       }),
@@ -225,8 +250,9 @@ describe('AccountLifecycleService', () => {
   });
 
   it('hashes a new password and consumes only the invitation token purpose', async () => {
-    await service.acceptInvitation({
+    const result = await service.acceptInvitation({
       token,
+      name: ' New Operator ',
       password: 'a-secure-password',
       requestId: 'request-5',
     });
@@ -237,10 +263,15 @@ describe('AccountLifecycleService', () => {
         AccountTokenPurpose.INVITATION,
         secret,
       ),
+      name: 'New Operator',
       passwordHash: 'hash:a-secure-password',
+      sessionTokenHash: hashSessionToken(sessionToken, secret),
+      sessionExpiresAt: new Date('2026-07-22T03:00:00.000Z'),
       now,
       requestId: 'request-5',
     });
+    expect(result.token).toBe(sessionToken);
+    expect(result.context.user.name).toBe('New Operator');
   });
 
   it('keeps password-reset requests generic for unknown identities', async () => {

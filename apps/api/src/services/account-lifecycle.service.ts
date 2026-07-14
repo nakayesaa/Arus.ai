@@ -12,12 +12,13 @@ import {
 } from '../lib/account-token.js';
 import type { AccountEmailSender } from '../lib/account-email.js';
 import { bcryptPasswordHasher, type PasswordHasher } from '../lib/password.js';
+import { createSessionToken, hashSessionToken } from '../lib/session-token.js';
 import {
   LifecycleRepositoryConflictError,
   type AccountLifecycleRepository,
   type MemberRecord,
 } from '../repositories/account-lifecycle.repository.js';
-import type { AuthContext } from './auth.service.js';
+import type { AuthContext, LoginResult } from './auth.service.js';
 import { normalizeEmail } from './auth.service.js';
 
 export interface MemberView {
@@ -37,7 +38,6 @@ export interface AccountLifecycleServiceContract {
   inviteMember(input: {
     context: AuthContext;
     email: string;
-    name: string;
     role: MembershipRole;
     requestId: string;
   }): Promise<MemberView>;
@@ -50,9 +50,10 @@ export interface AccountLifecycleServiceContract {
   }): Promise<MemberView>;
   acceptInvitation(input: {
     token: string;
+    name: string;
     password: string;
     requestId: string;
-  }): Promise<void>;
+  }): Promise<LoginResult>;
   requestPasswordReset(input: {
     email: string;
     requestId: string;
@@ -89,6 +90,7 @@ interface AccountLifecycleServiceOptions {
     Environment,
     | 'APP_ORIGIN'
     | 'SESSION_SECRET'
+    | 'SESSION_TTL_HOURS'
     | 'INVITATION_TTL_HOURS'
     | 'PASSWORD_RESET_TTL_MINUTES'
   >;
@@ -96,17 +98,21 @@ interface AccountLifecycleServiceOptions {
   passwordHasher?: PasswordHasher;
   clock?: () => Date;
   tokenFactory?: () => string;
+  sessionTokenFactory?: () => string;
 }
 
 export class AccountLifecycleService implements AccountLifecycleServiceContract {
   private readonly passwordHasher: PasswordHasher;
   private readonly clock: () => Date;
   private readonly tokenFactory: () => string;
+  private readonly sessionTokenFactory: () => string;
 
   constructor(private readonly options: AccountLifecycleServiceOptions) {
     this.passwordHasher = options.passwordHasher ?? bcryptPasswordHasher;
     this.clock = options.clock ?? (() => new Date());
     this.tokenFactory = options.tokenFactory ?? createAccountToken;
+    this.sessionTokenFactory =
+      options.sessionTokenFactory ?? createSessionToken;
   }
 
   async listMembers(context: AuthContext): Promise<MemberView[]> {
@@ -119,7 +125,6 @@ export class AccountLifecycleService implements AccountLifecycleServiceContract 
   async inviteMember(input: {
     context: AuthContext;
     email: string;
-    name: string;
     role: MembershipRole;
     requestId: string;
   }): Promise<MemberView> {
@@ -135,7 +140,6 @@ export class AccountLifecycleService implements AccountLifecycleServiceContract 
         actorId: input.context.user.id,
         email: input.email.trim(),
         normalizedEmail: normalizeEmail(input.email),
-        name: input.name.trim(),
         role: input.role,
         tokenHash: hashAccountToken(
           token,
@@ -151,10 +155,10 @@ export class AccountLifecycleService implements AccountLifecycleServiceContract 
         await this.options.emailSender.send({
           kind: 'INVITATION',
           to: member.email,
-          recipientName: member.name,
+          recipientName: 'there',
           actionUrl: actionUrl(
             this.options.environment.APP_ORIGIN,
-            '/accept-invitation',
+            '/welcome',
             token,
           ),
           expiresAt,
@@ -228,26 +232,39 @@ export class AccountLifecycleService implements AccountLifecycleServiceContract 
 
   async acceptInvitation(input: {
     token: string;
+    name: string;
     password: string;
     requestId: string;
-  }): Promise<void> {
+  }): Promise<LoginResult> {
     enforcePasswordPolicy(input.password);
     if (!isAccountToken(input.token)) {
       throw invalidToken();
     }
-    const accepted = await this.options.repository.acceptInvitation({
+    const now = this.clock();
+    const expiresAt = new Date(
+      now.getTime() + this.options.environment.SESSION_TTL_HOURS * 3_600_000,
+    );
+    const sessionToken = this.sessionTokenFactory();
+    const context = await this.options.repository.acceptInvitation({
       tokenHash: hashAccountToken(
         input.token,
         AccountTokenPurpose.INVITATION,
         this.options.environment.SESSION_SECRET,
       ),
+      name: input.name.trim(),
       passwordHash: await this.passwordHasher.hash(input.password),
-      now: this.clock(),
+      sessionTokenHash: hashSessionToken(
+        sessionToken,
+        this.options.environment.SESSION_SECRET,
+      ),
+      sessionExpiresAt: expiresAt,
+      now,
       requestId: input.requestId,
     });
-    if (!accepted) {
+    if (!context) {
       throw invalidToken();
     }
+    return { token: sessionToken, expiresAt, context };
   }
 
   async requestPasswordReset(input: {
