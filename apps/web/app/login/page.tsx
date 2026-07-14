@@ -1,11 +1,19 @@
 import type { Metadata } from 'next';
-import { ArrowRight } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
 import { ArusLogo } from '@/components/arus-logo';
+import { LoginForm } from '@/components/login-form';
+import { getServerSession } from '@/lib/auth/server';
 
 export const metadata: Metadata = { title: 'Login' };
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await getServerSession();
+
+  if (session) {
+    redirect('/dashboard');
+  }
+
   return (
     <main className="login-shell">
       <section className="login-card" aria-labelledby="login-title">
@@ -19,31 +27,7 @@ export default function LoginPage() {
           <span>Continue managing every rupiah with a clear audit trail.</span>
         </div>
 
-        <form className="login-form">
-          <label className="field">
-            Work email
-            <input
-              className="input"
-              name="email"
-              type="email"
-              autoComplete="email"
-              placeholder="operator@company.co.id"
-            />
-          </label>
-          <label className="field">
-            Password
-            <input
-              className="input"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="Enter your password"
-            />
-          </label>
-          <button className="button button-primary login-submit" type="submit">
-            Sign in <ArrowRight size={16} />
-          </button>
-        </form>
+        <LoginForm />
         <p className="login-footnote">
           Secure access for your organization&apos;s collection team.
         </p>

@@ -6,13 +6,21 @@ import {
   ShieldCheck,
   Users,
 } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
 import { PageHeader } from '@/components/page-header';
 import { Pill } from '@/components/table-ui';
+import { requireServerSession } from '@/lib/auth/server';
 
 export const metadata: Metadata = { title: 'Settings' };
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const session = await requireServerSession();
+
+  if (session.role !== 'OWNER') {
+    redirect('/dashboard');
+  }
+
   return (
     <div className="content-page">
       <PageHeader
@@ -34,7 +42,7 @@ export default function SettingsPage() {
             <button className="settings-row settings-row-button" type="button">
               <Building2 size={17} />
               <div>
-                <strong>Demo Indonesia</strong>
+                <strong>{session.organization.name}</strong>
                 <span>Organization name</span>
               </div>
               <ChevronRight size={16} />
@@ -42,7 +50,7 @@ export default function SettingsPage() {
             <button className="settings-row settings-row-button" type="button">
               <Clock3 size={17} />
               <div>
-                <strong>Asia/Jakarta (WIB)</strong>
+                <strong>{session.organization.timezone}</strong>
                 <span>Timezone</span>
               </div>
               <ChevronRight size={16} />
@@ -60,22 +68,18 @@ export default function SettingsPage() {
 
         <article className="panel panel-span-5">
           <h2>Workspace access</h2>
-          <p>Three active members can operate this organization.</p>
+          <p>Current authenticated owner for this organization.</p>
           <div className="settings-list">
-            {[
-              ['AN', 'Alex Nugraha', 'Owner'],
-              ['MY', 'Maya Yasmin', 'Member'],
-              ['DM', 'Dimas Mahendra', 'Member'],
-            ].map(([initials, name, role]) => (
-              <div className="settings-row" key={name}>
-                <span className="avatar avatar-alex">{initials}</span>
-                <div>
-                  <strong>{name}</strong>
-                  <span>{role}</span>
-                </div>
-                <Pill tone="green">Active</Pill>
+            <div className="settings-row">
+              <span className="avatar avatar-alex">
+                {initials(session.user.name)}
+              </span>
+              <div>
+                <strong>{session.user.name}</strong>
+                <span>Owner · {session.user.email}</span>
               </div>
-            ))}
+              <Pill tone="green">Active</Pill>
+            </div>
           </div>
           <button className="control-button full-width-button" type="button">
             <Users size={15} /> Manage members
@@ -84,4 +88,13 @@ export default function SettingsPage() {
       </section>
     </div>
   );
+}
+
+function initials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
 }

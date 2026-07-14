@@ -363,6 +363,18 @@ svg {
   background: #2a2d2e;
 }
 
+.profile-menu-item:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.profile-menu-error {
+  margin: 4px 8px 6px;
+  color: #ef958e;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
 .profile-menu-item > span {
   min-width: 0;
 }
@@ -1500,10 +1512,31 @@ svg {
   border-color: #337fca;
 }
 
+.input:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.input[aria-invalid='true'] {
+  border-color: #9f4e4a;
+}
+
+.login-error {
+  margin: -3px 0 0;
+  color: #ef958e;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .login-submit {
   width: 100%;
   height: 41px;
   margin-top: 3px;
+}
+
+.login-submit:disabled {
+  cursor: wait;
+  opacity: 0.68;
 }
 
 .login-footnote {

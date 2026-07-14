@@ -20,11 +20,13 @@ import {
   Upload,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 
 import { ArusLogo } from '@/components/arus-logo';
+import { logout } from '@/lib/auth/client';
+import type { AuthSession } from '@/lib/auth/types';
 
 const navigation = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -47,19 +49,37 @@ const history = [
 
 interface AppShellProps {
   children: ReactNode;
+  session: AuthSession;
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, session }: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [logoutPending, setLogoutPending] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   useEffect(() => {
     if (window.matchMedia('(max-width: 940px)').matches) {
       setSidebarOpen(false);
     }
   }, []);
+
+  async function handleLogout() {
+    setLogoutPending(true);
+    setLogoutError(null);
+
+    try {
+      await logout();
+      router.replace('/login');
+      router.refresh();
+    } catch {
+      setLogoutError('Could not sign out. Try again.');
+      setLogoutPending(false);
+    }
+  }
 
   return (
     <div
@@ -143,29 +163,38 @@ export function AppShell({ children }: AppShellProps) {
         <div className="sidebar-footer">
           {profileOpen && (
             <div className="profile-menu" role="menu">
-              <Link
-                className="profile-menu-item"
-                href="/settings"
-                role="menuitem"
-                onClick={() => setProfileOpen(false)}
-              >
-                <Settings size={15} />
-                <span>
-                  <strong>Settings</strong>
-                  <small>Organization and access</small>
-                </span>
-              </Link>
+              {session.role === 'OWNER' && (
+                <Link
+                  className="profile-menu-item"
+                  href="/settings"
+                  role="menuitem"
+                  onClick={() => setProfileOpen(false)}
+                >
+                  <Settings size={15} />
+                  <span>
+                    <strong>Settings</strong>
+                    <small>Organization and access</small>
+                  </span>
+                </Link>
+              )}
               <button
                 className="profile-menu-item"
                 type="button"
                 role="menuitem"
+                onClick={handleLogout}
+                disabled={logoutPending}
               >
                 <LogOut size={15} />
                 <span>
-                  <strong>Sign out</strong>
+                  <strong>{logoutPending ? 'Signing out…' : 'Sign out'}</strong>
                   <small>End this workspace session</small>
                 </span>
               </button>
+              {logoutError && (
+                <p className="profile-menu-error" role="alert">
+                  {logoutError}
+                </p>
+              )}
             </div>
           )}
           <button
@@ -175,10 +204,12 @@ export function AppShell({ children }: AppShellProps) {
             aria-expanded={profileOpen}
             aria-haspopup="menu"
           >
-            <span className="avatar avatar-alex">AN</span>
+            <span className="avatar avatar-alex">
+              {initials(session.user.name)}
+            </span>
             <span className="profile-copy">
-              <strong>Alex Nugraha</strong>
-              <small>Demo Indonesia</small>
+              <strong>{session.user.name}</strong>
+              <small>{session.organization.name}</small>
             </span>
             <ChevronDown
               className={profileOpen ? 'profile-chevron-open' : undefined}
@@ -207,4 +238,13 @@ export function AppShell({ children }: AppShellProps) {
       </main>
     </div>
   );
+}
+
+function initials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
 }
