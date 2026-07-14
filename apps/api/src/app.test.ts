@@ -9,6 +9,8 @@ const environment = loadEnvironment({
   NODE_ENV: 'test',
   APP_ORIGIN: 'http://localhost:3000',
   API_ORIGIN: 'http://localhost:4000',
+  DATABASE_URL: 'postgresql://arus:test@localhost:5432/arus_test',
+  SESSION_SECRET: 'test-session-secret-that-is-at-least-32-characters',
   LOG_LEVEL: 'silent',
 });
 
