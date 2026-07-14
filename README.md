@@ -11,6 +11,7 @@ Produk ini dibangun sebagai managed AR operations system untuk client nyata. Lih
 - Express API dengan request ID, structured logs, safe errors, CORS, dan security headers;
 - pure domain package dengan Vitest;
 - Prisma/PostgreSQL identity dan tenant foundation;
+- secure invitations, password recovery, member roles, and session revocation;
 - deterministic two-organization demo seed;
 - lint, format, typecheck, test, build, migration, dan local database scripts.
 
@@ -18,7 +19,7 @@ Produk ini dibangun sebagai managed AR operations system untuk client nyata. Lih
 
 - Node.js sesuai [`.nvmrc`](.nvmrc);
 - npm sesuai `packageManager` di `package.json`;
-- Docker dengan Compose plugin untuk local PostgreSQL.
+- PostgreSQL connection, either local Docker or a managed Supabase project.
 
 ## First setup
 
@@ -27,13 +28,19 @@ nvm install
 nvm use
 cp .env.example .env
 npm ci
-npm run db:up
 npm run db:migrate:deploy
 npm run db:seed
 npm run dev
 ```
 
+Run `npm run db:up` before migrations only when using local Docker. With Supabase,
+configure its pooled and direct PostgreSQL URLs in `.env` and skip Docker.
+
 Ganti `SESSION_SECRET` dan `DEMO_SEED_PASSWORD` di `.env` sebelum menjalankan seed. Demo seed memakai synthetic data, memuat dua organization untuk tenant-boundary testing, dan menolak berjalan saat `NODE_ENV=production`.
+
+Local invitation and reset emails are written as private JSON files under
+`.local-emails/`. Production refuses this mode and requires backend-only Resend
+configuration; provider keys are never exposed to the web bundle.
 
 Setelah startup:
 
