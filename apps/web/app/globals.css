@@ -1355,6 +1355,142 @@ svg {
   margin-top: 17px;
 }
 
+.members-manager {
+  min-width: 0;
+}
+
+.members-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.members-toolbar p {
+  margin-top: 6px;
+}
+
+.member-invite-form {
+  display: grid;
+  margin-top: 18px;
+  padding: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) 120px auto;
+  align-items: end;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 1.8%);
+}
+
+.member-invite-form .button {
+  height: 41px;
+}
+
+.member-list {
+  display: grid;
+  margin-top: 17px;
+}
+
+.member-row {
+  display: grid;
+  min-height: 64px;
+  grid-template-columns: auto minmax(150px, 1fr) auto 108px auto;
+  align-items: center;
+  gap: 11px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.member-row:first-child {
+  border-top: 0;
+}
+
+.member-identity {
+  min-width: 0;
+}
+
+.member-identity strong,
+.member-identity span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-identity strong {
+  color: #d7d8d8;
+  font-size: 12px;
+  font-weight: 560;
+}
+
+.member-identity span {
+  margin-top: 3px;
+  color: #6f7273;
+  font-size: 10px;
+}
+
+.member-status {
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.member-status-active {
+  color: var(--green);
+  border-color: rgb(112 208 173 / 22%);
+  background: rgb(112 208 173 / 6%);
+}
+
+.member-status-pending {
+  color: var(--amber);
+  border-color: rgb(229 174 88 / 22%);
+  background: rgb(229 174 88 / 6%);
+}
+
+.member-status-inactive {
+  color: var(--red);
+  border-color: rgb(240 117 109 / 22%);
+  background: rgb(240 117 109 / 6%);
+}
+
+.member-select {
+  width: 108px;
+  height: 33px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: #b8baba;
+  background: var(--surface);
+}
+
+.member-select:disabled,
+.member-row button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.member-empty {
+  padding: 20px 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.form-notice,
+.account-action-message,
+.account-action-success p {
+  color: var(--green) !important;
+  font-size: 11px !important;
+  line-height: 1.5;
+}
+
+.form-notice {
+  margin: 14px 0 0 !important;
+}
+
 .aging-bars {
   display: grid;
   gap: 15px;
@@ -1494,6 +1630,29 @@ svg {
   font-weight: 550;
 }
 
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.field-label-row a,
+.login-footnote a {
+  color: #8db9e8;
+}
+
+.field-label-row a:hover,
+.login-footnote a:hover {
+  color: #b5d7fa;
+}
+
+.field-hint {
+  color: #676b6c;
+  font-size: 10px;
+  font-weight: 450;
+}
+
 .input {
   width: 100%;
   height: 41px;
@@ -1546,6 +1705,25 @@ svg {
   text-align: center;
 }
 
+.account-action-success {
+  display: grid;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.account-action-success p,
+.account-action-message {
+  margin: 0;
+}
+
+.account-action-message {
+  margin-top: 28px;
+  padding: 14px;
+  border: 1px solid rgb(112 208 173 / 20%);
+  border-radius: 9px;
+  background: rgb(112 208 173 / 5%);
+}
+
 @media (max-width: 1160px) {
   .sidebar-open .data-actions .wide-control {
     display: none;
@@ -1596,6 +1774,10 @@ svg {
   .panel-span-7,
   .panel-span-8 {
     grid-column: span 12;
+  }
+
+  .member-invite-form {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -1703,5 +1885,27 @@ svg {
 
   .mini-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .members-toolbar {
+    display: grid;
+  }
+
+  .members-toolbar .primary-button {
+    width: max-content;
+  }
+
+  .member-invite-form {
+    grid-template-columns: 1fr;
+  }
+
+  .member-row {
+    padding: 12px 0;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .member-row .member-select,
+  .member-row .control-button {
+    grid-column: span 1;
   }
 }

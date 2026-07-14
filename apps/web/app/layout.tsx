@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     template: '%s | AR Collections OS',
   },
   description: 'Internal workspace for managed accounts receivable collection.',
+  referrer: 'no-referrer',
 };
 
 interface RootLayoutProps {

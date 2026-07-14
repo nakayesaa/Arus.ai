@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
@@ -53,7 +54,10 @@ export function LoginForm() {
         />
       </label>
       <label className="field">
-        Password
+        <span className="field-label-row">
+          Password
+          <Link href="/forgot-password">Forgot password?</Link>
+        </span>
         <input
           className="input"
           name="password"
