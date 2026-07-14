@@ -1,6 +1,3 @@
-const API_ORIGIN =
-  process.env.NEXT_PUBLIC_API_ORIGIN ?? 'http://localhost:4000';
-
 export interface ApiErrorBody {
   error: {
     code: string;
@@ -25,7 +22,7 @@ export async function apiRequest<T>(
   path: `/${string}`,
   init: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(new URL(path, API_ORIGIN), {
+  const response = await fetch(path, {
     ...init,
     credentials: 'include',
     headers: {
@@ -43,6 +40,10 @@ export async function apiRequest<T>(
       response.status,
       body,
     );
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return (await response.json()) as T;
