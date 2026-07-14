@@ -1,8 +1,11 @@
 import { createApp } from './app.js';
 import { loadEnvironment } from './config/env.js';
+import { createAccountEmailSender } from './lib/account-email.js';
 import { createDatabaseClient } from './lib/database.js';
 import { createLogger } from './lib/logger.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
+import { PrismaAccountLifecycleRepository } from './repositories/account-lifecycle.repository.js';
+import { AccountLifecycleService } from './services/account-lifecycle.service.js';
 import { AuthService } from './services/auth.service.js';
 
 const environment = loadEnvironment();
@@ -13,7 +16,13 @@ const authService = new AuthService({
   environment,
   logger,
 });
-const app = createApp({ authService, environment, logger });
+const lifecycleService = new AccountLifecycleService({
+  repository: new PrismaAccountLifecycleRepository(database),
+  emailSender: createAccountEmailSender(environment, logger),
+  environment,
+  logger,
+});
+const app = createApp({ authService, lifecycleService, environment, logger });
 
 const server = app.listen(environment.PORT, () => {
   logger.info(

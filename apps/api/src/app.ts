@@ -8,12 +8,15 @@ import { createLogger } from './lib/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { createHttpLogger } from './middleware/http-logger.js';
 import { requestIdMiddleware } from './middleware/request-id.js';
+import { createAccountLifecycleRouter } from './routes/account-lifecycle.routes.js';
 import { createAuthRouter } from './routes/auth.routes.js';
 import { healthRouter } from './routes/health.routes.js';
+import type { AccountLifecycleServiceContract } from './services/account-lifecycle.service.js';
 import type { AuthServiceContract } from './services/auth.service.js';
 
 interface CreateAppOptions {
   authService: AuthServiceContract;
+  lifecycleService?: AccountLifecycleServiceContract;
   environment?: Environment;
   logger?: Logger;
 }
@@ -45,6 +48,15 @@ export function createApp(options: CreateAppOptions): Express {
       environment,
     }),
   );
+  if (options.lifecycleService) {
+    app.use(
+      createAccountLifecycleRouter({
+        authService: options.authService,
+        lifecycleService: options.lifecycleService,
+        environment,
+      }),
+    );
+  }
   app.use(notFoundHandler);
   app.use(errorHandler);
 
