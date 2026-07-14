@@ -42,6 +42,18 @@ Local invitation and reset emails are written as private JSON files under
 `.local-emails/`. Production refuses this mode and requires backend-only Resend
 configuration; provider keys are never exposed to the web bundle.
 
+To send real email, create a Resend API key and configure only the backend `.env`:
+
+```text
+EMAIL_DELIVERY_MODE=resend
+EMAIL_FROM=Arus <accounts@your-verified-domain.com>
+RESEND_API_KEY=re_your_private_key
+```
+
+Restart `npm run dev` after changing these values. Invitation recipients open a
+one-time `/welcome` link, choose their display name and password, and receive an
+authenticated session immediately after activation.
+
 Setelah startup:
 
 - web: `http://localhost:3000`;
