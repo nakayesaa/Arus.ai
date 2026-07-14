@@ -353,7 +353,7 @@ function enforcePasswordPolicy(password: string): void {
 
 function actionUrl(origin: string, pathname: string, token: string): string {
   const url = new URL(pathname, origin);
-  url.searchParams.set('token', token);
+  url.hash = new URLSearchParams({ token }).toString();
   return url.toString();
 }
 

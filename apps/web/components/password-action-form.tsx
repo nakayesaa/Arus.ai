@@ -7,12 +7,16 @@ import { useState } from 'react';
 
 import { ApiClientError } from '@/lib/api-client/http';
 import { completePasswordReset } from '@/lib/account-lifecycle/client';
+import { useActionToken } from '@/lib/account-lifecycle/use-action-token';
 
 interface PasswordActionFormProps {
-  token: string;
+  initialToken?: string;
 }
 
-export function PasswordActionForm({ token }: PasswordActionFormProps) {
+export function PasswordActionForm({
+  initialToken = '',
+}: PasswordActionFormProps) {
+  const { token, ready } = useActionToken(initialToken);
   const [pending, setPending] = useState(false);
   const [complete, setComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,12 +93,12 @@ export function PasswordActionForm({ token }: PasswordActionFormProps) {
       <button
         className="button button-primary login-submit"
         type="submit"
-        disabled={pending || token.length === 0}
+        disabled={pending || !ready || token.length === 0}
       >
         {pending ? 'Saving…' : 'Reset password'}
         {!pending && <ArrowRight size={16} />}
       </button>
-      {token.length === 0 && (
+      {ready && token.length === 0 && (
         <p className="login-error">This link is missing its security token.</p>
       )}
     </form>

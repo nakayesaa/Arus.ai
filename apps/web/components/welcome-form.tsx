@@ -7,9 +7,11 @@ import { useState } from 'react';
 
 import { ApiClientError } from '@/lib/api-client/http';
 import { acceptInvitation } from '@/lib/account-lifecycle/client';
+import { useActionToken } from '@/lib/account-lifecycle/use-action-token';
 
-export function WelcomeForm({ token }: { token: string }) {
+export function WelcomeForm({ initialToken = '' }: { initialToken?: string }) {
   const router = useRouter();
+  const { token, ready } = useActionToken(initialToken);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,12 +94,12 @@ export function WelcomeForm({ token }: { token: string }) {
       <button
         className="button button-primary login-submit"
         type="submit"
-        disabled={pending || token.length === 0}
+        disabled={pending || !ready || token.length === 0}
       >
         {pending ? 'Creating your workspace…' : 'Enter Arus'}
         {!pending && <ArrowRight size={16} />}
       </button>
-      {token.length === 0 && (
+      {ready && token.length === 0 && (
         <p className="login-error">This invitation link is incomplete.</p>
       )}
     </form>

@@ -191,7 +191,7 @@ describe('AccountLifecycleService', () => {
     });
     expect(repository.invitationInput?.tokenHash).not.toBe(token);
     expect(emailSender.messages[0]?.actionUrl).toBe(
-      `http://localhost:3000/welcome?token=${token}`,
+      `http://localhost:3000/welcome#token=${token}`,
     );
     expect(result.status).toBe('PENDING');
   });
@@ -299,7 +299,7 @@ describe('AccountLifecycleService', () => {
       requestId: 'request-7',
     });
     expect(emailSender.messages[0]?.actionUrl).toBe(
-      `http://localhost:3000/reset-password?token=${token}`,
+      `http://localhost:3000/reset-password#token=${token}`,
     );
 
     await service.completePasswordReset({

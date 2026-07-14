@@ -24,7 +24,7 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
             Tell your team who you are, secure your account, and start working.
           </span>
         </div>
-        <WelcomeForm token={token} />
+        <WelcomeForm initialToken={token} />
       </section>
     </main>
   );

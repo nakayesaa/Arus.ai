@@ -26,7 +26,7 @@ export default async function ResetPasswordPage({
             Changing it will securely sign out every existing session.
           </span>
         </div>
-        <PasswordActionForm token={token} />
+        <PasswordActionForm initialToken={token} />
       </section>
     </main>
   );

@@ -34,7 +34,9 @@ class CapturingEmailSender implements AccountEmailSender {
     if (!message) {
       throw new Error(`Missing captured ${kind} email`);
     }
-    return new URL(message.actionUrl).searchParams.get('token') ?? '';
+    const url = new URL(message.actionUrl);
+    expect(url.search).toBe('');
+    return new URLSearchParams(url.hash.slice(1)).get('token') ?? '';
   }
 }
 

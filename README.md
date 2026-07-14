@@ -54,6 +54,11 @@ Restart `npm run dev` after changing these values. Invitation recipients open a
 one-time `/welcome` link, choose their display name and password, and receive an
 authenticated session immediately after activation.
 
+Invitation and reset credentials are carried in URL fragments so they never
+reach web/API request logs, then removed from the address bar immediately after
+the browser reads them. Keep Resend open and click tracking disabled for the
+transactional auth domain so the provider does not rewrite sensitive links.
+
 Setelah startup:
 
 - web: `http://localhost:3000`;

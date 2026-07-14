@@ -8,5 +8,5 @@ export default async function AcceptInvitationPage({
   searchParams,
 }: AcceptInvitationPageProps) {
   const { token = '' } = await searchParams;
-  redirect(`/welcome?token=${encodeURIComponent(token)}`);
+  redirect(`/welcome#token=${encodeURIComponent(token)}`);
 }
