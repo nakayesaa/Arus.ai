@@ -42,8 +42,10 @@ async function main(): Promise<void> {
 
   for (const user of seedUsers) {
     await prisma.user.upsert({
-      where: { email: user.email },
+      where: { normalizedEmail: user.normalizedEmail },
       update: {
+        email: user.email,
+        normalizedEmail: user.normalizedEmail,
         name: user.name,
         passwordHash,
         isActive: true,
@@ -51,6 +53,7 @@ async function main(): Promise<void> {
       create: {
         id: user.id,
         email: user.email,
+        normalizedEmail: user.normalizedEmail,
         name: user.name,
         passwordHash,
       },

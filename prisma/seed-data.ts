@@ -17,6 +17,7 @@ export const seedUsers = [
   {
     id: '10000000-0000-4000-8000-000000000001',
     email: 'owner@demo.arus.local',
+    normalizedEmail: 'owner@demo.arus.local',
     name: 'Demo Owner',
     organizationId: seedOrganizations[0].id,
     role: MembershipRole.OWNER,
@@ -24,6 +25,7 @@ export const seedUsers = [
   {
     id: '10000000-0000-4000-8000-000000000002',
     email: 'operator@demo.arus.local',
+    normalizedEmail: 'operator@demo.arus.local',
     name: 'Demo Operator',
     organizationId: seedOrganizations[0].id,
     role: MembershipRole.OPERATOR,
@@ -31,6 +33,7 @@ export const seedUsers = [
   {
     id: '10000000-0000-4000-8000-000000000003',
     email: 'owner@boundary.arus.local',
+    normalizedEmail: 'owner@boundary.arus.local',
     name: 'Boundary Owner',
     organizationId: seedOrganizations[1].id,
     role: MembershipRole.OWNER,
