@@ -22,4 +22,5 @@ test-results/
 *.dump
 *.sql.gz
 backups/
+.local-emails/
 .DS_Store

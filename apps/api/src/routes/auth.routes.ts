@@ -36,6 +36,11 @@ export function createAuthRouter(options: AuthRouterOptions): Router {
     },
   });
 
+  router.use((_request, response, next) => {
+    response.setHeader('Cache-Control', 'no-store');
+    next();
+  });
+
   router.post(
     '/api/auth/login',
     trustedOrigin,

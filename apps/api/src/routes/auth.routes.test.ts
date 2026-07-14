@@ -220,6 +220,9 @@ describe('authentication HTTP contract', () => {
       APP_ORIGIN: 'https://app.arus.example',
       API_ORIGIN: 'https://api.arus.example',
       SESSION_SECRET: 'production-like-test-secret-with-more-than-32-chars',
+      EMAIL_DELIVERY_MODE: 'resend',
+      EMAIL_FROM: 'Arus <accounts@arus.id>',
+      RESEND_API_KEY: 're_production-test-key-long-enough',
     });
 
     const response = await request(testApp(authService, productionEnvironment))

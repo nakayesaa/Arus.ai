@@ -17,6 +17,9 @@ describe('environment configuration', () => {
     expect(environment.DATABASE_POOL_MAX).toBe(10);
     expect(environment.SESSION_TTL_HOURS).toBe(168);
     expect(environment.AUTH_LOGIN_MAX_ATTEMPTS).toBe(10);
+    expect(environment.EMAIL_DELIVERY_MODE).toBe('file');
+    expect(environment.INVITATION_TTL_HOURS).toBe(72);
+    expect(environment.PASSWORD_RESET_TTL_MINUTES).toBe(60);
     expect(environment.TRUST_PROXY_HOPS).toBe(0);
   });
 
@@ -35,7 +38,23 @@ describe('environment configuration', () => {
         ...validEnvironment,
         NODE_ENV: 'production',
         SESSION_SECRET: 'replace-with-at-least-32-random-characters',
+        EMAIL_DELIVERY_MODE: 'resend',
+        EMAIL_FROM: 'Arus <accounts@arus.id>',
+        RESEND_API_KEY: 're_production-test-key-long-enough',
       }),
     ).toThrow('Invalid environment configuration: SESSION_SECRET, APP_ORIGIN');
+  });
+
+  it('rejects local-file email delivery in production', () => {
+    expect(() =>
+      loadEnvironment({
+        ...validEnvironment,
+        NODE_ENV: 'production',
+        APP_ORIGIN: 'https://app.arus.id',
+        SESSION_SECRET: 'production-session-secret-at-least-32-characters',
+      }),
+    ).toThrow(
+      'Invalid environment configuration: EMAIL_DELIVERY_MODE, EMAIL_FROM',
+    );
   });
 });

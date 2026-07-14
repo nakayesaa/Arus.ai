@@ -51,6 +51,41 @@ const environmentSchema = z
       .min(1)
       .max(100)
       .default(10),
+    PASSWORD_RESET_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .min(10_000)
+      .max(60 * 60 * 1_000)
+      .default(15 * 60 * 1_000),
+    PASSWORD_RESET_MAX_ATTEMPTS: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(20)
+      .default(5),
+    INVITATION_TTL_HOURS: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(24 * 7)
+      .default(72),
+    PASSWORD_RESET_TTL_MINUTES: z.coerce
+      .number()
+      .int()
+      .min(15)
+      .max(120)
+      .default(60),
+    EMAIL_DELIVERY_MODE: z.enum(['file', 'resend']).default('file'),
+    EMAIL_FROM: z
+      .string()
+      .trim()
+      .min(3)
+      .max(320)
+      .default('Arus <accounts@example.com>'),
+    RESEND_API_KEY: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(20).max(512).optional(),
+    ),
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
   })
   .superRefine((environment, context) => {
@@ -73,6 +108,29 @@ const environmentSchema = z
         code: 'custom',
         path: ['APP_ORIGIN'],
         message: 'Production application origin must use HTTPS',
+      });
+    }
+
+    if (
+      environment.NODE_ENV === 'production' &&
+      (environment.EMAIL_DELIVERY_MODE !== 'resend' ||
+        !environment.RESEND_API_KEY)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['EMAIL_DELIVERY_MODE'],
+        message: 'Production requires configured email delivery',
+      });
+    }
+
+    if (
+      environment.NODE_ENV === 'production' &&
+      environment.EMAIL_FROM.includes('@example.com')
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['EMAIL_FROM'],
+        message: 'Production sender must use a verified domain',
       });
     }
   });

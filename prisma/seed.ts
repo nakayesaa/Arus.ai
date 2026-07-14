@@ -28,6 +28,7 @@ const prisma = new PrismaClient({ adapter });
 
 async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash(demoPassword, 12);
+  const acceptedAt = new Date('2026-07-01T00:00:00.000Z');
 
   for (const organization of seedOrganizations) {
     await prisma.organization.upsert({
@@ -69,11 +70,13 @@ async function main(): Promise<void> {
       update: {
         role: user.role,
         isActive: true,
+        acceptedAt,
       },
       create: {
         userId: user.id,
         organizationId: user.organizationId,
         role: user.role,
+        acceptedAt,
       },
     });
   }

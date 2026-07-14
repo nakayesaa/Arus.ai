@@ -18,7 +18,7 @@ export interface LoginIdentity {
   id: string;
   email: string;
   normalizedEmail: string;
-  passwordHash: string;
+  passwordHash: string | null;
   name: string;
   isActive: boolean;
   memberships: IdentityMembership[];

@@ -95,7 +95,13 @@ export class AuthService implements AuthServiceContract {
       (candidate) => candidate.isActive,
     );
 
-    if (!identity || !passwordValid || !identity.isActive || !membership) {
+    if (
+      !identity ||
+      !identity.passwordHash ||
+      !passwordValid ||
+      !identity.isActive ||
+      !membership
+    ) {
       await this.auditRejectedLogin(identity, membership, input.requestId);
       throw new InvalidCredentialsError();
     }

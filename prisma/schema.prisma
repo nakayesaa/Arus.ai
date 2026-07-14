@@ -12,6 +12,11 @@ enum MembershipRole {
   OPERATOR
 }
 
+enum AccountTokenPurpose {
+  INVITATION
+  PASSWORD_RESET
+}
+
 model Organization {
   id        String   @id @default(uuid()) @db.Uuid
   name      String   @db.VarChar(200)
@@ -19,22 +24,24 @@ model Organization {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  memberships Membership[]
-  auditLogs   AuditLog[]
+  memberships   Membership[]
+  auditLogs     AuditLog[]
+  accountTokens AccountToken[]
 }
 
 model User {
   id              String   @id @default(uuid()) @db.Uuid
   email           String   @db.VarChar(320)
   normalizedEmail String   @unique @db.VarChar(320)
-  passwordHash    String   @db.VarChar(100)
+  passwordHash    String?  @db.VarChar(100)
   name            String   @db.VarChar(200)
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime @updatedAt @db.Timestamptz(3)
 
-  memberships Membership[]
-  auditLogs   AuditLog[]   @relation("AuditActor")
+  memberships   Membership[]
+  auditLogs     AuditLog[]     @relation("AuditActor")
+  accountTokens AccountToken[]
 }
 
 model Membership {
@@ -43,6 +50,8 @@ model Membership {
   organizationId String         @db.Uuid
   role           MembershipRole
   isActive       Boolean        @default(true)
+  invitedAt      DateTime?      @db.Timestamptz(3)
+  acceptedAt     DateTime?      @db.Timestamptz(3)
   createdAt      DateTime       @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime       @updatedAt @db.Timestamptz(3)
 
@@ -52,6 +61,23 @@ model Membership {
 
   @@unique([userId, organizationId])
   @@index([organizationId, isActive])
+}
+
+model AccountToken {
+  id             String              @id @default(uuid()) @db.Uuid
+  tokenHash      String              @unique @db.VarChar(64)
+  purpose        AccountTokenPurpose
+  userId         String              @db.Uuid
+  organizationId String              @db.Uuid
+  expiresAt      DateTime            @db.Timestamptz(3)
+  consumedAt     DateTime?           @db.Timestamptz(3)
+  createdAt      DateTime            @default(now()) @db.Timestamptz(3)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, purpose, expiresAt])
+  @@index([userId, purpose, expiresAt])
 }
 
 model Session {
