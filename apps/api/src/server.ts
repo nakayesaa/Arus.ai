@@ -32,16 +32,31 @@ function shutdown(signal: NodeJS.Signals): void {
   shuttingDown = true;
   logger.info({ signal }, 'API shutdown requested');
 
+  const forceCloseTimer = setTimeout(() => {
+    logger.error('API shutdown grace period exceeded; closing connections');
+    process.exitCode = 1;
+    server.closeAllConnections();
+  }, 10_000);
+  forceCloseTimer.unref();
+
   server.close(async (error) => {
+    clearTimeout(forceCloseTimer);
+
     if (error) {
       logger.error({ err: error }, 'API shutdown failed');
       process.exitCode = 1;
-      return;
     }
 
-    await database.$disconnect();
+    try {
+      await database.$disconnect();
+    } catch (disconnectError) {
+      logger.error({ err: disconnectError }, 'Database shutdown failed');
+      process.exitCode = 1;
+    }
+
     logger.info('API shutdown complete');
   });
+  server.closeIdleConnections();
 }
 
 process.once('SIGINT', shutdown);

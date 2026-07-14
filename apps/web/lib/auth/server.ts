@@ -6,7 +6,7 @@ import type { AuthSession, DataEnvelope } from './types';
 
 export const getServerSession = cache(async (): Promise<AuthSession | null> => {
   const requestHeaders = await headers();
-  const cookie = requestHeaders.get('cookie');
+  const cookie = sessionCookieHeader(requestHeaders.get('cookie'));
   const apiOrigin = new URL(process.env.API_ORIGIN ?? 'http://localhost:4000')
     .origin;
   const response = await fetch(new URL('/api/auth/me', apiOrigin), {
@@ -25,6 +25,27 @@ export const getServerSession = cache(async (): Promise<AuthSession | null> => {
   const body = (await response.json()) as DataEnvelope<AuthSession>;
   return body.data;
 });
+
+function sessionCookieHeader(cookieHeader: string | null): string | null {
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const expectedName =
+    process.env.NODE_ENV === 'production'
+      ? '__Host-arus_session'
+      : 'arus_session';
+
+  for (const segment of cookieHeader.split(';')) {
+    const cookie = segment.trim();
+
+    if (cookie.startsWith(`${expectedName}=`)) {
+      return cookie;
+    }
+  }
+
+  return null;
+}
 
 export async function requireServerSession(): Promise<AuthSession> {
   const session = await getServerSession();
