@@ -23,7 +23,6 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 
 import { ArusLogo } from '@/components/arus-logo';
-import { SearchControl } from '@/components/search-control';
 import { logout } from '@/lib/auth/client';
 import type { AuthSession } from '@/lib/auth/types';
 
@@ -100,8 +99,6 @@ export function AppShell({ children, session }: AppShellProps) {
             </button>
           </div>
         </div>
-
-        <SearchControl placeholder="Search workspace" variant="sidebar" />
 
         <div className="sidebar-section">
           <p className="sidebar-label">Workspace</p>

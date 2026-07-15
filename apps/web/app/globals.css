@@ -218,11 +218,6 @@ svg {
   height: 31px;
 }
 
-.sidebar-gooey-search {
-  width: 218px;
-  margin: 1px 15px 21px;
-}
-
 .arus-search-trigger {
   height: 40px;
   border: 1px solid #363a3b;
@@ -245,10 +240,9 @@ svg {
 .arus-search-trigger:focus-visible,
 .arus-search-trigger:has(.arus-search-input:focus-visible) {
   outline: none;
-  border-color: #555b5d;
+  border-color: #363a3b;
   box-shadow:
-    0 0 0 2px rgb(255 255 255 / 8%),
-    inset 0 1px 0 rgb(255 255 255 / 6%),
+    inset 0 1px 0 rgb(255 255 255 / 5%),
     0 12px 30px rgb(0 0 0 / 22%);
 }
 
