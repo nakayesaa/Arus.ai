@@ -3,10 +3,11 @@ import {
   ArrowUpDown,
   Filter,
   Plus,
-  Search,
   Upload,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+
+import { SearchControl } from '@/components/search-control';
 
 interface DataPageProps {
   title: string;
@@ -39,10 +40,7 @@ export function DataPage({
         </div>
 
         <div className="data-actions">
-          <label className="compact-search">
-            <Search size={14} aria-hidden="true" />
-            <input type="search" placeholder={searchPlaceholder} />
-          </label>
+          <SearchControl placeholder={searchPlaceholder} />
           <button className="control-button" type="button">
             <Filter size={14} />
             Filter

@@ -19,7 +19,7 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="id">
+    <html lang="id" className="dark">
       <body>{children}</body>
     </html>
   );

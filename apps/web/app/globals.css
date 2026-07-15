@@ -1,3 +1,7 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
 :root {
   color-scheme: dark;
   --canvas: #020304;
@@ -21,6 +25,35 @@
   --violet: #9e89ff;
   --shadow: 0 34px 90px rgb(0 0 0 / 52%), 0 1px 0 rgb(255 255 255 / 3%);
   font-family: 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
+  --background: #020304;
+  --foreground: #f2f4f3;
+  --card: #101314;
+  --card-foreground: #f2f4f3;
+  --popover: #111415;
+  --popover-foreground: #f2f4f3;
+  --primary: #f0f2f2;
+  --primary-foreground: #090b0c;
+  --secondary: #171a1b;
+  --secondary-foreground: #c9cecd;
+  --muted-foreground: #888f91;
+  --accent: #1c2021;
+  --accent-foreground: #f2f4f3;
+  --destructive: #f0756d;
+  --input: #25292b;
+  --ring: #5aa6f5;
+  --chart-1: #5aa6f5;
+  --chart-2: #70d0ad;
+  --chart-3: #e5ae58;
+  --chart-4: #9e89ff;
+  --chart-5: #f0756d;
+  --radius: 0.625rem;
+  --sidebar-foreground: #c9cecd;
+  --sidebar-primary: #f0f2f2;
+  --sidebar-primary-foreground: #090b0c;
+  --sidebar-accent: #1c2021;
+  --sidebar-accent-foreground: #f2f4f3;
+  --sidebar-border: #25292b;
+  --sidebar-ring: #5aa6f5;
 }
 
 * {
@@ -185,36 +218,45 @@ svg {
   height: 31px;
 }
 
-.sidebar-search {
-  display: flex;
-  height: 43px;
-  align-items: center;
-  gap: 10px;
+.sidebar-gooey-search {
+  width: 218px;
   margin: 1px 15px 21px;
-  padding: 0 12px;
-  border: 1px solid #3a3b3b;
-  border-radius: 10px;
-  color: var(--muted);
-  background: var(--surface);
 }
 
-.sidebar-search span {
-  flex: 1;
-  text-align: left;
+.arus-search-trigger {
+  height: 40px;
+  border: 1px solid #363a3b;
+  color: #dfe2e1;
+  background:
+    radial-gradient(circle at 12% -40%, rgb(90 166 245 / 15%), transparent 60%),
+    linear-gradient(145deg, #171a1b, #101314);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 5%),
+    0 12px 30px rgb(0 0 0 / 22%);
 }
 
-.sidebar-search kbd {
-  display: inline-flex;
-  height: 23px;
-  align-items: center;
-  gap: 2px;
-  padding: 0 6px;
-  border: 1px solid #343535;
-  border-radius: 5px;
-  color: var(--muted-dark);
-  background: #262727;
-  font-family: inherit;
-  font-size: 11px;
+.arus-search-trigger:hover {
+  border-color: #4b5457;
+  background:
+    radial-gradient(circle at 12% -40%, rgb(90 166 245 / 22%), transparent 60%),
+    linear-gradient(145deg, #1b1f20, #111415);
+}
+
+.arus-search-input {
+  color: #edf0ef;
+  caret-color: var(--blue);
+}
+
+.arus-search-input::placeholder {
+  color: #737a7c;
+}
+
+.arus-search-bubble {
+  color: #dfe2e1;
+  background: #15191a;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 5%),
+    0 12px 24px rgb(0 0 0 / 30%);
 }
 
 .sidebar-section {
@@ -499,6 +541,70 @@ svg {
     radial-gradient(circle at 72% -14%, rgb(255 255 255 / 4%), transparent 28%),
     radial-gradient(circle at 18% -10%, rgb(38 99 126 / 9%), transparent 25%),
     linear-gradient(145deg, #0c0f10 0%, var(--workspace) 66%);
+}
+
+.workspace-dock {
+  position: fixed;
+  z-index: 35;
+  right: 14px;
+  bottom: 26px;
+  left: 264px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transition: left 180ms ease;
+}
+
+.sidebar-collapsed .workspace-dock {
+  left: 14px;
+}
+
+.workspace-dock > * {
+  pointer-events: auto;
+}
+
+.arus-floating-dock {
+  height: 62px;
+  gap: 7px;
+  padding: 0 11px 10px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  background:
+    radial-gradient(circle at 50% 130%, rgb(53 126 190 / 20%), transparent 48%),
+    rgb(14 17 18 / 90%);
+  box-shadow:
+    0 24px 70px rgb(0 0 0 / 55%),
+    inset 0 1px 0 rgb(255 255 255 / 6%);
+  backdrop-filter: blur(18px);
+}
+
+.arus-floating-dock > a > div {
+  color: #8e9698;
+  border: 1px solid rgb(255 255 255 / 7%);
+  background: linear-gradient(145deg, #202526, #151819);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
+}
+
+.arus-floating-dock > a:hover > div,
+.arus-floating-dock > a[data-active='true'] > div {
+  color: #f5f7f6;
+  border-color: rgb(90 166 245 / 44%);
+  background:
+    radial-gradient(circle at 30% 0%, rgb(90 166 245 / 23%), transparent 58%),
+    linear-gradient(145deg, #22292b, #171b1c);
+}
+
+.arus-floating-dock-mobile > button,
+.arus-floating-dock-mobile a {
+  color: #9ca4a6;
+  border: 1px solid rgb(255 255 255 / 9%);
+  background: rgb(17 20 21 / 94%);
+  box-shadow: 0 14px 32px rgb(0 0 0 / 42%);
+  backdrop-filter: blur(16px);
+}
+
+.arus-floating-dock-mobile a[data-active='true'] {
+  color: #f4f6f5;
+  border-color: rgb(90 166 245 / 50%);
 }
 
 .sidebar-open-button {
@@ -948,35 +1054,8 @@ svg {
   flex: 0 0 auto;
 }
 
-.compact-search {
-  display: flex;
-  width: 176px;
-  height: 33px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  color: #656869;
-  background: #1a1b1b;
-}
-
-.compact-search:focus-within {
-  border-color: #4c79a5;
-}
-
-.compact-search input {
-  width: 100%;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  color: var(--text-soft);
-  background: transparent;
-  font-size: 12px;
-}
-
-.compact-search input::placeholder {
-  color: #777a7b;
+.data-search-control {
+  flex: 0 0 auto;
 }
 
 .data-actions .control-button,
@@ -1728,10 +1807,6 @@ svg {
   .sidebar-open .data-actions .wide-control {
     display: none;
   }
-
-  .compact-search {
-    width: 155px;
-  }
 }
 
 @media (max-width: 940px) {
@@ -1741,6 +1816,10 @@ svg {
 
   .workspace {
     grid-column: 2;
+  }
+
+  .workspace-dock {
+    left: 14px;
   }
 
   .sidebar {
@@ -1798,6 +1877,12 @@ svg {
   .sidebar,
   .workspace {
     height: 100vh;
+  }
+
+  .workspace-dock {
+    right: 0;
+    bottom: calc(22px + env(safe-area-inset-bottom));
+    left: 0;
   }
 
   .page-header {
@@ -1871,8 +1956,8 @@ svg {
     padding-bottom: 7px;
   }
 
-  .compact-search {
-    min-width: 170px;
+  .data-search-control {
+    min-width: 142px;
   }
 
   .data-actions .wide-control {
@@ -1907,5 +1992,60 @@ svg {
   .member-row .member-select,
   .member-row .control-button {
     grid-column: span 1;
+  }
+}
+
+@theme inline {
+  --font-heading: 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
