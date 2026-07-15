@@ -24,7 +24,6 @@ import { useEffect, useState } from 'react';
 
 import { ArusLogo } from '@/components/arus-logo';
 import { SearchControl } from '@/components/search-control';
-import { FloatingDock } from '@/components/ui/floating-dock';
 import { logout } from '@/lib/auth/client';
 import type { AuthSession } from '@/lib/auth/types';
 
@@ -45,15 +44,6 @@ const history = [
   { label: 'high-value-accounts.md', href: '/debtors' },
   { label: 'weekly-collection-review.md', href: '/chat' },
   { label: 'payment-allocation-check.md', href: '/payments' },
-] as const;
-
-const dockNavigation = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Chat', href: '/chat', icon: MessageSquareText },
-  { label: 'Collection Queue', href: '/collection-queue', icon: ListTodo },
-  { label: 'Invoices', href: '/invoices', icon: ReceiptText },
-  { label: 'Debtors', href: '/debtors', icon: Building2 },
-  { label: 'Reports', href: '/reports', icon: ChartNoAxesCombined },
 ] as const;
 
 interface AppShellProps {
@@ -238,20 +228,6 @@ export function AppShell({ children, session }: AppShellProps) {
           </button>
         )}
         {children}
-        <div className="workspace-dock">
-          <FloatingDock
-            desktopClassName="arus-floating-dock"
-            mobileClassName="arus-floating-dock-mobile"
-            items={dockNavigation.map(({ label, href, icon: Icon }) => ({
-              title: label,
-              href,
-              active:
-                pathname === href ||
-                (href !== '/dashboard' && pathname.startsWith(`${href}/`)),
-              icon: <Icon size={18} strokeWidth={1.7} aria-hidden="true" />,
-            }))}
-          />
-        </div>
       </main>
     </div>
   );
