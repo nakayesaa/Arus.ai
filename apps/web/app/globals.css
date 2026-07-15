@@ -222,9 +222,7 @@ svg {
   height: 40px;
   border: 1px solid #363a3b;
   color: #dfe2e1;
-  background:
-    radial-gradient(circle at 12% -40%, rgb(90 166 245 / 15%), transparent 60%),
-    linear-gradient(145deg, #171a1b, #101314);
+  background: #111415;
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 5%),
     0 12px 30px rgb(0 0 0 / 22%);
@@ -232,9 +230,7 @@ svg {
 
 .arus-search-trigger:hover {
   border-color: #4b5457;
-  background:
-    radial-gradient(circle at 12% -40%, rgb(90 166 245 / 22%), transparent 60%),
-    linear-gradient(145deg, #1b1f20, #111415);
+  background: #181b1c;
 }
 
 .arus-search-trigger:focus-visible,
