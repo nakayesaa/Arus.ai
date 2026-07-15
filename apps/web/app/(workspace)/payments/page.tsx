@@ -95,7 +95,6 @@ export default function PaymentsPage() {
       title="Payments"
       recordLabel="31 records · Rp 486 jt this week"
       pageLabel="Page 1 of 2"
-      searchPlaceholder="Search payments"
       primaryLabel="Record payment"
     >
       <table className="data-table">

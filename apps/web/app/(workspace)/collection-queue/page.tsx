@@ -113,7 +113,6 @@ export default function CollectionQueuePage() {
       title="Collection Queue"
       recordLabel="24 due today · deterministic priority"
       pageLabel="Sorted by priority score"
-      searchPlaceholder="Search queue"
       primaryLabel="Log action"
       extraAction={
         <button className="control-button" type="button">

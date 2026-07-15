@@ -13,7 +13,7 @@ interface DataPageProps {
   title: string;
   recordLabel: string;
   pageLabel: string;
-  searchPlaceholder: string;
+  searchPlaceholder?: string;
   primaryLabel: string;
   children: ReactNode;
   extraAction?: ReactNode;
@@ -40,7 +40,9 @@ export function DataPage({
         </div>
 
         <div className="data-actions">
-          <SearchControl placeholder={searchPlaceholder} />
+          {searchPlaceholder && (
+            <SearchControl placeholder={searchPlaceholder} />
+          )}
           <button className="control-button" type="button">
             <Filter size={14} />
             Filter
