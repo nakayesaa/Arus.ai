@@ -79,6 +79,7 @@ export interface GooeyInputClassNames {
 
 export interface GooeyInputProps {
   placeholder?: string;
+  buttonLabel?: string;
   className?: string;
   classNames?: GooeyInputClassNames;
   /** Collapsed control width in px */
@@ -98,6 +99,7 @@ export interface GooeyInputProps {
 
 export function GooeyInput({
   placeholder = 'Type to search...',
+  buttonLabel = 'Search',
   className,
   classNames,
   collapsedWidth = 115,
@@ -248,13 +250,13 @@ export function GooeyInput({
               onClick={handleExpand}
               aria-label={`Open ${placeholder.toLowerCase()}`}
               className={cn(
-                'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-4 text-sm font-medium outline-none transition-[color,box-shadow] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50',
+                'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-4 text-sm font-medium outline-none transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50',
                 surfaceClass,
                 classNames?.trigger,
               )}
             >
               <SearchIcon layoutId={iconLayoutId} />
-              <span className="truncate">{placeholder}</span>
+              <span className="truncate">{buttonLabel}</span>
             </motion.button>
           )}
         </motion.div>

@@ -242,9 +242,23 @@ svg {
     linear-gradient(145deg, #1b1f20, #111415);
 }
 
+.arus-search-trigger:focus-visible,
+.arus-search-trigger:has(.arus-search-input:focus-visible) {
+  outline: none;
+  border-color: #555b5d;
+  box-shadow:
+    0 0 0 2px rgb(255 255 255 / 8%),
+    inset 0 1px 0 rgb(255 255 255 / 6%),
+    0 12px 30px rgb(0 0 0 / 22%);
+}
+
 .arus-search-input {
   color: #edf0ef;
-  caret-color: var(--blue);
+  caret-color: #edf0ef;
+}
+
+.arus-search-input:focus-visible {
+  outline: none;
 }
 
 .arus-search-input::placeholder {
