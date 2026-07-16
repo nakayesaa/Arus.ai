@@ -116,8 +116,8 @@ export function AppShell({ children, session }: AppShellProps) {
               <Image
                 src="/brand/arus-logo-transparent.png"
                 alt=""
-                width={2172}
-                height={724}
+                width={82}
+                height={27}
                 priority
               />
             </span>
@@ -182,12 +182,11 @@ export function AppShell({ children, session }: AppShellProps) {
               <span>Workspace</span>
               <ChevronDown size={12} aria-hidden="true" />
             </button>
-            {workspaceOpen && (
-              <nav
-                className="nav-list"
-                id="sidebar-workspace-navigation"
-                aria-label="Workspace navigation"
-              >
+            <CollapsibleRegion
+              id="sidebar-workspace-navigation"
+              open={workspaceOpen}
+            >
+              <nav className="nav-list" aria-label="Workspace navigation">
                 {workspaceNavigation.map(({ label, href, icon: Icon }) => {
                   const active = pathname === href;
 
@@ -218,11 +217,8 @@ export function AppShell({ children, session }: AppShellProps) {
                     aria-hidden="true"
                   />
                 </button>
-                {moreOpen && (
-                  <div
-                    className="sidebar-more-navigation"
-                    id="sidebar-more-navigation"
-                  >
+                <CollapsibleRegion id="sidebar-more-navigation" open={moreOpen}>
+                  <div className="sidebar-more-navigation">
                     <Link className="nav-link" href="/payments">
                       <CreditCard
                         size={14}
@@ -236,9 +232,9 @@ export function AppShell({ children, session }: AppShellProps) {
                       <span>Data Import</span>
                     </Link>
                   </div>
-                )}
+                </CollapsibleRegion>
               </nav>
-            )}
+            </CollapsibleRegion>
           </div>
 
           <div className="sidebar-section sidebar-favorites">
@@ -252,12 +248,11 @@ export function AppShell({ children, session }: AppShellProps) {
               <span>Favorites</span>
               <ChevronDown size={12} aria-hidden="true" />
             </button>
-            {favoritesOpen && (
-              <nav
-                className="nav-list"
-                id="sidebar-favorites-navigation"
-                aria-label="Favorite views"
-              >
+            <CollapsibleRegion
+              id="sidebar-favorites-navigation"
+              open={favoritesOpen}
+            >
+              <nav className="nav-list" aria-label="Favorite views">
                 {favorites.map(({ label, href, tone }) => {
                   const active = pathname === href;
 
@@ -279,7 +274,7 @@ export function AppShell({ children, session }: AppShellProps) {
                   );
                 })}
               </nav>
-            )}
+            </CollapsibleRegion>
           </div>
 
           <div className="sidebar-section sidebar-history">
@@ -293,10 +288,9 @@ export function AppShell({ children, session }: AppShellProps) {
               <span>History</span>
               <ChevronDown size={12} aria-hidden="true" />
             </button>
-            {historyOpen && (
+            <CollapsibleRegion id="sidebar-history-list" open={historyOpen}>
               <nav
                 className="nav-list history-scroll"
-                id="sidebar-history-list"
                 aria-label="Markdown history"
               >
                 {history.map(({ label, href }) => (
@@ -310,7 +304,7 @@ export function AppShell({ children, session }: AppShellProps) {
                   </Link>
                 ))}
               </nav>
-            )}
+            </CollapsibleRegion>
           </div>
         </div>
 
@@ -387,6 +381,25 @@ export function AppShell({ children, session }: AppShellProps) {
         )}
         {children}
       </main>
+    </div>
+  );
+}
+
+interface CollapsibleRegionProps {
+  children: ReactNode;
+  id: string;
+  open: boolean;
+}
+
+function CollapsibleRegion({ children, id, open }: CollapsibleRegionProps) {
+  return (
+    <div
+      className="sidebar-collapse-region"
+      id={id}
+      data-open={open}
+      aria-hidden={!open}
+    >
+      <div className="sidebar-collapse-region-inner">{children}</div>
     </div>
   );
 }

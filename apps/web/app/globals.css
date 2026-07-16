@@ -24,6 +24,11 @@
   --red: #f0756d;
   --violet: #9e89ff;
   --shadow: 0 34px 90px rgb(0 0 0 / 52%), 0 1px 0 rgb(255 255 255 / 3%);
+  --motion-fast: 140ms;
+  --motion-standard: 200ms;
+  --motion-layout: 240ms;
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   font-family: 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
   --background: #020304;
   --foreground: #f2f4f3;
@@ -120,7 +125,7 @@ svg {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--sidebar);
-  transition: grid-template-columns 180ms cubic-bezier(0.2, 0, 0, 1);
+  transition: grid-template-columns var(--motion-layout) var(--ease-out-expo);
 }
 
 .app-shell.sidebar-collapsed {
@@ -139,8 +144,8 @@ svg {
   background: var(--sidebar);
   opacity: 1;
   transition:
-    opacity 140ms cubic-bezier(0.2, 0, 0, 1),
-    transform 180ms cubic-bezier(0.2, 0, 0, 1);
+    opacity var(--motion-fast) var(--ease-out-quart),
+    transform var(--motion-standard) var(--ease-out-expo);
 }
 
 .sidebar-collapsed .sidebar {
@@ -356,6 +361,33 @@ svg {
 .nav-list {
   display: grid;
   gap: 1px;
+}
+
+.sidebar-collapse-region {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--motion-standard) var(--ease-out-quart),
+    opacity var(--motion-fast) var(--ease-out-quart),
+    visibility 0s linear var(--motion-standard);
+}
+
+.sidebar-collapse-region[data-open='true'] {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  opacity: 1;
+  transition:
+    grid-template-rows var(--motion-standard) var(--ease-out-quart),
+    opacity var(--motion-fast) var(--ease-out-quart),
+    visibility 0s;
+}
+
+.sidebar-collapse-region-inner {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .nav-link {
@@ -666,6 +698,25 @@ svg {
     inset 0 1px 0 rgb(255 255 255 / 3%);
 }
 
+.workspace-route-transition {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  animation: workspace-route-enter var(--motion-standard) var(--ease-out-quart);
+}
+
+@keyframes workspace-route-enter {
+  from {
+    opacity: 0.84;
+    transform: translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .sidebar-collapsed .workspace {
   margin-left: 8px;
 }
@@ -741,6 +792,19 @@ svg {
   left: 12px;
   border-color: var(--border);
   background: var(--surface);
+  animation: sidebar-control-enter var(--motion-fast) var(--ease-out-quart);
+}
+
+@keyframes sidebar-control-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-4px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
 }
 
 .page-header {
@@ -1582,10 +1646,30 @@ svg {
   border-radius: 10px;
   background: #111415;
   box-shadow: 0 4px 8px rgb(0 0 0 / 38%);
+  transform-origin: right bottom;
+  visibility: visible;
+  opacity: 1;
+  transition:
+    width var(--motion-standard) var(--ease-out-quart),
+    opacity var(--motion-fast) var(--ease-out-quart),
+    transform var(--motion-standard) var(--ease-out-expo),
+    visibility 0s;
 }
 
 .collection-copilot-collapsed {
   width: 300px;
+}
+
+.collection-copilot-closed {
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.985);
+  transition:
+    width var(--motion-standard) var(--ease-out-quart),
+    opacity var(--motion-fast) var(--ease-out-quart),
+    transform var(--motion-fast) var(--ease-out-quart),
+    visibility 0s linear var(--motion-fast);
 }
 
 .copilot-header {
@@ -1601,6 +1685,35 @@ svg {
 
 .collection-copilot-collapsed .copilot-header {
   border-bottom: 0;
+}
+
+.copilot-collapse-region {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: 1fr;
+  visibility: visible;
+  opacity: 1;
+  transition:
+    grid-template-rows var(--motion-layout) var(--ease-out-quart),
+    opacity var(--motion-fast) var(--ease-out-quart),
+    visibility 0s;
+}
+
+.copilot-collapse-region[data-open='false'] {
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--motion-standard) var(--ease-out-quart),
+    opacity 100ms var(--ease-out-quart),
+    visibility 0s linear var(--motion-standard);
+}
+
+.copilot-collapse-region-inner {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .copilot-brand {
@@ -1873,6 +1986,26 @@ svg {
   background: var(--surface-raised);
   font-size: 10px;
   font-weight: 600;
+  transform-origin: right bottom;
+  visibility: visible;
+  opacity: 1;
+  transition:
+    color var(--motion-fast) var(--ease-out-quart),
+    background var(--motion-fast) var(--ease-out-quart),
+    opacity var(--motion-fast) var(--ease-out-quart),
+    transform var(--motion-standard) var(--ease-out-expo),
+    visibility 0s;
+}
+
+.copilot-reopen-hidden {
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+  transition:
+    opacity 100ms var(--ease-out-quart),
+    transform var(--motion-fast) var(--ease-out-quart),
+    visibility 0s linear var(--motion-fast);
 }
 
 .copilot-reopen:hover {
