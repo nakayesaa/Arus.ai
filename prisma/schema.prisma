@@ -27,6 +27,10 @@ model Organization {
   memberships   Membership[]
   auditLogs     AuditLog[]
   accountTokens AccountToken[]
+  debtors       Debtor[]
+  invoices      Invoice[]
+  payments      Payment[]
+  allocations   PaymentAllocation[]
 }
 
 model User {
@@ -39,9 +43,11 @@ model User {
   createdAt       DateTime @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime @updatedAt @db.Timestamptz(3)
 
-  memberships   Membership[]
-  auditLogs     AuditLog[]     @relation("AuditActor")
-  accountTokens AccountToken[]
+  memberships        Membership[]
+  auditLogs          AuditLog[]          @relation("AuditActor")
+  accountTokens      AccountToken[]
+  createdPayments    Payment[]           @relation("PaymentCreator")
+  createdAllocations PaymentAllocation[] @relation("AllocationCreator")
 }
 
 model Membership {
@@ -112,4 +118,91 @@ model AuditLog {
 
   @@index([organizationId, createdAt])
   @@index([organizationId, entityType, entityId])
+}
+
+model Debtor {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  code           String?   @db.VarChar(50)
+  normalizedCode String?   @db.VarChar(50)
+  name           String    @db.VarChar(200)
+  contactName    String?   @db.VarChar(200)
+  phoneNumber    String?   @db.VarChar(50)
+  email          String?   @db.VarChar(320)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt      DateTime? @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  invoices     Invoice[]
+  payments     Payment[]
+
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, name])
+}
+
+model Invoice {
+  id                      String    @id @default(uuid()) @db.Uuid
+  organizationId          String    @db.Uuid
+  debtorId                String    @db.Uuid
+  invoiceNumber           String    @db.VarChar(50)
+  normalizedInvoiceNumber String    @db.VarChar(50)
+  invoiceDate             DateTime  @db.Date
+  dueDate                 DateTime  @db.Date
+  originalAmount          Decimal   @db.Decimal(18, 2)
+  description             String?   @db.VarChar(1000)
+  createdAt               DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt               DateTime? @db.Timestamptz(3)
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  debtor       Debtor              @relation(fields: [debtorId], references: [id], onDelete: Restrict)
+  allocations  PaymentAllocation[]
+
+  @@index([organizationId, dueDate])
+  @@index([organizationId, debtorId])
+  @@index([organizationId, deletedAt])
+}
+
+model Payment {
+  id               String   @id @default(uuid()) @db.Uuid
+  organizationId   String   @db.Uuid
+  debtorId         String   @db.Uuid
+  paymentDate      DateTime @db.Date
+  amount           Decimal  @db.Decimal(18, 2)
+  bankReference    String?  @db.VarChar(100)
+  isOpeningBalance Boolean  @default(false)
+  createdById      String   @db.Uuid
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  debtor       Debtor              @relation(fields: [debtorId], references: [id], onDelete: Restrict)
+  createdBy    User                @relation("PaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  allocations  PaymentAllocation[]
+
+  @@index([organizationId, paymentDate])
+  @@index([organizationId, debtorId])
+}
+
+model PaymentAllocation {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  paymentId      String    @db.Uuid
+  invoiceId      String    @db.Uuid
+  amount         Decimal   @db.Decimal(18, 2)
+  allocationDate DateTime  @db.Date
+  createdById    String    @db.Uuid
+  reversedAt     DateTime? @db.Timestamptz(3)
+  reversalReason String?   @db.VarChar(500)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  payment      Payment      @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  invoice      Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation("AllocationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, invoiceId, allocationDate])
+  @@index([organizationId, paymentId])
 }
