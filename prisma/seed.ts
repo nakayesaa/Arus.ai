@@ -4,7 +4,14 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcrypt';
 
 import { PrismaClient } from '../apps/api/src/generated/prisma/client.js';
-import { seedOrganizations, seedUsers } from './seed-data.js';
+import {
+  seedAllocations,
+  seedDebtors,
+  seedInvoices,
+  seedOrganizations,
+  seedPayments,
+  seedUsers,
+} from './seed-data.js';
 
 function requireEnvironment(name: string): string {
   const value = process.env[name];
@@ -81,9 +88,103 @@ async function main(): Promise<void> {
     });
   }
 
+  for (const debtor of seedDebtors) {
+    await prisma.debtor.upsert({
+      where: { id: debtor.id },
+      update: {
+        organizationId: debtor.organizationId,
+        code: debtor.code,
+        normalizedCode: debtor.normalizedCode,
+        name: debtor.name,
+        contactName: debtor.contactName,
+        phoneNumber: debtor.phoneNumber,
+        email: debtor.email,
+        deletedAt: null,
+      },
+      create: debtor,
+    });
+  }
+
+  for (const invoice of seedInvoices) {
+    await prisma.invoice.upsert({
+      where: { id: invoice.id },
+      update: {
+        organizationId: invoice.organizationId,
+        debtorId: invoice.debtorId,
+        invoiceNumber: invoice.invoiceNumber,
+        normalizedInvoiceNumber: invoice.normalizedInvoiceNumber,
+        invoiceDate: asDatabaseDate(invoice.invoiceDate),
+        dueDate: asDatabaseDate(invoice.dueDate),
+        originalAmount: invoice.originalAmount,
+        description: invoice.description,
+        deletedAt: null,
+      },
+      create: {
+        ...invoice,
+        invoiceDate: asDatabaseDate(invoice.invoiceDate),
+        dueDate: asDatabaseDate(invoice.dueDate),
+      },
+    });
+  }
+
+  for (const payment of seedPayments) {
+    await prisma.payment.upsert({
+      where: { id: payment.id },
+      update: {
+        organizationId: payment.organizationId,
+        debtorId: payment.debtorId,
+        paymentDate: asDatabaseDate(payment.paymentDate),
+        amount: payment.amount,
+        bankReference: payment.bankReference,
+        isOpeningBalance: payment.isOpeningBalance,
+        createdById: payment.createdById,
+      },
+      create: {
+        ...payment,
+        paymentDate: asDatabaseDate(payment.paymentDate),
+      },
+    });
+  }
+
+  for (const allocation of seedAllocations) {
+    await prisma.paymentAllocation.upsert({
+      where: { id: allocation.id },
+      update: {
+        organizationId: allocation.organizationId,
+        paymentId: allocation.paymentId,
+        invoiceId: allocation.invoiceId,
+        amount: allocation.amount,
+        allocationDate: asDatabaseDate(allocation.allocationDate),
+        createdById: allocation.createdById,
+        reversedAt: allocation.reversedAt
+          ? new Date(allocation.reversedAt)
+          : null,
+        reversalReason: allocation.reversalReason,
+      },
+      create: {
+        ...allocation,
+        allocationDate: asDatabaseDate(allocation.allocationDate),
+        reversedAt: allocation.reversedAt
+          ? new Date(allocation.reversedAt)
+          : null,
+      },
+    });
+  }
+
   console.info(
-    `Seeded ${seedOrganizations.length} organizations and ${seedUsers.length} users`,
+    [
+      `Seeded ${seedOrganizations.length} organizations`,
+      `${seedUsers.length} users`,
+      `${seedDebtors.length} debtors`,
+      `${seedInvoices.length} invoices`,
+      `${seedPayments.length} payments`,
+      `and ${seedAllocations.length} allocations`,
+    ].join(', '),
   );
+}
+
+function asDatabaseDate(value: string): Date {
+  return new Date(`${value}T00:00:00.000Z`);
 }
 
 try {
