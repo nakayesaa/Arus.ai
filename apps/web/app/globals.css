@@ -1195,8 +1195,8 @@ svg {
   background: #0b0e0f;
 }
 
-.workspace:has(> .sidebar-open-button) .case-topbar {
-  padding-left: 55px;
+.sidebar-collapsed .case-topbar {
+  padding-left: 64px;
 }
 
 .case-breadcrumbs,
