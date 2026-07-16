@@ -111,13 +111,15 @@ svg {
 .app-shell {
   display: grid;
   width: calc(100vw - 28px);
-  min-height: calc(100vh - 28px);
+  height: calc(100vh - 28px);
+  height: calc(100dvh - 28px);
+  min-height: 0;
   margin: 14px;
   overflow: hidden;
   grid-template-columns: 240px minmax(0, 1fr);
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--workspace);
+  background: var(--sidebar);
   transition: grid-template-columns 180ms cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -129,13 +131,12 @@ svg {
   display: flex;
   width: 240px;
   min-width: 240px;
-  height: calc(100vh - 30px);
+  height: 100%;
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
   color: var(--muted);
-  border-right: 1px solid var(--border);
-  background: #0c0e0f;
+  background: var(--sidebar);
   opacity: 1;
   transition:
     opacity 140ms cubic-bezier(0.2, 0, 0, 1),
@@ -653,10 +654,17 @@ svg {
 .workspace {
   position: relative;
   min-width: 0;
-  height: calc(100vh - 30px);
+  height: auto;
   min-height: 0;
+  margin: 8px 8px 4px 0;
   overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   background: var(--workspace);
+}
+
+.sidebar-collapsed .workspace {
+  margin-left: 8px;
 }
 
 .workspace-dock {
@@ -2892,6 +2900,7 @@ svg {
 
   .workspace {
     grid-column: 2;
+    margin-left: 8px;
   }
 
   .workspace-dock {
@@ -2948,16 +2957,24 @@ svg {
 
   .app-shell {
     width: 100vw;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
     margin: 0;
     border-right: 0;
     border-left: 0;
     border-radius: 0;
   }
 
-  .sidebar,
+  .sidebar {
+    height: 100%;
+  }
+
   .workspace {
-    height: 100vh;
+    height: auto;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
   }
 
   .workspace-dock {
