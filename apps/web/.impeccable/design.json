@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-16T15:29:09+07:00",
+  "title": "Design System: Arus",
+  "extensions": {
+    "colorMeta": {
+      "obsidian-canvas": {
+        "role": "neutral",
+        "displayName": "Obsidian Canvas",
+        "canonical": "#020304",
+        "tonalRamp": ["#020304", "#101213", "#252829", "#3e4243", "#5f6465", "#858a8b", "#b5b9b9", "#eef0f0"]
+      },
+      "graphite-workspace": {
+        "role": "neutral",
+        "displayName": "Graphite Workspace",
+        "canonical": "#090b0c",
+        "tonalRamp": ["#090b0c", "#151819", "#292d2e", "#414647", "#626768", "#878c8d", "#b6baba", "#eef0f0"]
+      },
+      "iron-sidebar": {
+        "role": "neutral",
+        "displayName": "Iron Sidebar",
+        "canonical": "#0d1011",
+        "tonalRamp": ["#0d1011", "#191c1d", "#2d3132", "#45494a", "#656a6b", "#8a8f90", "#b8bbbb", "#eff0f0"]
+      },
+      "carbon-surface": {
+        "role": "neutral",
+        "displayName": "Carbon Surface",
+        "canonical": "#101314",
+        "tonalRamp": ["#101314", "#1b1f20", "#303435", "#484d4e", "#686d6e", "#8c9192", "#babdbd", "#eff0f0"]
+      },
+      "lifted-graphite": {
+        "role": "neutral",
+        "displayName": "Lifted Graphite",
+        "canonical": "#171a1b",
+        "tonalRamp": ["#171a1b", "#222627", "#363a3b", "#4e5253", "#6d7273", "#909596", "#bcbfbf", "#f0f1f1"]
+      },
+      "active-graphite": {
+        "role": "neutral",
+        "displayName": "Active Graphite",
+        "canonical": "#1c2021",
+        "tonalRamp": ["#1c2021", "#282c2d", "#3b3f40", "#535758", "#727677", "#949899", "#bec1c1", "#f0f1f1"]
+      },
+      "soft-graphite": {
+        "role": "neutral",
+        "displayName": "Soft Graphite",
+        "canonical": "#1e2223",
+        "tonalRamp": ["#1e2223", "#2a2e2f", "#3d4142", "#55595a", "#747879", "#969a9b", "#c0c2c2", "#f1f2f2"]
+      },
+      "structural-line": {
+        "role": "neutral",
+        "displayName": "Structural Line",
+        "canonical": "#25292b",
+        "tonalRamp": ["#25292b", "#303537", "#44494b", "#5c6163", "#7a7f81", "#9ca0a1", "#c5c7c8", "#f2f3f3"]
+      },
+      "quiet-line": {
+        "role": "neutral",
+        "displayName": "Quiet Line",
+        "canonical": "#1d2122",
+        "tonalRamp": ["#1d2122", "#292d2e", "#3c4041", "#545859", "#737778", "#95999a", "#bfc2c2", "#f1f2f2"]
+      },
+      "primary-ink": {
+        "role": "neutral",
+        "displayName": "Primary Ink",
+        "canonical": "#f2f4f3",
+        "tonalRamp": ["#202322", "#353938", "#505554", "#6e7472", "#929896", "#b8bcbb", "#dadddc", "#f2f4f3"]
+      },
+      "secondary-ink": {
+        "role": "neutral",
+        "displayName": "Secondary Ink",
+        "canonical": "#c9cecd",
+        "tonalRamp": ["#1d2120", "#333836", "#4e5553", "#6d7472", "#919896", "#b4bab8", "#d7dbda", "#f0f2f1"]
+      },
+      "quiet-ink": {
+        "role": "neutral",
+        "displayName": "Quiet Ink",
+        "canonical": "#888f91",
+        "tonalRamp": ["#171b1c", "#2b3032", "#444a4c", "#606769", "#81888a", "#a5abad", "#cdd1d2", "#f0f2f2"]
+      },
+      "disabled-ink": {
+        "role": "neutral",
+        "displayName": "Disabled Ink",
+        "canonical": "#596164",
+        "tonalRamp": ["#141819", "#252b2d", "#3b4245", "#555d60", "#747d80", "#9ba2a5", "#c7cbcd", "#f0f2f3"]
+      },
+      "action-blue": {
+        "role": "primary",
+        "displayName": "Action Blue",
+        "canonical": "#5aa6f5",
+        "tonalRamp": ["#092844", "#0d3d68", "#145893", "#2375bc", "#4995df", "#75b5f7", "#acd4ff", "#e8f3ff"]
+      },
+      "action-blue-pressed": {
+        "role": "primary",
+        "displayName": "Action Blue Pressed",
+        "canonical": "#347fc9",
+        "tonalRamp": ["#0a243b", "#103756", "#194f78", "#24699b", "#3d86bd", "#69a6da", "#9dc9ef", "#e2f1ff"]
+      },
+      "settled-green": {
+        "role": "secondary",
+        "displayName": "Settled Green",
+        "canonical": "#70d0ad",
+        "tonalRamp": ["#0b2d23", "#124536", "#1c624d", "#2e8068", "#50a388", "#7ac6a9", "#afe2ce", "#e7f8f1"]
+      },
+      "attention-amber": {
+        "role": "secondary",
+        "displayName": "Attention Amber",
+        "canonical": "#e5ae58",
+        "tonalRamp": ["#332108", "#50340b", "#714b11", "#95651d", "#bc8432", "#dda85a", "#f2cc92", "#fff1d7"]
+      },
+      "exception-red": {
+        "role": "secondary",
+        "displayName": "Exception Red",
+        "canonical": "#f0756d",
+        "tonalRamp": ["#3a1211", "#591c1a", "#7d2926", "#a33b37", "#c9534d", "#e87a73", "#f7aba6", "#ffe6e3"]
+      },
+      "dispute-violet": {
+        "role": "tertiary",
+        "displayName": "Dispute Violet",
+        "canonical": "#9e89ff",
+        "tonalRamp": ["#21174b", "#33246e", "#493394", "#6248b9", "#8066dc", "#a18bf7", "#c5b8ff", "#eeeaff"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Authentication, onboarding, and top-level report titles only." },
+      "headline": { "displayName": "Headline", "purpose": "One page or record title per main region." },
+      "title": { "displayName": "Title", "purpose": "Panels, exception groups, and record sections." },
+      "body": { "displayName": "Body", "purpose": "Explanatory copy, notes, and timeline content." },
+      "body-compact": { "displayName": "Body Compact", "purpose": "Tables, navigation, filters, and dense records." },
+      "label": { "displayName": "Label", "purpose": "Controls, column headers, and short state labels." },
+      "metadata": { "displayName": "Metadata", "purpose": "Timestamps, sources, policies, and short overlines." },
+      "numeric": { "displayName": "Numeric", "purpose": "Money, days, percentages, and counts with tabular figures." }
+    },
+    "shadows": [
+      { "name": "popover", "value": "0 8px 24px rgb(0 0 0 / 32%)", "purpose": "Menus, compact date pickers, and command search only." },
+      { "name": "dialog", "value": "0 20px 48px rgb(0 0 0 / 44%)", "purpose": "Rare blocking confirmation dialogs only." },
+      { "name": "focus", "value": "0 0 0 2px rgb(90 166 245 / 72%)", "purpose": "Visible keyboard focus, never decorative elevation." }
+    ],
+    "motion": [
+      { "name": "state-fast", "value": "120ms cubic-bezier(0.2, 0, 0, 1)", "purpose": "Hover, press, selection, and simple disclosure states." },
+      { "name": "state-standard", "value": "180ms cubic-bezier(0.2, 0, 0, 1)", "purpose": "Navigation, filtering, and compact content changes." },
+      { "name": "panel", "value": "220ms cubic-bezier(0.2, 0, 0, 1)", "purpose": "Sidebar drawers and context panels without bounce." },
+      { "name": "reduced-motion", "value": "1ms linear", "purpose": "Equivalent state feedback when reduced motion is requested." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "720px" },
+      { "name": "sidebar-drawer", "value": "940px" },
+      { "name": "three-zone", "value": "1160px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single highest-value action in a region.",
+      "html": "<button class=\"ds-button-primary\">Approve reminder</button>",
+      "css": ".ds-button-primary { height:32px; padding:0 12px; border:1px solid #f2f4f3; border-radius:6px; background:#f2f4f3; color:#090b0c; font:600 12px/1.35 'Manrope Variable',system-ui,sans-serif; transition:background 120ms cubic-bezier(.2,0,0,1),border-color 120ms cubic-bezier(.2,0,0,1); } .ds-button-primary:hover { background:#c9cecd; border-color:#c9cecd; } .ds-button-primary:active { background:#888f91; } .ds-button-primary:focus-visible { outline:2px solid #5aa6f5; outline-offset:2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "A compact secondary or inline action without visual dominance.",
+      "html": "<button class=\"ds-button-ghost\">Assign owner</button>",
+      "css": ".ds-button-ghost { height:32px; padding:0 8px; border:1px solid transparent; border-radius:6px; background:transparent; color:#888f91; font:600 12px/1.35 'Manrope Variable',system-ui,sans-serif; transition:background 120ms cubic-bezier(.2,0,0,1),color 120ms cubic-bezier(.2,0,0,1); } .ds-button-ghost:hover { background:#1c2021; color:#f2f4f3; } .ds-button-ghost:active { background:#25292b; } .ds-button-ghost:focus-visible { outline:2px solid #5aa6f5; outline-offset:2px; }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "A quiet contextual search field for operational lists.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Search invoices</span><input class=\"ds-input\" placeholder=\"Invoice, debtor, or reference\"></label>",
+      "css": ".ds-field { display:grid; gap:6px; color:#c9cecd; font:600 12px/1.35 'Manrope Variable',system-ui,sans-serif; } .ds-input { width:280px; height:34px; padding:0 10px; border:1px solid #25292b; border-radius:6px; background:#101314; color:#f2f4f3; font:450 13px/1.4 'Manrope Variable',system-ui,sans-serif; transition:border-color 120ms cubic-bezier(.2,0,0,1); } .ds-input::placeholder { color:#888f91; } .ds-input:hover { border-color:#596164; } .ds-input:focus-visible { outline:2px solid #5aa6f5; outline-offset:2px; border-color:#5aa6f5; }"
+    },
+    {
+      "name": "Active Navigation Item",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Compact active navigation with tonal emphasis instead of accent color.",
+      "html": "<a class=\"ds-nav-item\" href=\"#\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z\" fill=\"currentColor\"/></svg><span>Collection Queue</span><kbd>G Q</kbd></a>",
+      "css": ".ds-nav-item { display:flex; align-items:center; gap:9px; width:220px; height:36px; padding:0 10px; border-radius:6px; background:#1c2021; color:#f2f4f3; text-decoration:none; font:450 13px/1.4 'Manrope Variable',system-ui,sans-serif; } .ds-nav-item svg { width:16px; height:16px; color:#888f91; } .ds-nav-item kbd { margin-left:auto; color:#596164; font:600 10px/1 'Manrope Variable',system-ui,sans-serif; } .ds-nav-item:hover { background:#25292b; } .ds-nav-item:focus-visible { outline:2px solid #5aa6f5; outline-offset:2px; }"
+    },
+    {
+      "name": "Critical Status",
+      "kind": "chip",
+      "refersTo": "status-critical",
+      "description": "A scan-critical broken-promise state using text and icon as well as color.",
+      "html": "<span class=\"ds-status-critical\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 9v4m0 4h.01M10.3 3.7 2.5 17.2A2 2 0 0 0 4.2 20h15.6a2 2 0 0 0 1.7-2.8L13.7 3.7a2 2 0 0 0-3.4 0Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\"/></svg>Broken promise</span>",
+      "css": ".ds-status-critical { display:inline-flex; align-items:center; gap:5px; min-height:22px; padding:2px 6px; border:1px solid #25292b; border-radius:4px; background:#101314; color:#f0756d; font:600 12px/1.35 'Manrope Variable',system-ui,sans-serif; } .ds-status-critical svg { width:13px; height:13px; }"
+    },
+    {
+      "name": "Exception Queue Row",
+      "kind": "custom",
+      "refersTo": "table-row",
+      "description": "A dense queue row that exposes reason, owner, next action, and exact value.",
+      "html": "<div class=\"ds-queue-row\" tabindex=\"0\"><span class=\"ds-queue-account\"><strong>PT Sinar Abadi</strong><small>INV-2026-0418 · broken promise</small></span><span class=\"ds-queue-age\">47d overdue</span><span class=\"ds-queue-owner\">Raka · Today 14:00</span><strong class=\"ds-queue-value\">Rp 125.000.000</strong></div>",
+      "css": ".ds-queue-row { display:grid; grid-template-columns:minmax(180px,1.5fr) 100px 160px 140px; align-items:center; min-height:44px; padding:0 12px; border-bottom:1px solid #1d2122; background:#090b0c; color:#c9cecd; font:450 13px/1.4 'Manrope Variable',system-ui,sans-serif; transition:background 120ms cubic-bezier(.2,0,0,1); } .ds-queue-row:hover { background:#1c2021; } .ds-queue-row:focus-visible { outline:2px solid #5aa6f5; outline-offset:-2px; } .ds-queue-account { display:grid; gap:2px; } .ds-queue-account strong { color:#f2f4f3; font-weight:600; } .ds-queue-account small { color:#888f91; font-size:11px; } .ds-queue-age { color:#e5ae58; } .ds-queue-owner { color:#888f91; } .ds-queue-value { justify-self:end; color:#f2f4f3; font-variant-numeric:tabular-nums; font-weight:600; }"
+    },
+    {
+      "name": "Context Rail",
+      "kind": "card",
+      "refersTo": "context-panel",
+      "description": "A flat record context rail for next action, ownership, and automation explanation.",
+      "html": "<aside class=\"ds-context-rail\"><header><span>Next action</span><strong>Approve reminder</strong></header><dl><div><dt>Owner</dt><dd>Raka Pratama</dd></div><div><dt>Due</dt><dd>Today, 14:00</dd></div><div><dt>Policy</dt><dd>Standard 30-day follow-up</dd></div></dl><p>Suggested because the invoice is 47 days overdue and yesterday's promise was missed.</p></aside>",
+      "css": ".ds-context-rail { width:352px; min-height:320px; padding:16px; border-left:1px solid #25292b; background:#090b0c; color:#c9cecd; font:450 13px/1.5 'Manrope Variable',system-ui,sans-serif; } .ds-context-rail header { display:grid; gap:5px; padding-bottom:16px; border-bottom:1px solid #1d2122; } .ds-context-rail header span,.ds-context-rail dt { color:#888f91; font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; } .ds-context-rail header strong { color:#f2f4f3; font-size:16px; } .ds-context-rail dl { display:grid; gap:10px; margin:16px 0; } .ds-context-rail dl div { display:flex; justify-content:space-between; gap:16px; } .ds-context-rail dd { margin:0; color:#c9cecd; text-align:right; } .ds-context-rail p { margin:0; padding-top:16px; border-top:1px solid #1d2122; color:#888f91; }"
+    },
+    {
+      "name": "Audit Timeline Event",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "A quiet timeline event that distinguishes system authority and explains change.",
+      "html": "<article class=\"ds-timeline\"><span class=\"ds-timeline-marker\"></span><div><header><strong>System scheduled a reminder</strong><time>10:42</time></header><p>Triggered by Standard 30-day follow-up after the promise was missed.</p><footer>Awaiting approval · Customer-facing</footer></div></article>",
+      "css": ".ds-timeline { position:relative; display:grid; grid-template-columns:16px 1fr; gap:10px; max-width:520px; padding:12px 0; border-bottom:1px solid #1d2122; color:#c9cecd; font:450 13px/1.5 'Manrope Variable',system-ui,sans-serif; } .ds-timeline::before { content:''; position:absolute; left:5px; top:0; bottom:0; width:1px; background:#25292b; } .ds-timeline-marker { position:relative; z-index:1; width:9px; height:9px; margin-top:5px; border:2px solid #090b0c; border-radius:50%; background:#e5ae58; box-shadow:0 0 0 1px #25292b; } .ds-timeline header { display:flex; justify-content:space-between; gap:16px; } .ds-timeline strong { color:#f2f4f3; font-weight:600; } .ds-timeline time,.ds-timeline footer { color:#888f91; font-size:11px; } .ds-timeline p { margin:4px 0; color:#c9cecd; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Auditable Control Room",
+    "overview": "Arus is a dark, desktop-primary operating surface in which every visible element helps an operator understand attention, cause, ownership, next action, or change. The system is flat by default, information-dense without feeling cramped, and calm enough for continuous daily use. It translates the compositional discipline of Linear, the financial clarity of Ramp, and the shared-workflow model of Front into managed AR collections; Stripe and Attio are secondary references for typography, restrained controls, and record composition. The existing graphite foundation, Manrope typography, compact navigation, dense tables, and subtle dividers are preserved. Decorative gradients, large ambient shadows, inconsistent oversized radii, excessive blue, decorative cards, and chat-first composition are refinements to remove. Hierarchy comes from typography, alignment, spacing, and state—not ornament.",
+    "keyCharacteristics": [
+      "Flat-by-default graphite surfaces with hairline structural boundaries.",
+      "Exception-first dashboards and queues that lead directly to work.",
+      "Decomposed financial and workflow state instead of one ambiguous status.",
+      "Compact, keyboard-friendly controls built for repeated operator use.",
+      "A shared operator-client workspace with unmistakable organization context.",
+      "Explainable automation with visible policy, reason, timing, authority, and audit history."
+    ],
+    "rules": [
+      { "name": "The Five-Question Rule", "body": "Every operational screen must answer what requires attention, why, who owns the next action, what should happen next, and what changed after the action.", "section": "overview" },
+      { "name": "The One-Workspace Rule", "body": "Operators and client users use the same visual system. Permissions and organization scope change; interaction grammar and visual language do not.", "section": "overview" },
+      { "name": "The Sparse Signal Rule", "body": "Semantic color marks exceptions and outcomes only. If a screen feels colorful before it feels informative, color has been overused.", "section": "colors" },
+      { "name": "The Decomposed State Rule", "body": "Aging, payment, promise, dispute, automation, and task ownership use separate labels or columns. Never collapse them into one color-coded status.", "section": "colors" },
+      { "name": "The No Banking Blue Rule", "body": "Blue never washes a panel, dominates a chart, or becomes the default financial visual. Neutral ink is the primary action color.", "section": "colors" },
+      { "name": "The Operational Scale Rule", "body": "Product pages use the fixed scale in the frontmatter. No dashboard heading exceeds Display, no table text drops below Metadata, and tracking never becomes tighter than -0.02em.", "section": "typography" },
+      { "name": "The Numeric Integrity Rule", "body": "Money, days, and percentages use tabular numerals, consistent decimal policy, right alignment, and an explicit currency or unit. Never abbreviate a critical financial value when exactness affects a decision.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "A resting surface has no shadow. If a panel needs a shadow to be legible, fix its boundary, tone, or placement first.", "section": "elevation" },
+      { "name": "The One-Boundary Rule", "body": "Use either a tonal shift or a one-pixel border for local grouping. Use both only at major shell boundaries; never add border, shadow, and gradient to the same surface.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do preserve the existing graphite foundation, Manrope family, compact shell, dense table rhythm, and subtle one-pixel boundaries.",
+      "Do start dashboards with actionable exceptions and connect every metric to its causing invoices, debtors, promises, disputes, payments, or tasks.",
+      "Do keep active organization context visible in the sidebar, page header, command menu, confirmation copy, and exported output.",
+      "Do expose exact financial values, source references, ownership, next action, and audit history wherever a decision is made.",
+      "Do separate aging, payment, promise, dispute, automation, and ownership into independently legible state.",
+      "Do use the three-zone shell when context improves work: compact navigation, fluid operating surface, and optional 320–384px context rail.",
+      "Do keep controls between 32–36px high, table rows between 40–44px, and default content spacing on the 4px scale.",
+      "Do make keyboard behavior, visible focus, semantic labels, reduced motion, and non-color status communication part of shared components.",
+      "Do make automation explainable, stoppable, editable, and auditable, with customer-facing execution visibly gated by current client policy.",
+      "Do use split views, inline editing, and dedicated record pages for sustained work."
+    ],
+    "donts": [
+      "Don't ship a generic Tailwind admin template: sidebar plus four KPI cards, decorative chart, generic table, and activity feed is not an AR workflow.",
+      "Don't create a corporate-blue banking dashboard, mobile-bank balance screen, wallet, payment gateway, or bright fintech-blue visual system.",
+      "Don't create card soup. Rows, sections, dividers, tables, timelines, and context rails are the default composition.",
+      "Don't make Arus an AI chat-first interface. AI is a supporting summary, classification, explanation, or suggested action—not the product shell or primary navigation.",
+      "Don't use decorative analytics: donut charts, gauges, heatmaps, or graphs without a decision and record-level drill-down.",
+      "Don't use oversized dashboard design: no landing-page headings, excessive whitespace, giant touch targets, or KPI blocks that consume the first viewport.",
+      "Don't use excessive gradients, glow, glassmorphism, neon effects, translucent panels, animated backgrounds, or crypto-dashboard styling.",
+      "Don't create a rainbow status system. Use neutral foundations and semantic color only for overdue, broken promise, dispute, paid, warning, selection, and destructive action.",
+      "Don't turn every field into a badge or pill. Use compact status containers only when they materially improve scanning.",
+      "Don't reproduce old ERP form density: no walls of tiny fields, internal codes without explanation, deeply nested tabs, or long unstructured forms.",
+      "Don't reproduce Salesforce-style navigation complexity. Keep the core AR navigation opinionated and shallow.",
+      "Don't reproduce Monday.com or ClickUp-style visual noise with excessive colors, avatars, icons, custom statuses, kanban variants, animation, or configuration.",
+      "Don't create Notion-like blank-canvas flexibility. Arus defines the invoice, follow-up, promise, dispute, payment, and next-action workflow.",
+      "Don't force mobile-app patterns onto desktop or use a floating dock as primary desktop navigation.",
+      "Don't make workflows modal-heavy. Modals are for short atomic decisions, never sustained record work.",
+      "Don't hide organization context or allow cross-client context to become ambiguous.",
+      "Don't create separate visual systems for operators and clients. Capability and scope differ; the workspace grammar remains shared.",
+      "Don't present automation as uncontrolled. Always show reason, target, timing, source policy, approval state, and available controls.",
+      "Don't create ambiguous financial state by merging invoice status, aging, payment, dispute, promise, and collection workflow into one label.",
+      "Don't build a vanity-first dashboard that stops at total receivables and overdue percentage. The first viewport must lead to actionable exceptions.",
+      "Don't use more than one primary action per region, more than two text lines per table cell, or more than one shadowed surface at a time.",
+      "Don't remove visible focus outlines, rely on color alone, drop text below 11px, or defer accessibility until after P0."
+    ]
+  }
+}
