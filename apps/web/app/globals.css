@@ -688,14 +688,46 @@ svg {
   min-width: 0;
   height: auto;
   min-height: 0;
-  margin: 8px 8px 4px 0;
+  margin: 8px;
   overflow: auto;
-  border: 1px solid #2d3233;
-  border-radius: 8px;
+  border: 1px solid #363b3d;
+  border-radius: var(--radius);
   background: var(--workspace);
   box-shadow:
-    -3px 4px 8px rgb(0 0 0 / 26%),
-    inset 0 1px 0 rgb(255 255 255 / 3%);
+    -6px 6px 8px rgb(0 0 0 / 48%),
+    inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+
+/* Keep collection surfaces scrollable without persistent position chrome. */
+.app-shell
+  :is(
+    .sidebar-scroll-area,
+    .history-scroll,
+    .workspace,
+    .case-content,
+    .case-properties,
+    .copilot-content,
+    .data-table-wrap,
+    .data-actions
+  ) {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.app-shell
+  :is(
+    .sidebar-scroll-area,
+    .history-scroll,
+    .workspace,
+    .case-content,
+    .case-properties,
+    .copilot-content,
+    .data-table-wrap,
+    .data-actions
+  )::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .workspace-route-transition {

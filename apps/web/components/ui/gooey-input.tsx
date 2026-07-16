@@ -72,7 +72,7 @@ export interface GooeyInputProps {
   collapsedWidth?: number;
   /** Expanded control width in px */
   expandedWidth?: number;
-  /** Horizontal offset when expanded (px), aligns detached bubble */
+  /** Horizontal space when expanded (px), reserved for the detached bubble */
   expandedOffset?: number;
   /** Gaussian blur amount for the gooey SVG filter */
   gooeyBlur?: number;
@@ -176,12 +176,12 @@ export function GooeyInput({
       >
         <div
           className={cn(
-            'flex h-10 items-center justify-center transition-[width,transform] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)]',
+            'flex h-10 items-center justify-center transition-[width,margin-left] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)]',
             classNames?.buttonRow,
           )}
           style={{
             width: isExpanded ? expandedWidth : collapsedWidth,
-            transform: `translateX(${isExpanded ? expandedOffset : 0}px)`,
+            marginLeft: isExpanded ? expandedOffset : 0,
           }}
         >
           {isExpanded ? (
