@@ -17,13 +17,15 @@ export function PageHeader({
   return (
     <header className="page-header">
       <div className="page-heading">
-        <h1>{title}</h1>
-        {eyebrow && (
-          <p className="page-context">
-            <History size={16} aria-hidden="true" />
-            {eyebrow}
-          </p>
-        )}
+        <div className="page-title-row">
+          <h1>{title}</h1>
+          {eyebrow && (
+            <p className="page-context">
+              <History size={14} aria-hidden="true" />
+              {eyebrow}
+            </p>
+          )}
+        </div>
         {description && <p className="page-description">{description}</p>}
       </div>
       {action && <div className="page-actions">{action}</div>}

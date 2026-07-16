@@ -9,8 +9,6 @@ import {
   LayoutDashboard,
   ListTodo,
   LogOut,
-  MessageSquareText,
-  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   ReceiptText,
@@ -26,15 +24,29 @@ import { ArusLogo } from '@/components/arus-logo';
 import { logout } from '@/lib/auth/client';
 import type { AuthSession } from '@/lib/auth/types';
 
-const navigation = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Chat', href: '/chat', icon: MessageSquareText },
-  { label: 'Collection Queue', href: '/collection-queue', icon: ListTodo },
-  { label: 'Invoices', href: '/invoices', icon: ReceiptText },
-  { label: 'Debtors', href: '/debtors', icon: Building2 },
-  { label: 'Import', href: '/import', icon: Upload },
-  { label: 'Payments', href: '/payments', icon: CreditCard },
-  { label: 'Reports', href: '/reports', icon: ChartNoAxesCombined },
+const navigationGroups = [
+  {
+    label: 'Operations',
+    items: [
+      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Collection Queue', href: '/collection-queue', icon: ListTodo },
+    ],
+  },
+  {
+    label: 'Records',
+    items: [
+      { label: 'Invoices', href: '/invoices', icon: ReceiptText },
+      { label: 'Debtors', href: '/debtors', icon: Building2 },
+      { label: 'Payments', href: '/payments', icon: CreditCard },
+    ],
+  },
+  {
+    label: 'Data',
+    items: [
+      { label: 'Reports', href: '/reports', icon: ChartNoAxesCombined },
+      { label: 'Import', href: '/import', icon: Upload },
+    ],
+  },
 ] as const;
 
 const history = [
@@ -100,28 +112,45 @@ export function AppShell({ children, session }: AppShellProps) {
           </div>
         </div>
 
-        <div className="sidebar-section">
-          <p className="sidebar-label">Workspace</p>
-          <nav className="nav-list" aria-label="Primary navigation">
-            {navigation.map(({ label, href, icon: Icon }) => {
-              const active =
-                pathname === href ||
-                (href !== '/dashboard' && pathname.startsWith(`${href}/`));
-
-              return (
-                <Link
-                  className={`nav-link ${active ? 'active' : ''}`}
-                  href={href}
-                  key={href}
-                  aria-current={active ? 'page' : undefined}
-                >
-                  <Icon size={17} strokeWidth={1.7} aria-hidden="true" />
-                  <span>{label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+        <div className="organization-context" aria-label="Current organization">
+          <span className="organization-context-icon" aria-hidden="true">
+            <Building2 size={15} strokeWidth={1.7} />
+          </span>
+          <span className="organization-context-copy">
+            <small>Client workspace</small>
+            <strong>{session.organization.name}</strong>
+          </span>
+          <span className="organization-context-role">
+            {roleLabel(session.role)}
+          </span>
         </div>
+
+        <nav className="sidebar-navigation" aria-label="Primary navigation">
+          {navigationGroups.map((group) => (
+            <div className="sidebar-section" key={group.label}>
+              <p className="sidebar-label">{group.label}</p>
+              <div className="nav-list">
+                {group.items.map(({ label, href, icon: Icon }) => {
+                  const active =
+                    pathname === href ||
+                    (href !== '/dashboard' && pathname.startsWith(`${href}/`));
+
+                  return (
+                    <Link
+                      className={`nav-link ${active ? 'active' : ''}`}
+                      href={href}
+                      key={href}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      <Icon size={16} strokeWidth={1.7} aria-hidden="true" />
+                      <span>{label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
 
         <div className="sidebar-section sidebar-history">
           <button
@@ -199,16 +228,13 @@ export function AppShell({ children, session }: AppShellProps) {
             </span>
             <span className="profile-copy">
               <strong>{session.user.name}</strong>
-              <small>{session.organization.name}</small>
+              <small>{session.user.email}</small>
             </span>
             <ChevronDown
               className={profileOpen ? 'profile-chevron-open' : undefined}
               size={14}
               aria-hidden="true"
             />
-          </button>
-          <button className="icon-button" type="button" aria-label="Dark theme">
-            <Moon size={16} />
           </button>
         </div>
       </aside>
@@ -237,4 +263,8 @@ function initials(name: string): string {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('');
+}
+
+function roleLabel(role: AuthSession['role']): string {
+  return role === 'OWNER' ? 'Owner' : 'Operator';
 }
