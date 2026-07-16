@@ -6,8 +6,8 @@ export function ArusLogo({ className }: { className?: string }) {
       <Image
         src="/brand/arus-logo-transparent.png"
         alt="Arus"
-        width={2172}
-        height={724}
+        width={211}
+        height={70}
         priority
       />
     </span>
