@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 
 export const metadata: Metadata = {
-  title: 'Dashboard',
+  title: 'Collections Inbox',
 };
 
 const summary = [
@@ -54,6 +54,7 @@ const exceptions = [
     amount: 'Rp 185.000.000',
     owner: 'Maya',
     due: '45 min',
+    href: '/invoices/INV-2026-0418',
   },
   {
     type: 'No next action',
@@ -64,6 +65,7 @@ const exceptions = [
     amount: 'Rp 142.500.000',
     owner: 'Alex',
     due: 'Today',
+    href: '/invoices',
   },
   {
     type: 'Payment review',
@@ -74,6 +76,7 @@ const exceptions = [
     amount: 'Rp 28.000.000',
     owner: 'Maya',
     due: '11:30',
+    href: '/payments',
   },
   {
     type: 'Open dispute',
@@ -84,6 +87,7 @@ const exceptions = [
     amount: 'Rp 64.000.000',
     owner: 'Dimas',
     due: '14:00',
+    href: '/collection-queue',
   },
 ] as const;
 
@@ -97,12 +101,12 @@ export default function DashboardPage() {
   return (
     <div className="dashboard-page">
       <PageHeader
-        title="Dashboard"
+        title="Collections Inbox"
         eyebrow="Thursday, 16 July"
         description="Today’s exceptions, ownership, and collection movement."
         action={
           <Link className="primary-button" href="/collection-queue">
-            Open collection queue <ArrowRight size={14} />
+            Open approval queue <ArrowRight size={14} />
           </Link>
         }
       />
@@ -144,7 +148,7 @@ export default function DashboardPage() {
               {exceptions.map(({ icon: Icon, ...exception }) => (
                 <Link
                   className="exception-row"
-                  href="/collection-queue"
+                  href={exception.href}
                   key={`${exception.type}-${exception.debtor}`}
                 >
                   <span className={`exception-icon tone-${exception.tone}`}>

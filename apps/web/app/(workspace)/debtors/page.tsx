@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { DataPage } from '@/components/data-page';
 import { Avatar, Pill, RowCheckbox } from '@/components/table-ui';
 
-export const metadata: Metadata = { title: 'Debtors' };
+export const metadata: Metadata = { title: 'My Accounts' };
 
 const debtors = [
   [
@@ -127,7 +127,7 @@ function riskTone(risk: string) {
 export default function DebtorsPage() {
   return (
     <DataPage
-      title="Debtors"
+      title="My Accounts"
       recordLabel="28 companies · Rp 3,42 M total AR"
       pageLabel="Page 1 of 2"
       searchPlaceholder="Search debtors"

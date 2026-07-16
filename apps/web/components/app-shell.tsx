@@ -1,19 +1,21 @@
 'use client';
 
 import {
+  BadgeCheck,
   Building2,
-  ChartNoAxesCombined,
   ChevronDown,
+  CircleDot,
   CreditCard,
   FileText,
-  LayoutDashboard,
-  ListTodo,
+  Inbox,
+  Layers3,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  ReceiptText,
   Settings,
+  Target,
   Upload,
+  UserRound,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -26,27 +28,37 @@ import type { AuthSession } from '@/lib/auth/types';
 
 const navigationGroups = [
   {
-    label: 'Operations',
+    label: 'Collections',
     items: [
-      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-      { label: 'Collection Queue', href: '/collection-queue', icon: ListTodo },
+      { label: 'Collections Inbox', href: '/dashboard', icon: Inbox },
+      { label: 'My Accounts', href: '/debtors', icon: UserRound },
+      { label: 'Approval Queue', href: '/collection-queue', icon: BadgeCheck },
     ],
   },
   {
-    label: 'Records',
+    label: 'Workspace',
     items: [
-      { label: 'Invoices', href: '/invoices', icon: ReceiptText },
-      { label: 'Debtors', href: '/debtors', icon: Building2 },
+      { label: 'Collection Strategies', href: '/reports', icon: Target },
+      { label: 'Customer Portfolios', href: '/invoices', icon: Layers3 },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
       { label: 'Payments', href: '/payments', icon: CreditCard },
+      { label: 'Data Import', href: '/import', icon: Upload },
     ],
   },
+] as const;
+
+const favorites = [
   {
-    label: 'Data',
-    items: [
-      { label: 'Reports', href: '/reports', icon: ChartNoAxesCombined },
-      { label: 'Import', href: '/import', icon: Upload },
-    ],
+    label: 'INV-2026-0418',
+    href: '/invoices/INV-2026-0418',
+    tone: 'critical',
   },
+  { label: 'Broken promises', href: '/collection-queue', tone: 'attention' },
+  { label: 'High-risk accounts', href: '/debtors', tone: 'neutral' },
 ] as const;
 
 const history = [
@@ -151,6 +163,32 @@ export function AppShell({ children, session }: AppShellProps) {
             </div>
           ))}
         </nav>
+
+        <div className="sidebar-section sidebar-favorites">
+          <p className="sidebar-label">Favorites</p>
+          <nav className="nav-list" aria-label="Favorite views">
+            {favorites.map(({ label, href, tone }) => {
+              const active = pathname === href;
+
+              return (
+                <Link
+                  className={`nav-link favorite-link ${active ? 'active' : ''}`}
+                  href={href}
+                  key={href}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <CircleDot
+                    className={`favorite-icon tone-${tone}`}
+                    size={14}
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
         <div className="sidebar-section sidebar-history">
           <button

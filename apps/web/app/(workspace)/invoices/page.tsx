@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 import { DataPage } from '@/components/data-page';
 import { Pill, RowCheckbox } from '@/components/table-ui';
@@ -163,9 +164,9 @@ export default function InvoicesPage() {
                   <RowCheckbox label={`Select ${invoice}`} />
                 </td>
                 <td>
-                  <a className="blue-link" href={`#${invoice}`}>
+                  <Link className="blue-link" href={`/invoices/${invoice}`}>
                     {invoice}
-                  </a>
+                  </Link>
                 </td>
                 <td>
                   <span className="entity-cell">
