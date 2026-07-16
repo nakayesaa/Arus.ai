@@ -15,42 +15,24 @@ import {
   Clock3,
   Copy,
   Link2,
-  Mail,
   MessageCircleMore,
-  Minus,
-  Paperclip,
-  Send,
-  Sparkles,
   Star,
   UserRound,
-  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import type { ComponentType, FormEvent, ReactNode } from 'react';
+import type { ComponentType, ReactNode } from 'react';
+
+import { CollectionCopilot } from '@/components/collection-copilot';
 
 export function InvoiceCaseWorkspace() {
   const [starred, setStarred] = useState(true);
-  const [copilotOpen, setCopilotOpen] = useState(true);
-  const [copilotCollapsed, setCopilotCollapsed] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [prompt, setPrompt] = useState('');
-  const [copilotNotice, setCopilotNotice] = useState<string | null>(null);
 
   async function copyInvoiceId() {
     await navigator.clipboard.writeText('INV-2026-0418');
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
-  }
-
-  function submitCopilotRequest(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const request = prompt.trim();
-
-    if (!request) return;
-
-    setCopilotNotice(`Request queued for review: “${request}”`);
-    setPrompt('');
   }
 
   return (
@@ -266,133 +248,7 @@ export function InvoiceCaseWorkspace() {
         </aside>
       </div>
 
-      {copilotOpen ? (
-        <aside
-          className={`collection-copilot ${copilotCollapsed ? 'collection-copilot-collapsed' : ''}`}
-          aria-label="Arus Collection Copilot"
-        >
-          <header className="copilot-header">
-            <span className="copilot-brand">
-              <span className="copilot-mark" aria-hidden="true">
-                <Sparkles size={14} />
-              </span>
-              <strong>Arus Collection Copilot</strong>
-              <small>Case-aware</small>
-            </span>
-            <span className="copilot-window-actions">
-              <button
-                type="button"
-                onClick={() => setCopilotCollapsed((current) => !current)}
-                aria-label={
-                  copilotCollapsed ? 'Expand copilot' : 'Minimize copilot'
-                }
-              >
-                <Minus size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setCopilotOpen(false)}
-                aria-label="Close copilot"
-              >
-                <X size={14} />
-              </button>
-            </span>
-          </header>
-
-          {!copilotCollapsed && (
-            <>
-              <div className="copilot-content">
-                <p className="copilot-attribution">
-                  <Bot size={13} aria-hidden="true" /> Investigated this case
-                  using invoice, communication, promise, and payment history.
-                </p>
-                <h2>Broken promise requires a controlled escalation</h2>
-                <p>
-                  No payment was matched after the promised deadline. The debtor
-                  replied yesterday, so a firm reminder is appropriate before
-                  escalating to the client owner.
-                </p>
-
-                <div className="copilot-evidence">
-                  <span>
-                    <Clock3 size={13} /> Promise missed by 21 hours
-                  </span>
-                  <span>
-                    <CircleDollarSign size={13} /> No matching payment detected
-                  </span>
-                  <span>
-                    <Mail size={13} /> Last customer contact was acknowledged
-                  </span>
-                </div>
-
-                <section className="copilot-recommendation">
-                  <header>
-                    <span>Recommended next action</span>
-                    <strong>Human approval required</strong>
-                  </header>
-                  <p>
-                    Send a WhatsApp reminder requesting payment confirmation by
-                    14:00, then escalate to the client owner if there is no
-                    reply.
-                  </p>
-                  <div>
-                    <Link
-                      className="copilot-primary-action"
-                      href="/collection-queue"
-                    >
-                      Review draft
-                    </Link>
-                    <Link
-                      className="copilot-secondary-action"
-                      href="/collection-queue"
-                    >
-                      Open evidence
-                    </Link>
-                  </div>
-                </section>
-              </div>
-
-              <form
-                className="copilot-composer"
-                onSubmit={submitCopilotRequest}
-              >
-                <label htmlFor="copilot-prompt">Ask about this account</label>
-                <div>
-                  <button
-                    type="button"
-                    disabled
-                    aria-label="Attachments are not available yet"
-                  >
-                    <Paperclip size={14} />
-                  </button>
-                  <input
-                    id="copilot-prompt"
-                    value={prompt}
-                    onChange={(event) => setPrompt(event.target.value)}
-                    placeholder="Investigate, summarize, or draft an action…"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!prompt.trim()}
-                    aria-label="Send request to copilot"
-                  >
-                    <Send size={14} />
-                  </button>
-                </div>
-                {copilotNotice && <p role="status">{copilotNotice}</p>}
-              </form>
-            </>
-          )}
-        </aside>
-      ) : (
-        <button
-          className="copilot-reopen"
-          type="button"
-          onClick={() => setCopilotOpen(true)}
-        >
-          <Sparkles size={14} /> Open Collection Copilot
-        </button>
-      )}
+      <CollectionCopilot />
     </section>
   );
 }
