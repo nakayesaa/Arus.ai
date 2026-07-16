@@ -658,9 +658,12 @@ svg {
   min-height: 0;
   margin: 8px 8px 4px 0;
   overflow: auto;
-  border: 1px solid var(--border);
+  border: 1px solid #2d3233;
   border-radius: 8px;
   background: var(--workspace);
+  box-shadow:
+    -3px 4px 8px rgb(0 0 0 / 26%),
+    inset 0 1px 0 rgb(255 255 255 / 3%);
 }
 
 .sidebar-collapsed .workspace {
@@ -1190,6 +1193,10 @@ svg {
   padding: 0 14px 0 20px;
   border-bottom: 1px solid var(--border-soft);
   background: #0b0e0f;
+}
+
+.workspace:has(> .sidebar-open-button) .case-topbar {
+  padding-left: 55px;
 }
 
 .case-breadcrumbs,
@@ -2975,6 +2982,7 @@ svg {
     margin: 0;
     border: 0;
     border-radius: 0;
+    box-shadow: none;
   }
 
   .workspace-dock {
