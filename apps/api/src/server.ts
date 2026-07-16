@@ -5,8 +5,10 @@ import { createDatabaseClient } from './lib/database.js';
 import { createLogger } from './lib/logger.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
 import { PrismaAccountLifecycleRepository } from './repositories/account-lifecycle.repository.js';
+import { PrismaReceivablesRepository } from './repositories/receivables.repository.js';
 import { AccountLifecycleService } from './services/account-lifecycle.service.js';
 import { AuthService } from './services/auth.service.js';
+import { ReceivablesService } from './services/receivables.service.js';
 
 const environment = loadEnvironment();
 const logger = createLogger(environment);
@@ -22,7 +24,16 @@ const lifecycleService = new AccountLifecycleService({
   environment,
   logger,
 });
-const app = createApp({ authService, lifecycleService, environment, logger });
+const receivablesService = new ReceivablesService({
+  repository: new PrismaReceivablesRepository(database),
+});
+const app = createApp({
+  authService,
+  lifecycleService,
+  receivablesService,
+  environment,
+  logger,
+});
 
 const server = app.listen(environment.PORT, () => {
   logger.info(

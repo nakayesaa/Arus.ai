@@ -11,12 +11,15 @@ import { requestIdMiddleware } from './middleware/request-id.js';
 import { createAccountLifecycleRouter } from './routes/account-lifecycle.routes.js';
 import { createAuthRouter } from './routes/auth.routes.js';
 import { healthRouter } from './routes/health.routes.js';
+import { createReceivablesRouter } from './routes/receivables.routes.js';
 import type { AccountLifecycleServiceContract } from './services/account-lifecycle.service.js';
 import type { AuthServiceContract } from './services/auth.service.js';
+import type { ReceivablesServiceContract } from './services/receivables.service.js';
 
 interface CreateAppOptions {
   authService: AuthServiceContract;
   lifecycleService?: AccountLifecycleServiceContract;
+  receivablesService?: ReceivablesServiceContract;
   environment?: Environment;
   logger?: Logger;
 }
@@ -53,6 +56,15 @@ export function createApp(options: CreateAppOptions): Express {
       createAccountLifecycleRouter({
         authService: options.authService,
         lifecycleService: options.lifecycleService,
+        environment,
+      }),
+    );
+  }
+  if (options.receivablesService) {
+    app.use(
+      createReceivablesRouter({
+        authService: options.authService,
+        receivablesService: options.receivablesService,
         environment,
       }),
     );
