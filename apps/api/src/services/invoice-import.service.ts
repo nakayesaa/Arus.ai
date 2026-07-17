@@ -157,7 +157,7 @@ export class InvoiceImportService implements InvoiceImportServiceContract {
           requestId: input.requestId,
           importJobId: job.id,
           failureCode: error.code,
-          failureMessage: error.message,
+          failureMessage: boundedFailureMessage(error.message),
           fileWarnings: error.warnings,
         });
         return toJobView(failed);
@@ -313,4 +313,8 @@ function importJobNotFound(): InvoiceImportServiceError {
     'IMPORT_JOB_NOT_FOUND',
     'Invoice import job not found',
   );
+}
+
+function boundedFailureMessage(message: string): string {
+  return Array.from(message).slice(0, 500).join('');
 }

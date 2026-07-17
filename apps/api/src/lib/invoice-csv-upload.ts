@@ -49,7 +49,6 @@ export function readInvoiceCsvUpload(
           fileSize: MAX_INVOICE_CSV_BYTES,
           files: 1,
           headerPairs: 100,
-          parts: 1,
         },
       });
     } catch {
@@ -150,9 +149,6 @@ export function readInvoiceCsvUpload(
     });
     parser.on('fieldsLimit', () => {
       rejectUnexpected('CSV upload does not accept multipart text fields');
-    });
-    parser.on('partsLimit', () => {
-      rejectUnexpected('CSV upload accepts exactly one multipart part');
     });
     parser.on('error', () => {
       fail(
