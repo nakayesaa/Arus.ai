@@ -25,29 +25,33 @@ export const REQUIRED_INVOICE_IMPORT_COLUMNS = [
   'original_amount',
 ] as const satisfies readonly InvoiceImportColumn[];
 
+export const INVOICE_IMPORT_DIAGNOSTIC_CODES = [
+  'AMBIGUOUS_DEBTOR',
+  'COLUMN_COUNT_MISMATCH',
+  'DEBTOR_NAME_MISMATCH',
+  'DUE_BEFORE_INVOICE_DATE',
+  'DUPLICATE_HEADER',
+  'DUPLICATE_IN_DATABASE',
+  'DUPLICATE_IN_FILE',
+  'EMPTY_FILE',
+  'FIELD_TOO_LONG',
+  'INVALID_AMOUNT',
+  'INVALID_DATE',
+  'INVALID_EMAIL',
+  'INVALID_HEADER',
+  'INVALID_TEXT',
+  'INVALID_UTF8',
+  'MALFORMED_CSV',
+  'MISSING_REQUIRED_HEADER',
+  'MISSING_REQUIRED_VALUE',
+  'OUTSTANDING_MISMATCH',
+  'PAID_EXCEEDS_ORIGINAL',
+  'TOO_MANY_ROWS',
+  'UNKNOWN_COLUMN',
+] as const;
+
 export type InvoiceImportDiagnosticCode =
-  | 'AMBIGUOUS_DEBTOR'
-  | 'COLUMN_COUNT_MISMATCH'
-  | 'DEBTOR_NAME_MISMATCH'
-  | 'DUE_BEFORE_INVOICE_DATE'
-  | 'DUPLICATE_HEADER'
-  | 'DUPLICATE_IN_DATABASE'
-  | 'DUPLICATE_IN_FILE'
-  | 'EMPTY_FILE'
-  | 'FIELD_TOO_LONG'
-  | 'INVALID_AMOUNT'
-  | 'INVALID_DATE'
-  | 'INVALID_EMAIL'
-  | 'INVALID_HEADER'
-  | 'INVALID_TEXT'
-  | 'INVALID_UTF8'
-  | 'MALFORMED_CSV'
-  | 'MISSING_REQUIRED_HEADER'
-  | 'MISSING_REQUIRED_VALUE'
-  | 'OUTSTANDING_MISMATCH'
-  | 'PAID_EXCEEDS_ORIGINAL'
-  | 'TOO_MANY_ROWS'
-  | 'UNKNOWN_COLUMN';
+  (typeof INVOICE_IMPORT_DIAGNOSTIC_CODES)[number];
 
 export interface InvoiceImportDiagnostic {
   code: InvoiceImportDiagnosticCode;
@@ -93,14 +97,9 @@ export interface ValidatedInvoiceImportRow {
   warnings: InvoiceImportDiagnostic[];
 }
 
-export type InvoiceImportRowResult =
-  | 'VALID'
-  | 'INVALID'
-  | 'DUPLICATE';
+export type InvoiceImportRowResult = 'VALID' | 'INVALID' | 'DUPLICATE';
 
-export type InvoiceImportDebtorAction =
-  | 'MATCH_EXISTING'
-  | 'WILL_CREATE';
+export type InvoiceImportDebtorAction = 'MATCH_EXISTING' | 'WILL_CREATE';
 
 export interface ImportMatchingDebtor {
   id: string;
