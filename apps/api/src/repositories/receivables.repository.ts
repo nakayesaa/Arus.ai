@@ -50,6 +50,7 @@ export interface DebtorMutationValues {
   code: string | null;
   normalizedCode: string | null;
   name: string;
+  normalizedName: string;
   contactName: string | null;
   phoneNumber: string | null;
   email: string | null;

@@ -106,6 +106,7 @@ integrationDescribe('receivables with PostgreSQL', () => {
           code: 'AR-A-001',
           normalizedCode: 'ar-a-001',
           name: 'Alpha Retail',
+          normalizedName: 'alpha retail',
         },
         {
           id: debtorASecondId,
@@ -113,6 +114,7 @@ integrationDescribe('receivables with PostgreSQL', () => {
           code: 'AR-A-002',
           normalizedCode: 'ar-a-002',
           name: 'Beta Distribution',
+          normalizedName: 'beta distribution',
         },
         {
           id: debtorBId,
@@ -120,6 +122,7 @@ integrationDescribe('receivables with PostgreSQL', () => {
           code: 'SHARED-001',
           normalizedCode: 'shared-001',
           name: 'Tenant B Customer',
+          normalizedName: 'tenant b customer',
         },
       ],
     });

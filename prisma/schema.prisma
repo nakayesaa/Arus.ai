@@ -17,6 +17,26 @@ enum AccountTokenPurpose {
   PASSWORD_RESET
 }
 
+enum InvoiceImportJobStatus {
+  PREVIEWING
+  READY
+  COMMITTED
+  FAILED
+  CANCELLED
+}
+
+enum InvoiceImportRowResult {
+  VALID
+  INVALID
+  DUPLICATE
+  COMMITTED
+}
+
+enum InvoiceImportDebtorAction {
+  MATCH_EXISTING
+  WILL_CREATE
+}
+
 model Organization {
   id        String   @id @default(uuid()) @db.Uuid
   name      String   @db.VarChar(200)
@@ -31,6 +51,8 @@ model Organization {
   invoices      Invoice[]
   payments      Payment[]
   allocations   PaymentAllocation[]
+  importJobs    InvoiceImportJob[]
+  importRows    InvoiceImportRow[]
 }
 
 model User {
@@ -48,6 +70,7 @@ model User {
   accountTokens      AccountToken[]
   createdPayments    Payment[]           @relation("PaymentCreator")
   createdAllocations PaymentAllocation[] @relation("AllocationCreator")
+  createdImportJobs  InvoiceImportJob[]  @relation("InvoiceImportCreator")
 }
 
 model Membership {
@@ -126,6 +149,7 @@ model Debtor {
   code           String?   @db.VarChar(50)
   normalizedCode String?   @db.VarChar(50)
   name           String    @db.VarChar(200)
+  normalizedName String    @db.VarChar(200)
   contactName    String?   @db.VarChar(200)
   phoneNumber    String?   @db.VarChar(50)
   email          String?   @db.VarChar(320)
@@ -133,12 +157,14 @@ model Debtor {
   updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt      DateTime? @db.Timestamptz(3)
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   invoices     Invoice[]
   payments     Payment[]
+  importRows   InvoiceImportRow[] @relation("ImportMatchedDebtor")
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, name])
+  @@index([organizationId, normalizedName, deletedAt])
 }
 
 model Invoice {
@@ -158,6 +184,7 @@ model Invoice {
   organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   debtor       Debtor              @relation(fields: [debtorId], references: [id], onDelete: Restrict)
   allocations  PaymentAllocation[]
+  importRow    InvoiceImportRow?   @relation("CommittedInvoice")
 
   @@index([organizationId, dueDate])
   @@index([organizationId, debtorId])
@@ -205,4 +232,57 @@ model PaymentAllocation {
 
   @@index([organizationId, invoiceId, allocationDate])
   @@index([organizationId, paymentId])
+}
+
+model InvoiceImportJob {
+  id             String                 @id @default(uuid()) @db.Uuid
+  organizationId String                 @db.Uuid
+  filename       String                 @db.VarChar(255)
+  fileHash       String                 @db.Char(64)
+  status         InvoiceImportJobStatus @default(PREVIEWING)
+  totalRows      Int                    @default(0)
+  validRows      Int                    @default(0)
+  invalidRows    Int                    @default(0)
+  duplicateRows  Int                    @default(0)
+  warningRows    Int                    @default(0)
+  fileWarnings   Json?                  @db.JsonB
+  failureCode    String?                @db.VarChar(80)
+  failureMessage String?                @db.VarChar(500)
+  createdById    String                 @db.Uuid
+  committedAt    DateTime?              @db.Timestamptz(3)
+  cancelledAt    DateTime?              @db.Timestamptz(3)
+  createdAt      DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime               @updatedAt @db.Timestamptz(3)
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy    User               @relation("InvoiceImportCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  rows         InvoiceImportRow[]
+
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, fileHash, createdAt])
+}
+
+model InvoiceImportRow {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  organizationId     String                     @db.Uuid
+  importJobId        String                     @db.Uuid
+  rowNumber          Int
+  result             InvoiceImportRowResult
+  normalizedPayload  Json                       @db.JsonB
+  errors             Json                       @db.JsonB
+  warnings           Json                       @db.JsonB
+  debtorAction       InvoiceImportDebtorAction?
+  matchedDebtorId    String?                    @db.Uuid
+  committedInvoiceId String?                    @unique @db.Uuid
+  createdAt          DateTime                   @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime                   @updatedAt @db.Timestamptz(3)
+
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  importJob        InvoiceImportJob @relation(fields: [importJobId], references: [id], onDelete: Restrict)
+  matchedDebtor    Debtor?          @relation("ImportMatchedDebtor", fields: [matchedDebtorId], references: [id], onDelete: Restrict)
+  committedInvoice Invoice?         @relation("CommittedInvoice", fields: [committedInvoiceId], references: [id], onDelete: Restrict)
+
+  @@unique([importJobId, rowNumber])
+  @@index([organizationId, importJobId, result, rowNumber])
+  @@index([organizationId, matchedDebtorId])
 }

@@ -96,6 +96,7 @@ async function main(): Promise<void> {
         code: debtor.code,
         normalizedCode: debtor.normalizedCode,
         name: debtor.name,
+        normalizedName: debtor.normalizedName,
         contactName: debtor.contactName,
         phoneNumber: debtor.phoneNumber,
         email: debtor.email,

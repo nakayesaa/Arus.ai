@@ -184,6 +184,7 @@ describe('ReceivablesService', () => {
         code: 'Customer-99',
         normalizedCode: 'customer-99',
         name: 'New Debtor',
+        normalizedName: 'new debtor',
         contactName: 'Finance Team',
         phoneNumber: null,
         email: 'ar@example.com',

@@ -396,6 +396,7 @@ function debtorValues(input: {
     code,
     normalizedCode: code?.toLowerCase() ?? null,
     name: input.name.trim(),
+    normalizedName: normalizeIdentity(input.name),
     contactName: normalizeNullable(input.contactName),
     phoneNumber: normalizeNullable(input.phoneNumber),
     email: normalizeNullable(input.email)?.toLowerCase() ?? null,
@@ -415,7 +416,10 @@ function debtorChanges(input: {
     changes.code = code;
     changes.normalizedCode = code?.toLowerCase() ?? null;
   }
-  if (input.name !== undefined) changes.name = input.name.trim();
+  if (input.name !== undefined) {
+    changes.name = input.name.trim();
+    changes.normalizedName = normalizeIdentity(input.name);
+  }
   if (input.contactName !== undefined)
     changes.contactName = normalizeNullable(input.contactName);
   if (input.phoneNumber !== undefined)
@@ -434,6 +438,10 @@ function normalizeNullable(value: string | null | undefined): string | null {
 function normalizedSearch(value: string | undefined): string | undefined {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
+}
+
+function normalizeIdentity(value: string): string {
+  return value.trim().toLowerCase();
 }
 
 function pagination(page: number, limit: number, total: number): Pagination {
