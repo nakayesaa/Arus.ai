@@ -84,6 +84,7 @@ export interface ReceivablesRepository {
     organizationId: string;
     search?: string | undefined;
     debtorId?: string | undefined;
+    debtorIds?: readonly string[] | undefined;
     take: number;
   }): Promise<InvoiceCalculationRecord[]>;
   findInvoice(
@@ -238,6 +239,7 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
     organizationId: string;
     search?: string | undefined;
     debtorId?: string | undefined;
+    debtorIds?: readonly string[] | undefined;
     take: number;
   }): Promise<InvoiceCalculationRecord[]> {
     const records = await this.database.invoice.findMany({
@@ -245,6 +247,7 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
         organizationId: input.organizationId,
         deletedAt: null,
         ...(input.debtorId ? { debtorId: input.debtorId } : {}),
+        ...(input.debtorIds ? { debtorId: { in: [...input.debtorIds] } } : {}),
         ...(input.search
           ? {
               OR: [

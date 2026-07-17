@@ -20,7 +20,12 @@ const asOfDateSchema = z
 const idParamsSchema = z.object({ id: z.uuid() }).strict();
 
 const debtorListQuerySchema = z
-  .object({ search: searchSchema, page: pageSchema, limit: limitSchema })
+  .object({
+    search: searchSchema,
+    asOfDate: asOfDateSchema,
+    page: pageSchema,
+    limit: limitSchema,
+  })
   .strict();
 const debtorDetailQuerySchema = z.object({ asOfDate: asOfDateSchema }).strict();
 const invoiceListQuerySchema = z
@@ -100,7 +105,11 @@ export function createReceivablesController(
         context: authenticatedContext(response),
         ...query,
       });
-      response.status(200).json(result);
+      response.status(200).json({
+        data: result.data,
+        pagination: result.pagination,
+        meta: { asOfDate: result.asOfDate },
+      });
     } catch (error) {
       next(mapReceivablesError(error));
     }

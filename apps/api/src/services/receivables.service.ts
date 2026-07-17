@@ -40,6 +40,17 @@ export interface DebtorView {
   updatedAt: string;
 }
 
+export interface DebtorSummary {
+  invoiceCount: number;
+  openInvoiceCount: number;
+  totalOutstanding: string;
+  overdueOutstanding: string;
+}
+
+export interface DebtorListView extends DebtorView {
+  summary: DebtorSummary;
+}
+
 export interface InvoiceView {
   id: string;
   debtor: { id: string; code: string | null; name: string };
@@ -61,20 +72,22 @@ export interface InvoiceDetailView extends InvoiceView {
 }
 
 export interface DebtorDetailView extends DebtorView {
-  summary: {
-    invoiceCount: number;
-    openInvoiceCount: number;
-    totalOutstanding: string;
-  };
+  summary: DebtorSummary;
+  invoices: InvoiceView[];
 }
 
 export interface ReceivablesServiceContract {
   listDebtors(input: {
     context: AuthContext;
     search?: string | undefined;
+    asOfDate?: string | undefined;
     page: number;
     limit: number;
-  }): Promise<{ data: DebtorView[]; pagination: Pagination }>;
+  }): Promise<{
+    data: DebtorListView[];
+    pagination: Pagination;
+    asOfDate: string;
+  }>;
   getDebtor(input: {
     context: AuthContext;
     debtorId: string;
@@ -152,9 +165,15 @@ export class ReceivablesService implements ReceivablesServiceContract {
   async listDebtors(input: {
     context: AuthContext;
     search?: string | undefined;
+    asOfDate?: string | undefined;
     page: number;
     limit: number;
-  }): Promise<{ data: DebtorView[]; pagination: Pagination }> {
+  }): Promise<{
+    data: DebtorListView[];
+    pagination: Pagination;
+    asOfDate: string;
+  }> {
+    const asOfDate = this.resolveAsOfDate(input.context, input.asOfDate);
     const result = await this.options.repository.listDebtors({
       organizationId: input.context.organization.id,
       ...(normalizedSearch(input.search)
@@ -163,9 +182,27 @@ export class ReceivablesService implements ReceivablesServiceContract {
       skip: (input.page - 1) * input.limit,
       take: input.limit,
     });
+    const invoices =
+      result.records.length === 0
+        ? []
+        : await this.options.repository.listInvoiceCandidates({
+            organizationId: input.context.organization.id,
+            debtorIds: result.records.map((record) => record.id),
+            take: MAX_DERIVATION_CANDIDATES + 1,
+          });
+    assertWithinDerivationLimit(invoices.length, 'Debtor summary');
+    const invoicesByDebtor = groupInvoicesByDebtor(invoices);
+
     return {
-      data: result.records.map(toDebtorView),
+      data: result.records.map((record) => {
+        const debtorInvoices = invoicesByDebtor.get(record.id) ?? [];
+        return {
+          ...toDebtorView(record),
+          summary: summarizeInvoices(debtorInvoices, asOfDate),
+        };
+      }),
       pagination: pagination(input.page, input.limit, result.total),
+      asOfDate,
     };
   }
 
@@ -183,22 +220,16 @@ export class ReceivablesService implements ReceivablesServiceContract {
       throw new ReceivablesError('DEBTOR_NOT_FOUND', 'Debtor not found');
     }
 
-    let totalOutstanding = 0n;
-    let openInvoiceCount = 0;
-    for (const invoice of record.invoices) {
-      const view = toInvoiceView(invoice, asOfDate);
-      totalOutstanding += parseMoney(view.outstandingAmount);
-      if (view.state !== InvoiceState.PAID) openInvoiceCount += 1;
-    }
+    assertWithinDerivationLimit(record.invoices.length, 'Debtor detail');
+    const invoices = record.invoices.map((invoice) =>
+      toInvoiceView(invoice, asOfDate),
+    );
 
     return {
       data: {
         ...toDebtorView(record),
-        summary: {
-          invoiceCount: record.invoices.length,
-          openInvoiceCount,
-          totalOutstanding: formatMoney(totalOutstanding),
-        },
+        summary: summarizeInvoiceViews(invoices),
+        invoices,
       },
       asOfDate,
     };
@@ -276,12 +307,7 @@ export class ReceivablesService implements ReceivablesServiceContract {
       ...(input.debtorId ? { debtorId: input.debtorId } : {}),
       take: MAX_DERIVATION_CANDIDATES + 1,
     });
-    if (records.length > MAX_DERIVATION_CANDIDATES) {
-      throw new ReceivablesError(
-        'QUERY_TOO_BROAD',
-        'Invoice query exceeds the pilot processing limit; add a narrower filter',
-      );
-    }
+    assertWithinDerivationLimit(records.length, 'Invoice query');
 
     const derived = records
       .map((record) => toInvoiceView(record, asOfDate))
@@ -382,6 +408,56 @@ function toDebtorView(record: DebtorRecord): DebtorView {
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   };
+}
+
+function summarizeInvoices(
+  records: readonly InvoiceCalculationRecord[],
+  asOfDate: string,
+): DebtorSummary {
+  return summarizeInvoiceViews(
+    records.map((record) => toInvoiceView(record, asOfDate)),
+  );
+}
+
+function summarizeInvoiceViews(
+  invoices: readonly InvoiceView[],
+): DebtorSummary {
+  let totalOutstanding = 0n;
+  let overdueOutstanding = 0n;
+  let openInvoiceCount = 0;
+  for (const invoice of invoices) {
+    const outstanding = parseMoney(invoice.outstandingAmount);
+    totalOutstanding += outstanding;
+    if (invoice.state !== InvoiceState.PAID) openInvoiceCount += 1;
+    if (invoice.aging.daysOverdue > 0) overdueOutstanding += outstanding;
+  }
+  return {
+    invoiceCount: invoices.length,
+    openInvoiceCount,
+    totalOutstanding: formatMoney(totalOutstanding),
+    overdueOutstanding: formatMoney(overdueOutstanding),
+  };
+}
+
+function groupInvoicesByDebtor(
+  invoices: readonly InvoiceCalculationRecord[],
+): Map<string, InvoiceCalculationRecord[]> {
+  const grouped = new Map<string, InvoiceCalculationRecord[]>();
+  for (const invoice of invoices) {
+    const records = grouped.get(invoice.debtor.id);
+    if (records) records.push(invoice);
+    else grouped.set(invoice.debtor.id, [invoice]);
+  }
+  return grouped;
+}
+
+function assertWithinDerivationLimit(count: number, label: string): void {
+  if (count > MAX_DERIVATION_CANDIDATES) {
+    throw new ReceivablesError(
+      'QUERY_TOO_BROAD',
+      `${label} exceeds the pilot processing limit; add a narrower filter`,
+    );
+  }
 }
 
 function debtorValues(input: {

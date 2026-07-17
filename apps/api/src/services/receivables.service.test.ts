@@ -108,9 +108,14 @@ class FakeReceivablesRepository implements ReceivablesRepository {
 
   async listInvoiceCandidates(input: {
     organizationId: string;
+    debtorIds?: readonly string[] | undefined;
   }): Promise<InvoiceCalculationRecord[]> {
     this.lastInvoiceOrganizationId = input.organizationId;
-    return this.invoices;
+    return input.debtorIds
+      ? this.invoices.filter((invoice) =>
+          input.debtorIds?.includes(invoice.debtor.id),
+        )
+      : this.invoices;
   }
 
   async findInvoice(): Promise<InvoiceDetailRecord | null> {
@@ -160,7 +165,33 @@ describe('ReceivablesService', () => {
       invoiceCount: 2,
       openInvoiceCount: 1,
       totalOutstanding: '135000000.00',
+      overdueOutstanding: '135000000.00',
     });
+    expect(result.data.invoices).toHaveLength(2);
+  });
+
+  it('returns exact debtor list summaries for the requested business date', async () => {
+    const service = testService(new FakeReceivablesRepository());
+
+    const result = await service.listDebtors({
+      context,
+      asOfDate: '2026-07-16',
+      page: 1,
+      limit: 25,
+    });
+
+    expect(result.asOfDate).toBe('2026-07-16');
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        id: debtor.id,
+        summary: {
+          invoiceCount: 2,
+          openInvoiceCount: 1,
+          totalOutstanding: '135000000.00',
+          overdueOutstanding: '135000000.00',
+        },
+      }),
+    ]);
   });
 
   it('normalizes debtor identity at the service boundary', async () => {

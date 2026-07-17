@@ -286,7 +286,14 @@ integrationDescribe('receivables with PostgreSQL', () => {
       total: 2,
       totalPages: 2,
     });
+    expect(firstPage.body.meta.asOfDate).toBe('2026-07-16');
     expect(firstPage.body.data[0].id).toBe(debtorAId);
+    expect(firstPage.body.data[0].summary).toEqual({
+      invoiceCount: 1,
+      openInvoiceCount: 1,
+      totalOutstanding: '135000000.00',
+      overdueOutstanding: '135000000.00',
+    });
     expect(secondPage.body.data[0].id).toBe(debtorASecondId);
     expect(firstPage.body.data[0].id).not.toBe(secondPage.body.data[0].id);
     expect(JSON.stringify([firstPage.body, secondPage.body])).not.toContain(
