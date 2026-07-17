@@ -4,10 +4,12 @@ import { createAccountEmailSender } from './lib/account-email.js';
 import { createDatabaseClient } from './lib/database.js';
 import { createLogger } from './lib/logger.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
+import { PrismaInvoiceImportRepository } from './repositories/invoice-import.repository.js';
 import { PrismaAccountLifecycleRepository } from './repositories/account-lifecycle.repository.js';
 import { PrismaReceivablesRepository } from './repositories/receivables.repository.js';
 import { AccountLifecycleService } from './services/account-lifecycle.service.js';
 import { AuthService } from './services/auth.service.js';
+import { InvoiceImportService } from './services/invoice-import.service.js';
 import { ReceivablesService } from './services/receivables.service.js';
 
 const environment = loadEnvironment();
@@ -27,10 +29,15 @@ const lifecycleService = new AccountLifecycleService({
 const receivablesService = new ReceivablesService({
   repository: new PrismaReceivablesRepository(database),
 });
+const invoiceImportService = new InvoiceImportService({
+  repository: new PrismaInvoiceImportRepository(database),
+  logger,
+});
 const app = createApp({
   authService,
   lifecycleService,
   receivablesService,
+  invoiceImportService,
   environment,
   logger,
 });
