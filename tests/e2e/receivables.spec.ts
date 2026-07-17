@@ -1,0 +1,107 @@
+import { expect, test, type Page } from '@playwright/test';
+
+const AS_OF_DATE = '2026-07-16';
+const SINAR_DEBTOR_ID = '20000000-0000-4000-8000-000000000001';
+const PARTIAL_INVOICE_ID = '30000000-0000-4000-8000-000000000001';
+
+test.beforeEach(async ({ page }) => {
+  await login(page);
+});
+
+test('reconciles a debtor account through its invoice allocation evidence', async ({
+  page,
+}) => {
+  await page.goto(`/debtors?asOfDate=${AS_OF_DATE}`);
+
+  await expect(
+    page.getByRole('heading', { name: 'My Accounts' }),
+  ).toBeVisible();
+  const debtorRow = page
+    .getByRole('row')
+    .filter({ has: page.getByRole('link', { name: 'PT Sinar Abadi Retail' }) });
+  await expect(debtorRow).toContainText('1 open');
+  await expect(debtorRow).toContainText('Rp 135.000.000');
+  await expect(page.getByText('Boundary Customer')).toHaveCount(0);
+
+  await debtorRow.getByRole('link', { name: 'PT Sinar Abadi Retail' }).click();
+  await expect(page).toHaveURL(
+    new RegExp(`/debtors/${SINAR_DEBTOR_ID}\\?asOfDate=${AS_OF_DATE}$`),
+  );
+  await expect(
+    page.getByRole('heading', { name: 'PT Sinar Abadi Retail' }),
+  ).toBeVisible();
+  await expect(page.locator('.record-metrics')).toContainText('Rp 135.000.000');
+  await expect(page.getByRole('link', { name: 'INV-2026-0418' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'INV-2026-0020' })).toBeVisible();
+
+  await page.getByRole('link', { name: 'INV-2026-0418' }).click();
+  await expect(page).toHaveURL(
+    new RegExp(`/invoices/${PARTIAL_INVOICE_ID}\\?asOfDate=${AS_OF_DATE}$`),
+  );
+  await expect(
+    page.getByRole('heading', { name: 'INV-2026-0418' }),
+  ).toBeVisible();
+  const metrics = page.locator('.record-metrics');
+  await expect(metrics).toContainText('Rp 185.000.000');
+  await expect(metrics).toContainText('Rp 50.000.000');
+  await expect(metrics).toContainText('Rp 135.000.000');
+
+  const allocationRow = page
+    .getByRole('row')
+    .filter({ hasText: 'SEED-PARTIAL-001' });
+  await expect(allocationRow).toContainText('Rp 50.000.000');
+  await expect(allocationRow).toContainText('Opening balance');
+  await expect(allocationRow).toContainText('Active');
+});
+
+test('keeps invoice search, state, aging, and business date in the URL', async ({
+  page,
+}) => {
+  await page.goto(`/invoices?asOfDate=${AS_OF_DATE}`);
+  await expect(page.getByRole('heading', { name: 'Invoices' })).toBeVisible();
+
+  await page
+    .getByRole('combobox', { name: 'Filter by invoice state' })
+    .selectOption('OPEN');
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('state'))
+    .toBe('OPEN');
+
+  await page
+    .getByRole('searchbox', { name: 'Search invoices and debtors' })
+    .fill('Metro');
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('search'))
+    .toBe('Metro');
+
+  await page
+    .getByRole('combobox', { name: 'Filter by aging' })
+    .selectOption('CURRENT');
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('agingBucket'))
+    .toBe('CURRENT');
+  expect(new URL(page.url()).searchParams.get('asOfDate')).toBe(AS_OF_DATE);
+
+  await expect(page.getByRole('link', { name: 'INV-2026-0090' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'INV-2026-0060' })).toHaveCount(
+    0,
+  );
+  await expect(page.getByText('Boundary Customer')).toHaveCount(0);
+});
+
+async function login(page: Page): Promise<void> {
+  const password = process.env.DEMO_SEED_PASSWORD;
+  if (!password) {
+    throw new Error(
+      'DEMO_SEED_PASSWORD is required for deterministic E2E login',
+    );
+  }
+
+  await page.goto('/login');
+  await page
+    .getByRole('textbox', { name: 'Work email' })
+    .fill(process.env.E2E_USER_EMAIL ?? 'owner@demo.arus.local');
+  await page.getByLabel('Password').fill(password);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+}

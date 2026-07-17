@@ -16,7 +16,7 @@ jobs:
   verify:
     name: Verify clean checkout
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     services:
       postgres:
@@ -77,6 +77,12 @@ jobs:
 
       - name: Build production artifacts
         run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run critical browser journeys
+        run: npm run test:e2e
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high

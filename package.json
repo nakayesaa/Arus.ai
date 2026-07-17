@@ -21,6 +21,7 @@
     "typecheck": "npm run db:generate && tsc --noEmit -p prisma/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:run": "npm run test:run --workspaces --if-present",
+    "test:e2e": "playwright test",
     "db:format": "prisma format",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.55.1",
     "@types/node": "20.19.37",
     "concurrently": "9.2.4",
     "dotenv": "17.4.2",
