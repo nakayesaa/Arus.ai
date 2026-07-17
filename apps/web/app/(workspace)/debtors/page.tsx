@@ -14,14 +14,13 @@ import {
   formatRupiah,
   initials,
 } from '@/lib/formatters';
-import { businessDateSchema } from '@/lib/receivables/contracts';
-import { listDebtors } from '@/lib/receivables/server';
 import {
-  buildUrl,
-  positiveInteger,
-  queryValue,
-  type PageSearchParams,
-} from '@/lib/url-query';
+  businessDateQuery,
+  listPage,
+  listSearch,
+} from '@/lib/receivables/page-query';
+import { listDebtors } from '@/lib/receivables/server';
+import { buildUrl, type PageSearchParams } from '@/lib/url-query';
 
 export const metadata: Metadata = { title: 'My Accounts' };
 
@@ -33,9 +32,9 @@ interface DebtorsPageProps {
 
 export default async function DebtorsPage({ searchParams }: DebtorsPageProps) {
   const rawSearchParams = await searchParams;
-  const search = boundedSearch(rawSearchParams);
-  const asOfDate = supportedBusinessDate(rawSearchParams);
-  const page = positiveInteger(queryValue(rawSearchParams, 'page'), 1, 100_000);
+  const search = listSearch(rawSearchParams);
+  const asOfDate = businessDateQuery(rawSearchParams);
+  const page = listPage(rawSearchParams);
   const result = await listDebtors({
     ...(search ? { search } : {}),
     ...(asOfDate ? { asOfDate } : {}),
@@ -182,19 +181,6 @@ export default async function DebtorsPage({ searchParams }: DebtorsPageProps) {
       )}
     </DataPage>
   );
-}
-
-function boundedSearch(searchParams: PageSearchParams): string | undefined {
-  const search = queryValue(searchParams, 'search');
-  return search && search.length <= 200 ? search : undefined;
-}
-
-function supportedBusinessDate(
-  searchParams: PageSearchParams,
-): string | undefined {
-  const value = queryValue(searchParams, 'asOfDate');
-  const result = businessDateSchema.safeParse(value);
-  return result.success ? result.data : undefined;
 }
 
 function hasValue(money: string): boolean {

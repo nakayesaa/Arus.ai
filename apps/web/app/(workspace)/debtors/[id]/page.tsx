@@ -13,13 +13,10 @@ import {
   formatRupiah,
   humanizeEnum,
 } from '@/lib/formatters';
-import {
-  businessDateSchema,
-  entityIdSchema,
-  type Invoice,
-} from '@/lib/receivables/contracts';
+import { entityIdSchema, type Invoice } from '@/lib/receivables/contracts';
+import { businessDateQuery } from '@/lib/receivables/page-query';
 import { getDebtor } from '@/lib/receivables/server';
-import { queryValue, type PageSearchParams } from '@/lib/url-query';
+import type { PageSearchParams } from '@/lib/url-query';
 
 export const metadata: Metadata = { title: 'Account details' };
 
@@ -38,7 +35,7 @@ export default async function DebtorDetailPage({
   const parsedId = entityIdSchema.safeParse(id);
   if (!parsedId.success) notFound();
 
-  const asOfDate = supportedBusinessDate(rawSearchParams);
+  const asOfDate = businessDateQuery(rawSearchParams);
   const result = await debtorOrNotFound(parsedId.data, asOfDate);
   const debtor = result.data;
   const visibleInvoices = debtor.invoices.slice(0, VISIBLE_INVOICE_LIMIT);
@@ -231,15 +228,6 @@ function invoiceStateTone(state: Invoice['state']) {
 
 function invoiceAgingLabel(invoice: Invoice): string {
   return invoice.state === 'PAID' ? 'Paid' : formatDuePosition(invoice.aging);
-}
-
-function supportedBusinessDate(
-  searchParams: PageSearchParams,
-): string | undefined {
-  const result = businessDateSchema.safeParse(
-    queryValue(searchParams, 'asOfDate'),
-  );
-  return result.success ? result.data : undefined;
 }
 
 async function debtorOrNotFound(id: string, asOfDate: string | undefined) {
