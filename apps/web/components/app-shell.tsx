@@ -3,10 +3,8 @@
 import {
   BadgeCheck,
   ChevronDown,
-  CircleDot,
   CreditCard,
   Ellipsis,
-  FileText,
   Inbox,
   Layers3,
   LogOut,
@@ -38,32 +36,6 @@ const workspaceNavigation = [
   { label: 'Customer Portfolios', href: '/invoices', icon: Layers3 },
 ] as const;
 
-const favorites = [
-  {
-    label: 'INV-2026-0418',
-    href: '/invoices/INV-2026-0418',
-    tone: 'critical',
-  },
-  {
-    label: 'Broken promises',
-    href: '/collection-queue?view=broken-promises',
-    tone: 'attention',
-  },
-  {
-    label: 'High-risk accounts',
-    href: '/debtors?view=high-risk',
-    tone: 'neutral',
-  },
-] as const;
-
-const history = [
-  { label: 'overdue-30-days.md', href: '/invoices' },
-  { label: 'broken-promises.md', href: '/collection-queue' },
-  { label: 'high-value-accounts.md', href: '/debtors' },
-  { label: 'weekly-collection-review.md', href: '/chat' },
-  { label: 'payment-allocation-check.md', href: '/payments' },
-] as const;
-
 interface AppShellProps {
   children: ReactNode;
   session: AuthSession;
@@ -75,9 +47,7 @@ export function AppShell({ children, session }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [workspaceOpen, setWorkspaceOpen] = useState(true);
-  const [favoritesOpen, setFavoritesOpen] = useState(true);
   const [moreOpen, setMoreOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
 
@@ -233,76 +203,6 @@ export function AppShell({ children, session }: AppShellProps) {
                     </Link>
                   </div>
                 </CollapsibleRegion>
-              </nav>
-            </CollapsibleRegion>
-          </div>
-
-          <div className="sidebar-section sidebar-favorites">
-            <button
-              className={`sidebar-group-toggle ${favoritesOpen ? 'sidebar-group-toggle-open' : ''}`}
-              type="button"
-              onClick={() => setFavoritesOpen((open) => !open)}
-              aria-expanded={favoritesOpen}
-              aria-controls="sidebar-favorites-navigation"
-            >
-              <span>Favorites</span>
-              <ChevronDown size={12} aria-hidden="true" />
-            </button>
-            <CollapsibleRegion
-              id="sidebar-favorites-navigation"
-              open={favoritesOpen}
-            >
-              <nav className="nav-list" aria-label="Favorite views">
-                {favorites.map(({ label, href, tone }) => {
-                  const active = pathname === href;
-
-                  return (
-                    <Link
-                      className={`nav-link favorite-link ${active ? 'active' : ''}`}
-                      href={href}
-                      key={href}
-                      aria-current={active ? 'page' : undefined}
-                    >
-                      <CircleDot
-                        className={`favorite-icon tone-${tone}`}
-                        size={14}
-                        strokeWidth={1.8}
-                        aria-hidden="true"
-                      />
-                      <span>{label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-            </CollapsibleRegion>
-          </div>
-
-          <div className="sidebar-section sidebar-history">
-            <button
-              className={`sidebar-group-toggle ${historyOpen ? 'sidebar-group-toggle-open' : ''}`}
-              type="button"
-              onClick={() => setHistoryOpen((open) => !open)}
-              aria-expanded={historyOpen}
-              aria-controls="sidebar-history-list"
-            >
-              <span>History</span>
-              <ChevronDown size={12} aria-hidden="true" />
-            </button>
-            <CollapsibleRegion id="sidebar-history-list" open={historyOpen}>
-              <nav
-                className="nav-list history-scroll"
-                aria-label="Markdown history"
-              >
-                {history.map(({ label, href }) => (
-                  <Link
-                    className="nav-link history-link"
-                    href={href}
-                    key={label}
-                  >
-                    <FileText size={14} strokeWidth={1.5} aria-hidden="true" />
-                    <span>{label}</span>
-                  </Link>
-                ))}
               </nav>
             </CollapsibleRegion>
           </div>
