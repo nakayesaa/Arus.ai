@@ -2564,6 +2564,34 @@ svg {
   gap: 10px;
 }
 
+.entity-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.entity-copy > a,
+.entity-copy > strong,
+.entity-copy > small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entity-copy > strong {
+  color: var(--text-soft);
+  font-weight: 570;
+}
+
+.entity-copy > small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.receivables-table {
+  min-width: 900px;
+}
+
 .entity-icon {
   display: grid;
   width: 21px;

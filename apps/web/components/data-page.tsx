@@ -43,7 +43,7 @@ export function DataPage({
           <p>{pageLabel}</p>
         </div>
 
-        {toolbar ? (
+        {toolbar !== undefined ? (
           <div className="data-actions">{toolbar}</div>
         ) : (
           <LegacyDataActions

@@ -11,7 +11,7 @@ export const agingBuckets = [
 ] as const;
 
 const moneySchema = z.string().regex(/^\d+\.\d{2}$/);
-const businessDateSchema = z.iso.date();
+export const businessDateSchema = z.iso.date();
 const timestampSchema = z.iso.datetime({ offset: true });
 const nullableText = (maximum: number) => z.string().max(maximum).nullable();
 const countSchema = z.number().int().nonnegative();
