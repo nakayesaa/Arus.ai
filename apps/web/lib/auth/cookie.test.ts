@@ -17,10 +17,15 @@ describe('sessionCookieHeader', () => {
       sessionCookieHeader(
         'arus_session=development; __Host-arus_session=production',
         'production',
+        'https://app.arus.example',
       ),
     ).toBe('__Host-arus_session=production');
     expect(
-      sessionCookieHeader('arus_session=development', 'production'),
+      sessionCookieHeader(
+        'arus_session=development',
+        'production',
+        'https://app.arus.example',
+      ),
     ).toBeNull();
   });
 
