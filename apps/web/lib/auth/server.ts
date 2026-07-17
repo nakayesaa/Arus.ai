@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
+import { sessionCookieHeader } from './cookie';
 import type { AuthSession, DataEnvelope } from './types';
 
 export const getServerSession = cache(async (): Promise<AuthSession | null> => {
@@ -25,27 +26,6 @@ export const getServerSession = cache(async (): Promise<AuthSession | null> => {
   const body = (await response.json()) as DataEnvelope<AuthSession>;
   return body.data;
 });
-
-function sessionCookieHeader(cookieHeader: string | null): string | null {
-  if (!cookieHeader) {
-    return null;
-  }
-
-  const expectedName =
-    process.env.NODE_ENV === 'production'
-      ? '__Host-arus_session'
-      : 'arus_session';
-
-  for (const segment of cookieHeader.split(';')) {
-    const cookie = segment.trim();
-
-    if (cookie.startsWith(`${expectedName}=`)) {
-      return cookie;
-    }
-  }
-
-  return null;
-}
 
 export async function requireServerSession(): Promise<AuthSession> {
   const session = await getServerSession();

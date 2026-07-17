@@ -1,28 +1,25 @@
-export interface ApiErrorBody {
-  error: {
-    code: string;
-    message: string;
-    fields?: Record<string, string>;
-    requestId: string;
-  };
-}
+import { z } from 'zod';
 
-export class ApiClientError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly body: ApiErrorBody | undefined,
-  ) {
-    super(message);
-    this.name = 'ApiClientError';
-  }
-}
+import { ApiClientError, ApiContractError, type ApiErrorBody } from './errors';
+import { fetchWithTimeout } from './fetch';
+
+export { ApiClientError } from './errors';
+
+const apiErrorBodySchema = z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    fields: z.record(z.string(), z.string()).optional(),
+    requestId: z.string(),
+  }),
+});
 
 export async function apiRequest<T>(
   path: `/${string}`,
   init: RequestInit = {},
+  responseSchema?: z.ZodType<T>,
 ): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetchWithTimeout(path, path, {
     ...init,
     credentials: 'include',
     headers: {
@@ -32,8 +29,7 @@ export async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => undefined)) as
-      ApiErrorBody | undefined;
+    const body = await readApiError(response);
 
     throw new ApiClientError(
       body?.error.message ?? 'API request failed',
@@ -46,5 +42,18 @@ export async function apiRequest<T>(
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  const body: unknown = await response.json();
+  if (!responseSchema) return body as T;
+
+  const parsed = responseSchema.safeParse(body);
+  if (!parsed.success) throw new ApiContractError(path);
+  return parsed.data;
+}
+
+async function readApiError(
+  response: Response,
+): Promise<ApiErrorBody | undefined> {
+  const body: unknown = await response.json().catch(() => undefined);
+  const parsed = apiErrorBodySchema.safeParse(body);
+  return parsed.success ? parsed.data : undefined;
 }
