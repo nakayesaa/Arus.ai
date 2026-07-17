@@ -31,6 +31,15 @@ export function buildUrl(
   for (const [key, value] of Object.entries(current)) {
     if (typeof value === 'string' && value.trim()) query.set(key, value);
   }
+  return urlWithChanges(path, query.toString(), changes);
+}
+
+export function urlWithChanges(
+  path: string,
+  currentQuery: string,
+  changes: Record<string, string | number | null | undefined>,
+): string {
+  const query = new URLSearchParams(currentQuery);
   for (const [key, value] of Object.entries(changes)) {
     if (value === null || value === undefined || value === '')
       query.delete(key);

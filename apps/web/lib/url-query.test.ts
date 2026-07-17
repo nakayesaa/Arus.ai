@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildUrl, positiveInteger, queryValue } from './url-query';
+import {
+  buildUrl,
+  positiveInteger,
+  queryValue,
+  urlWithChanges,
+} from './url-query';
 
 describe('URL query utilities', () => {
   it('reads only one normalized scalar value', () => {
@@ -23,5 +28,15 @@ describe('URL query utilities', () => {
         { page: 1, state: 'OPEN', search: null },
       ),
     ).toBe('/invoices?page=1&state=OPEN');
+  });
+
+  it('updates a browser query while removing reset values', () => {
+    expect(
+      urlWithChanges('/invoices', 'search=Acme&page=4&state=OPEN', {
+        search: 'Nusantara',
+        page: null,
+        state: null,
+      }),
+    ).toBe('/invoices?search=Nusantara');
   });
 });

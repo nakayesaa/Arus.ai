@@ -2292,6 +2292,88 @@ svg {
   flex: 0 0 auto;
 }
 
+.dataset-search {
+  display: flex;
+  width: 188px;
+  height: 33px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--muted);
+  background: var(--surface);
+}
+
+.dataset-search:focus-within {
+  border-color: #55595b;
+  color: var(--text-soft);
+}
+
+.dataset-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+}
+
+.dataset-search input::placeholder {
+  color: #696c6d;
+}
+
+.dataset-search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.dataset-search button {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+}
+
+.dataset-search button:hover {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+.dataset-select {
+  position: relative;
+}
+
+.dataset-select select {
+  height: 33px;
+  max-width: 172px;
+  padding: 0 28px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  outline: 0;
+  color: var(--text-soft);
+  background: var(--surface);
+  font: inherit;
+  font-size: 12px;
+}
+
+.dataset-select select:hover,
+.dataset-select select:focus-visible {
+  border-color: #55595b;
+  background: var(--surface-raised);
+}
+
+.dataset-select select:disabled {
+  opacity: 0.55;
+}
+
 .data-actions .control-button,
 .data-actions .primary-button {
   font-size: 12px;
@@ -3445,6 +3527,11 @@ svg {
 
   .data-search-control {
     min-width: 142px;
+  }
+
+  .dataset-search {
+    width: 172px;
+    min-width: 172px;
   }
 
   .data-actions .wide-control {
