@@ -2739,6 +2739,10 @@ svg {
   min-width: 720px;
 }
 
+.allocation-table {
+  min-width: 920px;
+}
+
 .record-properties {
   margin: 0;
 }
@@ -2765,6 +2769,32 @@ svg {
   overflow-wrap: anywhere;
   color: var(--text-soft);
   text-align: right;
+}
+
+.record-properties a {
+  color: var(--blue);
+}
+
+.record-properties a:hover {
+  text-decoration: underline;
+}
+
+.record-note {
+  padding: 13px 14px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.record-note span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.record-note p {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.55;
 }
 
 .record-loading-line,

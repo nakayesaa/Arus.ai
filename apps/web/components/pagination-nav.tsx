@@ -9,6 +9,7 @@ interface PaginationNavProps {
   page: number;
   totalPages: number;
   total: number;
+  pageKey?: string;
 }
 
 export function PaginationNav({
@@ -17,6 +18,7 @@ export function PaginationNav({
   page,
   totalPages,
   total,
+  pageKey = 'page',
 }: PaginationNavProps) {
   if (totalPages <= 1) {
     return (
@@ -35,7 +37,7 @@ export function PaginationNav({
         {page > 1 ? (
           <Link
             className="control-button icon-control"
-            href={buildUrl(path, searchParams, { page: page - 1 })}
+            href={buildUrl(path, searchParams, { [pageKey]: page - 1 })}
             aria-label="Previous page"
           >
             <ChevronLeft size={15} />
@@ -51,7 +53,7 @@ export function PaginationNav({
         {page < totalPages ? (
           <Link
             className="control-button icon-control"
-            href={buildUrl(path, searchParams, { page: page + 1 })}
+            href={buildUrl(path, searchParams, { [pageKey]: page + 1 })}
             aria-label="Next page"
           >
             <ChevronRight size={15} />
