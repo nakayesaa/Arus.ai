@@ -2592,6 +2592,202 @@ svg {
   min-width: 900px;
 }
 
+.record-page {
+  min-width: 0;
+  min-height: 100%;
+}
+
+.record-topbar {
+  display: flex;
+  min-height: 112px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.sidebar-collapsed .record-topbar {
+  padding-left: 55px;
+}
+
+.record-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 11px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.record-back-link:hover {
+  color: var(--text);
+}
+
+.record-title-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.record-title-line h1 {
+  font-size: 18px;
+  font-weight: 680;
+  letter-spacing: -0.018em;
+}
+
+.record-topbar p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.record-content {
+  padding: 20px 24px 36px;
+}
+
+.record-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.record-metrics > div {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  padding: 15px 16px;
+  border-right: 1px solid var(--border-soft);
+}
+
+.record-metrics > div:last-child {
+  border-right: 0;
+}
+
+.record-metrics span,
+.record-metrics strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-metrics span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.record-metrics strong {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.record-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.record-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.record-panel-header {
+  display: flex;
+  min-height: 65px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.record-panel-header h2 {
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.record-panel-header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.record-table-wrap {
+  overflow: auto;
+}
+
+.record-table {
+  min-width: 720px;
+}
+
+.record-properties {
+  margin: 0;
+}
+
+.record-properties > div {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 11px;
+}
+
+.record-properties > div:last-child {
+  border-bottom: 0;
+}
+
+.record-properties dt {
+  color: var(--muted);
+}
+
+.record-properties dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-soft);
+  text-align: right;
+}
+
+.record-loading-line,
+.record-loading-title,
+.record-metrics-loading span {
+  display: block;
+  border-radius: 4px;
+  background: var(--surface-raised);
+  animation: skeleton-pulse 1.4s ease-in-out infinite alternate;
+}
+
+.record-loading-line {
+  width: 118px;
+  height: 8px;
+  margin: 8px 0;
+}
+
+.record-loading-title {
+  width: 240px;
+  height: 18px;
+  margin: 12px 0;
+}
+
+.record-metrics-loading {
+  height: 77px;
+  padding: 18px;
+  gap: 18px;
+}
+
+.record-metrics-loading span {
+  height: 10px;
+}
+
 .entity-icon {
   display: grid;
   width: 21px;
@@ -3316,8 +3512,14 @@ svg {
   .page-header,
   .sidebar-collapsed .page-header,
   .data-topbar,
-  .sidebar-collapsed .data-topbar {
+  .sidebar-collapsed .data-topbar,
+  .record-topbar,
+  .sidebar-collapsed .record-topbar {
     padding-left: 55px;
+  }
+
+  .record-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .panel-span-4,
@@ -3564,6 +3766,26 @@ svg {
 
   .data-actions .wide-control {
     display: none;
+  }
+
+  .record-topbar {
+    align-items: flex-start;
+  }
+
+  .record-content {
+    padding: 16px;
+  }
+
+  .record-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .record-metrics > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .record-metrics > div:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border-soft);
   }
 
   .content-grid {

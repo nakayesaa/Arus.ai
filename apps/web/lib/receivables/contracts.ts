@@ -18,6 +18,7 @@ const countSchema = z.number().int().nonnegative();
 
 export const invoiceStateSchema = z.enum(invoiceStates);
 export const agingBucketSchema = z.enum(agingBuckets);
+export const entityIdSchema = z.uuid();
 
 const paginationSchema = z.object({
   page: z.number().int().positive(),
@@ -38,7 +39,7 @@ const debtorSummarySchema = z.object({
 });
 
 const debtorSchema = z.object({
-  id: z.uuid(),
+  id: entityIdSchema,
   code: nullableText(50),
   name: z.string().min(1).max(200),
   contactName: nullableText(200),
@@ -56,9 +57,9 @@ const invoiceAgingSchema = z.object({
 });
 
 export const invoiceSchema = z.object({
-  id: z.uuid(),
+  id: entityIdSchema,
   debtor: z.object({
-    id: z.uuid(),
+    id: entityIdSchema,
     code: nullableText(50),
     name: z.string().min(1).max(200),
   }),

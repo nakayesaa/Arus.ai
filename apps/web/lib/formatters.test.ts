@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatBusinessDate,
   formatCompactNumber,
+  formatDuePosition,
   formatRupiah,
   humanizeEnum,
   initials,
@@ -40,5 +41,17 @@ describe('display formatters', () => {
     expect(initials('PT Sinar Abadi Retail')).toBe('PR');
     expect(initials('')).toBe('—');
     expect(humanizeEnum('PARTIALLY_PAID')).toBe('Partially paid');
+  });
+
+  it('describes exact invoice due positions', () => {
+    expect(formatDuePosition({ daysToDue: 1, daysOverdue: 0 })).toBe(
+      'Due tomorrow',
+    );
+    expect(formatDuePosition({ daysToDue: -1, daysOverdue: 1 })).toBe(
+      '1 day overdue',
+    );
+    expect(formatDuePosition({ daysToDue: -46, daysOverdue: 46 })).toBe(
+      '46 days overdue',
+    );
   });
 });
