@@ -22,7 +22,7 @@ import {
 import { listDebtors } from '@/lib/receivables/server';
 import { buildUrl, type PageSearchParams } from '@/lib/url-query';
 
-export const metadata: Metadata = { title: 'My Accounts' };
+export const metadata: Metadata = { title: 'Customers' };
 
 const PAGE_SIZE = 25;
 
@@ -57,7 +57,7 @@ export default async function DebtorsPage({ searchParams }: DebtorsPageProps) {
 
   return (
     <DataPage
-      title="My Accounts"
+      title="Customers"
       recordLabel={`${formatCompactNumber(result.pagination.total)} ${result.pagination.total === 1 ? 'company' : 'companies'}`}
       pageLabel={pageLabel}
       toolbar={

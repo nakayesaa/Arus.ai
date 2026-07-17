@@ -4,8 +4,8 @@ import { TableSkeleton } from '@/components/data-state';
 export default function DebtorsLoading() {
   return (
     <DataPage
-      title="My Accounts"
-      recordLabel="Loading accounts"
+      title="Customers"
+      recordLabel="Loading customers"
       pageLabel="Fetching current receivables"
       toolbar={null}
     >

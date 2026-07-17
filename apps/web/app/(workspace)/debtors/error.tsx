@@ -10,8 +10,8 @@ interface DebtorsErrorProps {
 export default function DebtorsError({ reset }: DebtorsErrorProps) {
   return (
     <DataRouteError
-      title="My Accounts"
-      description="We couldn’t load debtor accounts. Your data was not changed."
+      title="Customers"
+      description="We couldn’t load customers. Your data was not changed."
       reset={reset}
     />
   );

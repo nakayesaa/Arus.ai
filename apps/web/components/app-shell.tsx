@@ -1,12 +1,13 @@
 'use client';
 
 import {
-  BadgeCheck,
+  Building2,
   ChevronDown,
   CreditCard,
   Ellipsis,
+  FileText,
   Inbox,
-  Layers3,
+  ListTodo,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -14,7 +15,6 @@ import {
   SquarePen,
   Target,
   Upload,
-  UserRound,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -27,13 +27,13 @@ import type { AuthSession } from '@/lib/auth/types';
 
 const primaryNavigation = [
   { label: 'Collections Inbox', href: '/dashboard', icon: Inbox },
-  { label: 'My Accounts', href: '/debtors', icon: UserRound },
-  { label: 'Approval Queue', href: '/collection-queue', icon: BadgeCheck },
+  { label: 'Customers', href: '/debtors', icon: Building2 },
+  { label: 'Collection Queue', href: '/collection-queue', icon: ListTodo },
 ] as const;
 
 const workspaceNavigation = [
   { label: 'Collection Strategies', href: '/reports', icon: Target },
-  { label: 'Customer Portfolios', href: '/invoices', icon: Layers3 },
+  { label: 'Invoices', href: '/invoices', icon: FileText },
 ] as const;
 
 interface AppShellProps {

@@ -18,7 +18,7 @@ import { businessDateQuery } from '@/lib/receivables/page-query';
 import { getDebtor } from '@/lib/receivables/server';
 import type { PageSearchParams } from '@/lib/url-query';
 
-export const metadata: Metadata = { title: 'Account details' };
+export const metadata: Metadata = { title: 'Customer details' };
 
 const VISIBLE_INVOICE_LIMIT = 50;
 
@@ -47,7 +47,7 @@ export default async function DebtorDetailPage({
         <div>
           <Link className="record-back-link" href="/debtors">
             <ArrowLeft size={14} aria-hidden="true" />
-            Accounts
+            Customers
           </Link>
           <div className="record-title-line">
             <h1>{debtor.name}</h1>

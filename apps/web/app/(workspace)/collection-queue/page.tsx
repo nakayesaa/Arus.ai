@@ -4,7 +4,7 @@ import { MessageSquareText } from 'lucide-react';
 import { DataPage } from '@/components/data-page';
 import { Pill, RowCheckbox, Score } from '@/components/table-ui';
 
-export const metadata: Metadata = { title: 'Approval Queue' };
+export const metadata: Metadata = { title: 'Collection Queue' };
 
 const queue = [
   [
@@ -110,7 +110,7 @@ function triggerTone(trigger: string) {
 export default function CollectionQueuePage() {
   return (
     <DataPage
-      title="Approval Queue"
+      title="Collection Queue"
       recordLabel="24 actions awaiting human review"
       pageLabel="Sorted by risk and due time"
       primaryLabel="Review selected"
