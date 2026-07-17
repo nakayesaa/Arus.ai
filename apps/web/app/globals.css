@@ -2592,6 +2592,16 @@ svg {
   min-width: 900px;
 }
 
+.invoice-table {
+  min-width: 1320px;
+}
+
+.account-filter-control {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .record-page {
   min-width: 0;
   min-height: 100%;

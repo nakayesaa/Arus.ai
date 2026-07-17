@@ -1,207 +1,275 @@
+import { Upload, X } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 import { DataPage } from '@/components/data-page';
-import { Pill, RowCheckbox } from '@/components/table-ui';
+import { DatasetSearch } from '@/components/dataset-search';
+import { DatasetSelect } from '@/components/dataset-select';
+import { DataState } from '@/components/data-state';
+import { PaginationNav } from '@/components/pagination-nav';
+import { Pill } from '@/components/table-ui';
+import {
+  formatBusinessDate,
+  formatCompactNumber,
+  formatDuePosition,
+  formatRupiah,
+  humanizeEnum,
+} from '@/lib/formatters';
+import {
+  agingBuckets,
+  invoiceStates,
+  type Invoice,
+} from '@/lib/receivables/contracts';
+import {
+  businessDateQuery,
+  entityIdQuery,
+  listPage,
+  listSearch,
+  supportedQueryValue,
+} from '@/lib/receivables/page-query';
+import { listInvoices } from '@/lib/receivables/server';
+import { buildUrl, type PageSearchParams } from '@/lib/url-query';
 
 export const metadata: Metadata = { title: 'Invoices' };
 
-const invoices = [
-  [
-    'INV-2026-081',
-    'PT Nusantara Distribusi',
-    '12 Jul 2026',
-    'Rp 428.000.000',
-    'Partially paid',
-    '1–7 days',
-    'Tomorrow',
-    'Alex',
-  ],
-  [
-    'INV-2026-074',
-    'CV Karya Prima',
-    '05 Jul 2026',
-    'Rp 315.000.000',
-    'Open',
-    '8–30 days',
-    'Broken promise',
-    'Maya',
-  ],
-  [
-    'INV-2026-069',
-    'PT Sinar Abadi Retail',
-    '28 Jun 2026',
-    'Rp 284.500.000',
-    'Open',
-    '8–30 days',
-    'Today, 14:00',
-    'Alex',
-  ],
-  [
-    'INV-2026-052',
-    'PT Metro Logistik',
-    '14 Jun 2026',
-    'Rp 241.750.000',
-    'Disputed',
-    '31–60 days',
-    'Awaiting reply',
-    'Dimas',
-  ],
-  [
-    'INV-2026-047',
-    'UD Sentosa Makmur',
-    '08 Jun 2026',
-    'Rp 176.000.000',
-    'Partially paid',
-    '31–60 days',
-    '16 Jul 2026',
-    'Maya',
-  ],
-  [
-    'INV-2026-031',
-    'PT Cipta Pangan Indonesia',
-    '29 May 2026',
-    'Rp 148.250.000',
-    'Open',
-    '31–60 days',
-    'Broken promise',
-    'Alex',
-  ],
-  [
-    'INV-2026-022',
-    'CV Berkat Bersama',
-    '11 May 2026',
-    'Rp 96.800.000',
-    'Open',
-    '61–90 days',
-    'Today, 16:00',
-    'Dimas',
-  ],
-  [
-    'INV-2026-014',
-    'PT Arta Medika',
-    '20 Apr 2026',
-    'Rp 82.500.000',
-    'Disputed',
-    '90+ days',
-    'Legal review',
-    'Maya',
-  ],
-  [
-    'INV-2026-008',
-    'PT Prima Teknologi',
-    '04 Apr 2026',
-    'Rp 67.000.000',
-    'Open',
-    '90+ days',
-    '17 Jul 2026',
-    'Alex',
-  ],
+const PAGE_SIZE = 25;
+const stateOptions = [
+  { value: '', label: 'All states' },
+  { value: 'OPEN', label: 'Open' },
+  { value: 'PARTIALLY_PAID', label: 'Partially paid' },
+  { value: 'PAID', label: 'Paid' },
+] as const;
+const agingOptions = [
+  { value: '', label: 'All aging' },
+  { value: 'CURRENT', label: 'Current' },
+  { value: 'OVERDUE_1_7', label: '1–7 days overdue' },
+  { value: 'OVERDUE_8_30', label: '8–30 days overdue' },
+  { value: 'OVERDUE_31_60', label: '31–60 days overdue' },
+  { value: 'OVERDUE_61_90', label: '61–90 days overdue' },
+  { value: 'OVERDUE_90_PLUS', label: '90+ days overdue' },
 ] as const;
 
-function statusTone(status: string) {
-  if (status === 'Partially paid') return 'blue' as const;
-  if (status === 'Disputed') return 'violet' as const;
-  return 'neutral' as const;
+interface InvoicesPageProps {
+  searchParams: Promise<PageSearchParams>;
 }
 
-function agingTone(aging: string) {
-  if (aging === '1–7 days') return 'amber' as const;
-  if (aging === '8–30 days') return 'amber' as const;
-  return 'red' as const;
-}
+export default async function InvoicesPage({
+  searchParams,
+}: InvoicesPageProps) {
+  const rawSearchParams = await searchParams;
+  const search = listSearch(rawSearchParams);
+  const asOfDate = businessDateQuery(rawSearchParams);
+  const debtorId = entityIdQuery(rawSearchParams, 'debtorId');
+  const state = supportedQueryValue(rawSearchParams, 'state', invoiceStates);
+  const agingBucket = supportedQueryValue(
+    rawSearchParams,
+    'agingBucket',
+    agingBuckets,
+  );
+  const page = listPage(rawSearchParams);
+  const result = await listInvoices({
+    ...(search ? { search } : {}),
+    ...(asOfDate ? { asOfDate } : {}),
+    ...(debtorId ? { debtorId } : {}),
+    ...(state ? { state } : {}),
+    ...(agingBucket ? { agingBucket } : {}),
+    page,
+    limit: PAGE_SIZE,
+  });
 
-export default function InvoicesPage() {
+  if (result.pagination.totalPages > 0 && page > result.pagination.totalPages) {
+    redirect(
+      buildUrl('/invoices', rawSearchParams, {
+        page: result.pagination.totalPages,
+      }),
+    );
+  }
+
+  const hasFilters = Boolean(search || debtorId || state || agingBucket);
+  const clearFiltersHref = buildUrl('/invoices', rawSearchParams, {
+    search: null,
+    debtorId: null,
+    state: null,
+    agingBucket: null,
+    page: null,
+  });
+  const pageLabel =
+    result.pagination.totalPages > 0
+      ? `As of ${formatBusinessDate(result.meta.asOfDate)} · Page ${result.pagination.page} of ${result.pagination.totalPages}`
+      : `As of ${formatBusinessDate(result.meta.asOfDate)}`;
+
   return (
     <DataPage
       title="Invoices"
-      recordLabel="80 records · 7 aging fields"
-      pageLabel="Page 1 of 4"
-      searchPlaceholder="Search invoices"
-      primaryLabel="Import CSV"
+      recordLabel={`${formatCompactNumber(result.pagination.total)} ${result.pagination.total === 1 ? 'invoice' : 'invoices'}`}
+      pageLabel={pageLabel}
+      toolbar={
+        <>
+          <DatasetSearch
+            value={search ?? ''}
+            placeholder="Search invoices"
+            label="Search invoices and debtors"
+          />
+          <DatasetSelect
+            label="Filter by invoice state"
+            queryKey="state"
+            value={state ?? ''}
+            options={stateOptions}
+          />
+          <DatasetSelect
+            label="Filter by aging"
+            queryKey="agingBucket"
+            value={agingBucket ?? ''}
+            options={agingOptions}
+          />
+          {debtorId && (
+            <Link
+              className="control-button account-filter-control"
+              href={buildUrl('/invoices', rawSearchParams, {
+                debtorId: null,
+                page: null,
+              })}
+            >
+              Account filter
+              <X size={13} aria-hidden="true" />
+            </Link>
+          )}
+          <Link className="primary-button" href="/import">
+            <Upload size={14} aria-hidden="true" />
+            Import CSV
+          </Link>
+        </>
+      }
+      footer={
+        <PaginationNav
+          path="/invoices"
+          searchParams={rawSearchParams}
+          page={result.pagination.page}
+          totalPages={result.pagination.totalPages}
+          total={result.pagination.total}
+        />
+      }
     >
-      <table className="data-table">
-        <colgroup>
-          <col style={{ width: 38 }} />
-          <col style={{ width: 135 }} />
-          <col style={{ width: 205 }} />
-          <col style={{ width: 105 }} />
-          <col style={{ width: 130 }} />
-          <col style={{ width: 112 }} />
-          <col style={{ width: 102 }} />
-          <col style={{ width: 125 }} />
-          <col style={{ width: 90 }} />
-        </colgroup>
-        <thead>
-          <tr>
-            <th className="check-column">
-              <RowCheckbox label="Select all invoices" />
-            </th>
-            <th>Invoice</th>
-            <th>Debtor</th>
-            <th>Due date</th>
-            <th>Outstanding</th>
-            <th>Status</th>
-            <th>Aging</th>
-            <th>Next follow-up</th>
-            <th>Owner</th>
-          </tr>
-        </thead>
-        <tbody>
-          {invoices.map(
-            ([
-              invoice,
-              debtor,
-              due,
-              amount,
-              status,
-              aging,
-              followUp,
-              owner,
-            ]) => (
-              <tr key={invoice}>
-                <td className="check-column">
-                  <RowCheckbox label={`Select ${invoice}`} />
-                </td>
+      {result.data.length > 0 ? (
+        <table className="data-table invoice-table">
+          <colgroup>
+            <col style={{ width: 160 }} />
+            <col style={{ width: 225 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 155 }} />
+            <col style={{ width: 155 }} />
+            <col style={{ width: 155 }} />
+            <col style={{ width: 135 }} />
+            <col style={{ width: 145 }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Debtor</th>
+              <th>Invoice date</th>
+              <th>Due date</th>
+              <th>Original</th>
+              <th>Allocated</th>
+              <th>Outstanding</th>
+              <th>State</th>
+              <th>Aging</th>
+            </tr>
+          </thead>
+          <tbody>
+            {result.data.map((invoice) => (
+              <tr key={invoice.id}>
                 <td>
-                  <Link className="blue-link" href={`/invoices/${invoice}`}>
-                    {invoice}
+                  <Link
+                    className="blue-link primary-cell"
+                    href={`/invoices/${invoice.id}?asOfDate=${result.meta.asOfDate}`}
+                  >
+                    {invoice.invoiceNumber}
                   </Link>
                 </td>
                 <td>
-                  <span className="entity-cell">
-                    <span className="entity-icon">CO</span>
-                    <strong>{debtor}</strong>
+                  <span className="entity-copy">
+                    <Link
+                      className="primary-cell"
+                      href={`/debtors/${invoice.debtor.id}?asOfDate=${result.meta.asOfDate}`}
+                    >
+                      {invoice.debtor.name}
+                    </Link>
+                    <small>{invoice.debtor.code ?? 'No account code'}</small>
                   </span>
                 </td>
-                <td className="muted-cell">{due}</td>
-                <td className="money-cell">{amount}</td>
-                <td>
-                  <Pill tone={statusTone(status)}>{status}</Pill>
+                <td className="muted-cell">
+                  {formatBusinessDate(invoice.invoiceDate)}
+                </td>
+                <td className="muted-cell">
+                  {formatBusinessDate(invoice.dueDate)}
+                </td>
+                <td className="money-cell">
+                  {formatRupiah(invoice.originalAmount)}
+                </td>
+                <td className="money-cell">
+                  {formatRupiah(invoice.allocatedAmount)}
+                </td>
+                <td className="money-cell">
+                  {formatRupiah(invoice.outstandingAmount)}
                 </td>
                 <td>
-                  <Pill tone={agingTone(aging)}>{aging}</Pill>
-                </td>
-                <td
-                  className={
-                    followUp === 'Broken promise' ? 'blue-link' : 'muted-cell'
-                  }
-                >
-                  {followUp}
+                  <Pill tone={invoiceStateTone(invoice.state)}>
+                    {humanizeEnum(invoice.state)}
+                  </Pill>
                 </td>
                 <td>
-                  <span className="entity-cell">
-                    <span className="avatar avatar-alex">
-                      {owner.slice(0, 2).toUpperCase()}
-                    </span>
-                    {owner}
-                  </span>
+                  <Pill tone={invoiceAgingTone(invoice)}>
+                    {invoiceAgingLabel(invoice)}
+                  </Pill>
                 </td>
               </tr>
-            ),
-          )}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <DataState
+          title={
+            hasFilters ? 'No invoices match these filters' : 'No invoices yet'
+          }
+          description={
+            hasFilters
+              ? 'Adjust the search, state, aging, or account filter to broaden the result.'
+              : 'Import a validated CSV file to populate the invoice ledger.'
+          }
+          action={
+            hasFilters ? (
+              <Link className="control-button" href={clearFiltersHref}>
+                Clear filters
+              </Link>
+            ) : (
+              <Link className="primary-button" href="/import">
+                Import CSV
+              </Link>
+            )
+          }
+        />
+      )}
     </DataPage>
   );
+}
+
+function invoiceStateTone(state: Invoice['state']) {
+  if (state === 'PAID') return 'green' as const;
+  if (state === 'PARTIALLY_PAID') return 'blue' as const;
+  return 'neutral' as const;
+}
+
+function invoiceAgingTone(invoice: Invoice) {
+  if (invoice.state === 'PAID') return 'green' as const;
+  if (invoice.aging.flags.includes('DUE_SOON')) return 'amber' as const;
+  if (!invoice.aging.flags.includes('OVERDUE')) return 'neutral' as const;
+  return ['OVERDUE_1_7', 'OVERDUE_8_30'].includes(invoice.aging.bucket)
+    ? ('amber' as const)
+    : ('red' as const);
+}
+
+function invoiceAgingLabel(invoice: Invoice): string {
+  return invoice.state === 'PAID' ? 'Paid' : formatDuePosition(invoice.aging);
 }
