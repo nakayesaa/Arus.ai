@@ -1,0 +1,2 @@
+customer_code,customer_name,invoice_number,invoice_date,due_date,original_amount,paid_amount
+CUST-PARTIAL,PT Angsuran Sejahtera,INV-PARTIAL-001,2026-06-15,2026-07-15,2500000,750000

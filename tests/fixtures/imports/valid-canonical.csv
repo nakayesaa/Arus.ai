@@ -1,0 +1,2 @@
+customer_code,customer_name,contact_name,phone_number,email,invoice_number,invoice_date,due_date,original_amount,paid_amount,outstanding_amount,salesperson,branch,notes
+CUST-100,PT Cahaya Nusantara,Siti Aminah,+62 812 3456 7890,FINANCE@CAHAYA.EXAMPLE,INV-2026-100,2026-07-01,2026-07-31,1500000,0,1500000,Budi,Jakarta,July opening invoice

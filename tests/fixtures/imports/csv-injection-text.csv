@@ -1,0 +1,2 @@
+customer_name,invoice_number,invoice_date,due_date,original_amount,notes
+PT Formula Aman,INV-INJECTION-001,2026-07-01,2026-07-31,1000000,"=HYPERLINK(""https://malicious.invalid"",""click"")"

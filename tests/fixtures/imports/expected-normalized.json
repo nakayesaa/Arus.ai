@@ -1,0 +1,58 @@
+{
+  "valid-canonical.csv": [
+    {
+      "rowNumber": 2,
+      "customerCode": "CUST-100",
+      "normalizedCustomerCode": "cust-100",
+      "customerName": "PT Cahaya Nusantara",
+      "normalizedCustomerName": "pt cahaya nusantara",
+      "email": "finance@cahaya.example",
+      "invoiceNumber": "INV-2026-100",
+      "normalizedInvoiceNumber": "inv-2026-100",
+      "invoiceDate": "2026-07-01",
+      "dueDate": "2026-07-31",
+      "originalAmount": "1500000.00",
+      "paidAmount": "0.00",
+      "declaredOutstandingAmount": "1500000.00",
+      "calculatedOutstandingAmount": "1500000.00"
+    }
+  ],
+  "valid-indonesian-amounts.csv": [
+    {
+      "rowNumber": 2,
+      "invoiceNumber": "INV-IDR-001",
+      "invoiceDate": "2026-07-01",
+      "dueDate": "2026-07-31",
+      "originalAmount": "1500000.50",
+      "paidAmount": "500000.25",
+      "declaredOutstandingAmount": "1000000.25",
+      "calculatedOutstandingAmount": "1000000.25"
+    },
+    {
+      "rowNumber": 3,
+      "invoiceNumber": "INV-IDR-002",
+      "invoiceDate": "2026-07-02",
+      "dueDate": "2026-08-01",
+      "originalAmount": "1500000.50",
+      "paidAmount": "0.00",
+      "declaredOutstandingAmount": "1500000.50",
+      "calculatedOutstandingAmount": "1500000.50"
+    }
+  ],
+  "partial-paid.csv": [
+    {
+      "rowNumber": 2,
+      "invoiceNumber": "INV-PARTIAL-001",
+      "originalAmount": "2500000.00",
+      "paidAmount": "750000.00",
+      "declaredOutstandingAmount": null,
+      "calculatedOutstandingAmount": "1750000.00"
+    }
+  ],
+  "csv-injection-text.csv": [
+    {
+      "rowNumber": 2,
+      "notes": "=HYPERLINK(\"https://malicious.invalid\",\"click\")"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+customer_name,invoice_number,invoice_date,due_date,original_amount,paid_amount,outstanding_amount
+PT Selisih,INV-MISMATCH-001,2026-07-01,2026-07-31,1000000,250000,800000
