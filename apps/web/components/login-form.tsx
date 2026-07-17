@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { FormEvent } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ApiClientError } from '@/lib/api-client/http';
 import { login } from '@/lib/auth/client';
@@ -13,6 +13,9 @@ export function LoginForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => setHydrated(true), []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,7 +41,7 @@ export function LoginForm() {
   }
 
   return (
-    <form className="login-form" onSubmit={handleSubmit}>
+    <form className="login-form" method="post" onSubmit={handleSubmit}>
       <label className="field">
         Work email
         <input
@@ -78,7 +81,7 @@ export function LoginForm() {
       <button
         className="button button-primary login-submit"
         type="submit"
-        disabled={pending}
+        disabled={!hydrated || pending}
       >
         {pending ? 'Signing in…' : 'Sign in'}
         {!pending && <ArrowRight size={16} aria-hidden="true" />}
