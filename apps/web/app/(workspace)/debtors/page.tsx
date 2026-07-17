@@ -84,7 +84,7 @@ export default async function DebtorsPage({ searchParams }: DebtorsPageProps) {
       }
     >
       {result.data.length > 0 ? (
-        <table className="data-table receivables-table">
+        <table className="data-table aligned-data-table receivables-table">
           <colgroup>
             <col style={{ width: 270 }} />
             <col style={{ width: 240 }} />

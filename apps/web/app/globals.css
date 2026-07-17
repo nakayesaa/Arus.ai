@@ -2232,8 +2232,14 @@ svg {
 
 /* Dense list pages */
 .data-page {
+  --data-content-start: 24px;
+
   min-width: 0;
   min-height: 100%;
+}
+
+.sidebar-collapsed .data-page {
+  --data-content-start: 56px;
 }
 
 .data-topbar {
@@ -2242,12 +2248,8 @@ svg {
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  padding: 12px 20px 0 25px;
+  padding: 12px 20px 0 var(--data-content-start);
   border-bottom: 1px solid var(--border-soft);
-}
-
-.sidebar-collapsed .data-topbar {
-  padding-left: 55px;
 }
 
 .data-title-block {
@@ -2382,6 +2384,10 @@ svg {
 .data-table-wrap {
   width: 100%;
   overflow: auto;
+}
+
+.data-table-wrap:has(> .aligned-data-table) {
+  padding-left: var(--data-content-start);
 }
 
 .data-state {
@@ -2594,6 +2600,15 @@ svg {
 
 .invoice-table {
   min-width: 1320px;
+}
+
+.collection-queue-table .queue-selection-column {
+  width: 24px;
+}
+
+.aligned-data-table th:first-child,
+.aligned-data-table td:first-child {
+  padding-left: 0;
 }
 
 .account-filter-control {
@@ -3518,6 +3533,10 @@ svg {
 }
 
 @media (max-width: 940px) {
+  .data-page {
+    --data-content-start: 56px;
+  }
+
   .app-shell {
     grid-template-columns: 0 minmax(0, 1fr);
   }
@@ -3551,8 +3570,6 @@ svg {
 
   .page-header,
   .sidebar-collapsed .page-header,
-  .data-topbar,
-  .sidebar-collapsed .data-topbar,
   .record-topbar,
   .sidebar-collapsed .record-topbar {
     padding-left: 55px;

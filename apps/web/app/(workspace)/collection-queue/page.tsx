@@ -121,9 +121,9 @@ export default function CollectionQueuePage() {
         </button>
       }
     >
-      <table className="data-table">
+      <table className="data-table aligned-data-table collection-queue-table">
         <colgroup>
-          <col style={{ width: 38 }} />
+          <col className="queue-selection-column" />
           <col style={{ width: 135 }} />
           <col style={{ width: 210 }} />
           <col style={{ width: 132 }} />

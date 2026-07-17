@@ -152,7 +152,7 @@ export default async function InvoicesPage({
       }
     >
       {result.data.length > 0 ? (
-        <table className="data-table invoice-table">
+        <table className="data-table aligned-data-table invoice-table">
           <colgroup>
             <col style={{ width: 160 }} />
             <col style={{ width: 225 }} />
