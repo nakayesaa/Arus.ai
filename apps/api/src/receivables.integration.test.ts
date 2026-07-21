@@ -13,6 +13,7 @@ import { createDatabaseClient } from './lib/database.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
 import { PrismaReceivablesRepository } from './repositories/receivables.repository.js';
 import { AuthService } from './services/auth.service.js';
+import { DashboardService } from './services/dashboard.service.js';
 import { ReceivablesService } from './services/receivables.service.js';
 
 const integrationDescribe = describe.runIf(
@@ -213,13 +214,20 @@ integrationDescribe('receivables with PostgreSQL', () => {
       environment,
       logger,
     });
+    const receivablesRepository = new PrismaReceivablesRepository(database);
+    const clock = () => new Date('2026-07-16T04:00:00.000Z');
     const receivablesService = new ReceivablesService({
-      repository: new PrismaReceivablesRepository(database),
-      clock: () => new Date('2026-07-16T04:00:00.000Z'),
+      repository: receivablesRepository,
+      clock,
+    });
+    const dashboardService = new DashboardService({
+      repository: receivablesRepository,
+      clock,
     });
     app = createApp({
       authService,
       receivablesService,
+      dashboardService,
       environment,
       logger,
     });
@@ -264,9 +272,77 @@ integrationDescribe('receivables with PostgreSQL', () => {
   it('requires authentication on collection reads', async () => {
     const debtors = await request(app).get('/api/debtors').expect(401);
     const invoices = await request(app).get('/api/invoices').expect(401);
+    const dashboard = await request(app).get('/api/dashboard').expect(401);
 
     expect(debtors.body.error.code).toBe('UNAUTHENTICATED');
     expect(invoices.body.error.code).toBe('UNAUTHENTICATED');
+    expect(dashboard.body.error.code).toBe('UNAUTHENTICATED');
+  });
+
+  it('reconciles dashboard totals and aging from tenant source records', async () => {
+    const response = await request(app)
+      .get('/api/dashboard?asOfDate=2026-07-16')
+      .set('Cookie', cookieA)
+      .expect(200);
+
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.body).toMatchObject({
+      data: {
+        summary: {
+          totalAr: '210000000.00',
+          totalOverdue: '210000000.00',
+          overduePercent: '100.00',
+          openInvoiceCount: 2,
+          overdueInvoiceCount: 2,
+        },
+        aging: [
+          {
+            bucket: 'CURRENT',
+            invoiceCount: 0,
+            outstandingAmount: '0.00',
+          },
+          {
+            bucket: 'OVERDUE_1_7',
+            invoiceCount: 1,
+            outstandingAmount: '75000000.00',
+          },
+          {
+            bucket: 'OVERDUE_8_30',
+            invoiceCount: 0,
+            outstandingAmount: '0.00',
+          },
+          {
+            bucket: 'OVERDUE_31_60',
+            invoiceCount: 1,
+            outstandingAmount: '135000000.00',
+          },
+          {
+            bucket: 'OVERDUE_61_90',
+            invoiceCount: 0,
+            outstandingAmount: '0.00',
+          },
+          {
+            bucket: 'OVERDUE_90_PLUS',
+            invoiceCount: 0,
+            outstandingAmount: '0.00',
+          },
+        ],
+        largestOverdue: [
+          {
+            id: partialInvoiceId,
+            outstandingAmount: '135000000.00',
+            daysOverdue: 47,
+          },
+          {
+            id: reversedInvoiceId,
+            outstandingAmount: '75000000.00',
+            daysOverdue: 7,
+          },
+        ],
+      },
+      meta: { asOfDate: '2026-07-16' },
+    });
+    expect(JSON.stringify(response.body)).not.toContain(tenantBInvoiceId);
   });
 
   it('lists only session-tenant data with deterministic pagination', async () => {
@@ -388,6 +464,14 @@ integrationDescribe('receivables with PostgreSQL', () => {
       .expect(400);
 
     expect(response.body.error).toMatchObject({
+      code: 'INVALID_AS_OF_DATE',
+      fields: { asOfDate: expect.any(String) },
+    });
+    const dashboard = await request(app)
+      .get('/api/dashboard?asOfDate=2026-02-30')
+      .set('Cookie', cookieA)
+      .expect(400);
+    expect(dashboard.body.error).toMatchObject({
       code: 'INVALID_AS_OF_DATE',
       fields: { asOfDate: expect.any(String) },
     });
@@ -561,6 +645,17 @@ integrationDescribe('receivables with PostgreSQL', () => {
     expect(response.body.data.map(recordId)).toEqual([tenantBInvoiceId]);
     expect(JSON.stringify(response.body)).not.toContain(partialInvoiceId);
     expect(JSON.stringify(response.body)).not.toContain(reversedInvoiceId);
+
+    const dashboard = await request(app)
+      .get('/api/dashboard?asOfDate=2026-07-16')
+      .set('Cookie', cookieB)
+      .expect(200);
+    expect(dashboard.body.data.summary).toMatchObject({
+      totalAr: '10000000.00',
+      totalOverdue: '10000000.00',
+      openInvoiceCount: 1,
+    });
+    expect(JSON.stringify(dashboard.body)).not.toContain(partialInvoiceId);
   });
 
   async function login(email: string): Promise<string> {
