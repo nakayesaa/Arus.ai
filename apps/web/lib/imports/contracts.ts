@@ -158,12 +158,35 @@ export const importRowsResponseSchema = z
   })
   .strict();
 
+const importCommitSchema = z
+  .object({
+    job: importJobSchema.refine((job) => job.status === 'COMMITTED', {
+      message: 'Committed import response must contain a committed job',
+    }),
+    reconciliation: z
+      .object({
+        committedInvoices: countSchema,
+        skippedRows: countSchema,
+        createdDebtors: countSchema,
+        openingPayments: countSchema,
+        openingAllocatedAmount: moneySchema,
+      })
+      .strict(),
+    replayed: z.boolean(),
+  })
+  .strict();
+
+export const importCommitEnvelopeSchema = z
+  .object({ data: importCommitSchema })
+  .strict();
+
 export type InvoiceImportJob = z.infer<typeof importJobSchema>;
 export type InvoiceImportRow = z.infer<typeof importRowSchema>;
 export type InvoiceImportRowResult = (typeof invoiceImportRowResults)[number];
 export type InvoiceImportRowsResponse = z.infer<
   typeof importRowsResponseSchema
 >;
+export type InvoiceImportCommit = z.infer<typeof importCommitSchema>;
 
 export function invoiceImportRowsQuery(input: {
   result?: InvoiceImportRowResult | undefined;

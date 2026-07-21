@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  importCommitEnvelopeSchema,
   importJobEnvelopeSchema,
   importRowsResponseSchema,
   invoiceImportRowsQuery,
@@ -57,6 +58,35 @@ describe('invoice import contracts', () => {
         limit: 25,
       }),
     ).toBe('page=2&limit=25&result=INVALID');
+  });
+
+  it('accepts exact import commit reconciliation evidence', () => {
+    const parsed = importCommitEnvelopeSchema.parse({
+      data: {
+        job: {
+          ...readyJob(),
+          status: 'COMMITTED',
+          committedAt: '2026-07-21T03:05:00.000Z',
+          updatedAt: '2026-07-21T03:05:00.000Z',
+        },
+        reconciliation: {
+          committedInvoices: 2,
+          skippedRows: 3,
+          createdDebtors: 1,
+          openingPayments: 1,
+          openingAllocatedAmount: '500000.25',
+        },
+        replayed: false,
+      },
+    });
+
+    expect(parsed.data.reconciliation).toEqual({
+      committedInvoices: 2,
+      skippedRows: 3,
+      createdDebtors: 1,
+      openingPayments: 1,
+      openingAllocatedAmount: '500000.25',
+    });
   });
 });
 

@@ -1,15 +1,18 @@
 import { apiRequest } from '../api-client/http';
 
 import {
+  importCommitEnvelopeSchema,
   importJobEnvelopeSchema,
   importRowsResponseSchema,
   invoiceImportRowsQuery,
   type InvoiceImportJob,
+  type InvoiceImportCommit,
   type InvoiceImportRowResult,
   type InvoiceImportRowsResponse,
 } from './contracts';
 
 const PREVIEW_TIMEOUT_MS = 30_000;
+const COMMIT_TIMEOUT_MS = 60_000;
 const previewJobEnvelopeSchema = importJobEnvelopeSchema.refine(
   ({ data }) => data.status === 'READY' || data.status === 'FAILED',
   { message: 'Preview response must be terminal' },
@@ -50,4 +53,20 @@ export function listInvoiceImportRows(
     input.signal ? { signal: input.signal } : {},
     importRowsResponseSchema,
   );
+}
+
+export async function commitInvoiceImportJob(
+  importJobId: string,
+  signal?: AbortSignal,
+): Promise<InvoiceImportCommit> {
+  const response = await apiRequest(
+    `/api/imports/${encodeURIComponent(importJobId)}/commit`,
+    {
+      method: 'POST',
+      ...(signal ? { signal } : {}),
+    },
+    importCommitEnvelopeSchema,
+    { timeoutMs: COMMIT_TIMEOUT_MS },
+  );
+  return response.data;
 }

@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiContractError } from '../api-client/errors';
-import { listInvoiceImportRows, previewInvoiceCsv } from './client';
+import {
+  commitInvoiceImportJob,
+  listInvoiceImportRows,
+  previewInvoiceCsv,
+} from './client';
 
 const jobId = 'ca791d48-b39b-4c4c-85de-9a58e9390331';
 
@@ -106,6 +110,58 @@ describe('invoice import client', () => {
         new File(['customer_name'], 'invoices.csv', { type: 'text/csv' }),
       ),
     ).rejects.toBeInstanceOf(ApiContractError);
+  });
+
+  it('posts an idempotent commit command without a client-authored payload', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        data: {
+          job: {
+            id: jobId,
+            filename: 'invoices.csv',
+            fileHash: 'b'.repeat(64),
+            status: 'COMMITTED',
+            counts: {
+              total: 3,
+              valid: 2,
+              invalid: 1,
+              duplicate: 0,
+              warning: 0,
+            },
+            fileWarnings: [],
+            failure: null,
+            committedAt: '2026-07-21T03:05:00.000Z',
+            cancelledAt: null,
+            createdAt: '2026-07-21T03:00:00.000Z',
+            updatedAt: '2026-07-21T03:05:00.000Z',
+          },
+          reconciliation: {
+            committedInvoices: 2,
+            skippedRows: 1,
+            createdDebtors: 1,
+            openingPayments: 1,
+            openingAllocatedAmount: '500000.00',
+          },
+          replayed: false,
+        },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(commitInvoiceImportJob(jobId)).resolves.toMatchObject({
+      job: { status: 'COMMITTED' },
+      reconciliation: { committedInvoices: 2 },
+      replayed: false,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/imports/${jobId}/commit`,
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+      }),
+    );
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(init.body).toBeUndefined();
   });
 });
 
