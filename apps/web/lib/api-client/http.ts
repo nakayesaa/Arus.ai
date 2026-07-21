@@ -18,15 +18,21 @@ export async function apiRequest<T>(
   path: `/${string}`,
   init: RequestInit = {},
   responseSchema?: z.ZodType<T>,
+  options: { timeoutMs?: number } = {},
 ): Promise<T> {
-  const response = await fetchWithTimeout(path, path, {
-    ...init,
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      ...init.headers,
+  const response = await fetchWithTimeout(
+    path,
+    path,
+    {
+      ...init,
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        ...init.headers,
+      },
     },
-  });
+    options.timeoutMs,
+  );
 
   if (!response.ok) {
     const body = await readApiError(response);
