@@ -1,0 +1,26 @@
+.page {
+  min-height: 100%;
+  padding-bottom: 2rem;
+}
+
+.page :global(.page-heading h1) {
+  font-size: 1.375rem;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.018em;
+}
+
+.page :global(.page-description) {
+  max-width: 65ch;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 40rem) {
+  .page :global(.page-header) {
+    flex-wrap: wrap;
+  }
+
+  .page :global(.page-actions) {
+    width: 100%;
+  }
+}

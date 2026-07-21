@@ -1,57 +1,32 @@
+import { Download } from 'lucide-react';
 import type { Metadata } from 'next';
-import { Download, FileSpreadsheet, UploadCloud } from 'lucide-react';
 
+import { InvoiceImportPreview } from '@/components/imports/invoice-import-preview';
 import { PageHeader } from '@/components/page-header';
+
+import styles from './page.module.css';
 
 export const metadata: Metadata = { title: 'Import' };
 
 export default function ImportPage() {
   return (
-    <div className="content-page">
+    <div className={styles.page}>
       <PageHeader
-        title="Import"
-        eyebrow="Invoice CSV"
-        description="Validate every row before anything changes in your receivables ledger."
+        title="Import invoices"
+        description="Check a canonical CSV for data quality, debtor matches, and duplicate invoices before anything reaches your receivables ledger."
         action={
-          <button className="control-button" type="button">
-            <Download size={15} /> Download template
-          </button>
+          <a
+            className="control-button"
+            href="/templates/invoice-import-template.csv"
+            download
+          >
+            <Download size={15} aria-hidden="true" />
+            Download template
+          </a>
         }
       />
 
-      <section className="content-grid">
-        <div className="panel panel-span-8 dropzone">
-          <div className="dropzone-inner">
-            <span className="dropzone-icon">
-              <UploadCloud size={23} />
-            </span>
-            <h2>Drop your invoice CSV here</h2>
-            <p>or choose a file from your computer · maximum 10 MB</p>
-            <button className="primary-button" type="button">
-              Choose CSV file
-            </button>
-          </div>
-        </div>
-
-        <aside className="panel panel-span-4">
-          <FileSpreadsheet size={20} aria-hidden="true" />
-          <h2>Safe import flow</h2>
-          <p>Nothing is committed until the validation preview is approved.</p>
-          <div className="step-list">
-            {[
-              ['1', 'Upload canonical CSV'],
-              ['2', 'Review valid, invalid, and duplicate rows'],
-              ['3', 'Commit validated invoices'],
-              ['4', 'Open your collection queue'],
-            ].map(([number, label]) => (
-              <div className="step-row" key={number}>
-                <span className="step-number">{number}</span>
-                <strong>{label}</strong>
-              </div>
-            ))}
-          </div>
-        </aside>
-      </section>
+      <InvoiceImportPreview />
     </div>
   );
 }
