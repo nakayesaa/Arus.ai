@@ -9,6 +9,8 @@ export default tseslint.config(
       '**/dist/**',
       '**/coverage/**',
       '**/.next/**',
+      '.agents/**',
+      '.codex/**',
       'apps/api/src/generated/**',
     ],
   },
