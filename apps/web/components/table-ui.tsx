@@ -18,21 +18,6 @@ export function Pill({ children, tone = 'neutral' }: PillProps) {
   return <span className={`pill pill-${tone}`}>{children}</span>;
 }
 
-interface ScoreProps {
-  value: number;
-  suffix?: string;
-}
-
-export function Score({ value, suffix = 'A' }: ScoreProps) {
-  return (
-    <span className="score">
-      <span className="score-ring" aria-hidden="true" />
-      <strong>{value}</strong>
-      <small>{suffix}</small>
-    </span>
-  );
-}
-
 export function RowCheckbox({ label }: { label: string }) {
   return (
     <label className="row-check">
