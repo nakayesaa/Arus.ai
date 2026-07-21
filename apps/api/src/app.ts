@@ -10,11 +10,13 @@ import { createHttpLogger } from './middleware/http-logger.js';
 import { requestIdMiddleware } from './middleware/request-id.js';
 import { createAccountLifecycleRouter } from './routes/account-lifecycle.routes.js';
 import { createAuthRouter } from './routes/auth.routes.js';
+import { createDashboardRouter } from './routes/dashboard.routes.js';
 import { healthRouter } from './routes/health.routes.js';
 import { createInvoiceImportRouter } from './routes/invoice-import.routes.js';
 import { createReceivablesRouter } from './routes/receivables.routes.js';
 import type { AccountLifecycleServiceContract } from './services/account-lifecycle.service.js';
 import type { AuthServiceContract } from './services/auth.service.js';
+import type { DashboardServiceContract } from './services/dashboard.service.js';
 import type { InvoiceImportServiceContract } from './services/invoice-import.service.js';
 import type { ReceivablesServiceContract } from './services/receivables.service.js';
 
@@ -23,6 +25,7 @@ interface CreateAppOptions {
   lifecycleService?: AccountLifecycleServiceContract;
   receivablesService?: ReceivablesServiceContract;
   invoiceImportService?: InvoiceImportServiceContract;
+  dashboardService?: DashboardServiceContract;
   environment?: Environment;
   logger?: Logger;
 }
@@ -68,6 +71,15 @@ export function createApp(options: CreateAppOptions): Express {
       createReceivablesRouter({
         authService: options.authService,
         receivablesService: options.receivablesService,
+        environment,
+      }),
+    );
+  }
+  if (options.dashboardService) {
+    app.use(
+      createDashboardRouter({
+        authService: options.authService,
+        dashboardService: options.dashboardService,
         environment,
       }),
     );
