@@ -179,6 +179,12 @@ integrationDescribe('invoice import preview with PostgreSQL', () => {
     await database.invoiceImportJob.deleteMany({
       where: { organizationId: { in: organizations } },
     });
+    await database.paymentAllocation.deleteMany({
+      where: { organizationId: { in: organizations } },
+    });
+    await database.payment.deleteMany({
+      where: { organizationId: { in: organizations } },
+    });
     await database.invoice.deleteMany({
       where: { organizationId: { in: organizations } },
     });
@@ -316,6 +322,243 @@ integrationDescribe('invoice import preview with PostgreSQL', () => {
     });
   });
 
+  it('commits valid rows atomically and replays the result without duplicate writes', async () => {
+    const before = await businessCounts();
+    const committed = await commitJob(cookieA, readyJobId).expect(200);
+
+    expect(committed.headers['cache-control']).toBe('no-store');
+    expect(committed.body.data).toMatchObject({
+      job: {
+        id: readyJobId,
+        status: 'COMMITTED',
+        committedAt: expect.any(String),
+      },
+      reconciliation: {
+        committedInvoices: 4,
+        skippedRows: 4,
+        createdDebtors: 2,
+        openingPayments: 1,
+        openingAllocatedAmount: '500000.25',
+      },
+      replayed: false,
+    });
+    await expect(businessCounts()).resolves.toEqual({
+      debtors: before.debtors + 2,
+      invoices: before.invoices + 4,
+      payments: before.payments + 1,
+      allocations: before.allocations + 1,
+    });
+
+    const committedRows = await database.invoiceImportRow.findMany({
+      where: { importJobId: readyJobId },
+      orderBy: { rowNumber: 'asc' },
+      select: {
+        result: true,
+        committedInvoiceId: true,
+        committedInvoice: {
+          select: {
+            invoiceNumber: true,
+            originalAmount: true,
+            debtor: { select: { code: true, name: true } },
+            allocations: {
+              select: {
+                amount: true,
+                allocationDate: true,
+                payment: {
+                  select: {
+                    amount: true,
+                    isOpeningBalance: true,
+                    bankReference: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(committedRows.map((row) => row.result)).toEqual([
+      'COMMITTED',
+      'COMMITTED',
+      'COMMITTED',
+      'INVALID',
+      'DUPLICATE',
+      'COMMITTED',
+      'DUPLICATE',
+      'INVALID',
+    ]);
+    expect(
+      committedRows.every(
+        (row) => row.result !== 'COMMITTED' || row.committedInvoiceId !== null,
+      ),
+    ).toBe(true);
+    const partial = committedRows.find(
+      (row) => row.committedInvoice?.invoiceNumber === 'INV-READY-003',
+    )?.committedInvoice;
+    expect(partial).toMatchObject({
+      debtor: { code: 'NEW-001', name: 'PT New Debtor' },
+      allocations: [
+        {
+          payment: {
+            isOpeningBalance: true,
+            bankReference: `IMPORT:${readyJobId}:4`,
+          },
+        },
+      ],
+    });
+    expect(partial?.originalAmount.toFixed(2)).toBe('1500000.50');
+    expect(partial?.allocations[0]?.amount.toFixed(2)).toBe('500000.25');
+    expect(partial?.allocations[0]?.payment.amount.toFixed(2)).toBe(
+      '500000.25',
+    );
+    expect(
+      partial?.allocations[0]?.allocationDate.toISOString().slice(0, 10),
+    ).toBe('2026-07-03');
+
+    const audit = await database.auditLog.findMany({
+      where: {
+        organizationId: organizationAId,
+        action: 'IMPORT_COMMITTED',
+        entityId: readyJobId,
+      },
+    });
+    expect(audit).toHaveLength(1);
+    expect(audit[0]?.metadata).toMatchObject({
+      committedInvoices: 4,
+      skippedRows: 4,
+      createdDebtors: 2,
+      openingPayments: 1,
+      openingAllocatedAmount: '500000.25',
+    });
+
+    const countsAfterFirstCommit = await businessCounts();
+    const replay = await commitJob(cookieA, readyJobId).expect(200);
+    expect(replay.body.data).toEqual({
+      ...committed.body.data,
+      replayed: true,
+    });
+    await expect(businessCounts()).resolves.toEqual(countsAfterFirstCommit);
+    await expect(
+      database.auditLog.count({
+        where: { action: 'IMPORT_COMMITTED', entityId: readyJobId },
+      }),
+    ).resolves.toBe(1);
+  });
+
+  it('serializes concurrent commit requests into one posting and one replay', async () => {
+    const preview = await uploadCsv(
+      cookieA,
+      validCsv('INV-CONCURRENT-COMMIT-001'),
+      'concurrent-commit.csv',
+    ).expect(201);
+    const importJobId = preview.body.data.id as string;
+
+    const responses = await Promise.all([
+      commitJob(cookieA, importJobId),
+      commitJob(cookieA, importJobId),
+    ]);
+    expect(responses.map((response) => response.status)).toEqual([200, 200]);
+    expect(
+      responses.map((response) => response.body.data.replayed).sort(),
+    ).toEqual([false, true]);
+    await expect(
+      database.invoice.count({
+        where: {
+          organizationId: organizationAId,
+          normalizedInvoiceNumber: 'inv-concurrent-commit-001',
+        },
+      }),
+    ).resolves.toBe(1);
+    await expect(
+      database.auditLog.count({
+        where: { action: 'IMPORT_COMMITTED', entityId: importJobId },
+      }),
+    ).resolves.toBe(1);
+  });
+
+  it('rolls back every posting when receivable data changes after preview', async () => {
+    const preview = await uploadCsv(
+      cookieA,
+      [
+        'customer_name,invoice_number,invoice_date,due_date,original_amount',
+        'PT Rollback One,INV-ROLLBACK-001,2026-07-01,2026-07-31,1000000',
+        'PT Rollback Two,INV-ROLLBACK-002,2026-07-02,2026-08-01,2000000',
+      ].join('\n'),
+      'rollback.csv',
+    ).expect(201);
+    const importJobId = preview.body.data.id as string;
+    expect(preview.body.data.counts.valid).toBe(2);
+
+    await database.invoice.create({
+      data: {
+        organizationId: organizationAId,
+        debtorId: codedDebtorAId,
+        invoiceNumber: 'INV-ROLLBACK-002',
+        normalizedInvoiceNumber: 'inv-rollback-002',
+        invoiceDate: databaseDate('2026-07-02'),
+        dueDate: databaseDate('2026-08-01'),
+        originalAmount: '2000000.00',
+      },
+    });
+    const before = await businessCounts();
+
+    const response = await commitJob(cookieA, importJobId).expect(409);
+    expect(response.body.error.code).toBe('IMPORT_COMMIT_CONFLICT');
+    await expect(businessCounts()).resolves.toEqual(before);
+    await expect(
+      database.invoice.count({
+        where: {
+          organizationId: organizationAId,
+          normalizedInvoiceNumber: 'inv-rollback-001',
+        },
+      }),
+    ).resolves.toBe(0);
+    await expect(
+      database.debtor.count({
+        where: {
+          organizationId: organizationAId,
+          normalizedName: { in: ['pt rollback one', 'pt rollback two'] },
+        },
+      }),
+    ).resolves.toBe(0);
+    await expect(
+      database.invoiceImportJob.findUniqueOrThrow({
+        where: { id: importJobId },
+        select: { status: true },
+      }),
+    ).resolves.toEqual({ status: 'READY' });
+    await expect(
+      database.auditLog.count({
+        where: { action: 'IMPORT_COMMITTED', entityId: importJobId },
+      }),
+    ).resolves.toBe(0);
+  });
+
+  it('rejects a ready preview with no valid rows', async () => {
+    const preview = await uploadCsv(
+      cookieA,
+      [
+        'customer_name,invoice_number,invoice_date,due_date,original_amount',
+        'PT Invalid Only,INV-INVALID-ONLY,2026-08-01,2026-07-01,1000000',
+      ].join('\n'),
+      'invalid-only.csv',
+    ).expect(201);
+    const importJobId = preview.body.data.id as string;
+    expect(preview.body.data).toMatchObject({
+      status: 'READY',
+      counts: { valid: 0, invalid: 1 },
+    });
+
+    const response = await commitJob(cookieA, importJobId).expect(422);
+    expect(response.body.error.code).toBe('IMPORT_NO_VALID_ROWS');
+    await expect(
+      database.invoiceImportJob.findUniqueOrThrow({
+        where: { id: importJobId },
+        select: { status: true },
+      }),
+    ).resolves.toEqual({ status: 'READY' });
+  });
+
   it('persists a FAILED job for a whole-file CSV error', async () => {
     const badCsv = await readFile(new URL('bad-quoting.csv', fixtureRoot));
     const response = await uploadCsv(cookieA, badCsv, 'bad-quoting.csv').expect(
@@ -362,10 +605,14 @@ integrationDescribe('invoice import preview with PostgreSQL', () => {
       .get(`/api/imports/${readyJobId}/rows`)
       .set('Cookie', cookieB)
       .expect(404);
+    const commit = await commitJob(cookieB, readyJobId).expect(404);
 
     expect(job.body.error.code).toBe('IMPORT_JOB_NOT_FOUND');
     expect(rows.body.error.code).toBe('IMPORT_JOB_NOT_FOUND');
-    expect(JSON.stringify([job.body, rows.body])).not.toContain(codedDebtorAId);
+    expect(commit.body.error.code).toBe('IMPORT_JOB_NOT_FOUND');
+    expect(JSON.stringify([job.body, rows.body, commit.body])).not.toContain(
+      codedDebtorAId,
+    );
   });
 
   it('requires authentication and a trusted origin before reading uploads', async () => {
@@ -386,9 +633,20 @@ integrationDescribe('invoice import preview with PostgreSQL', () => {
         contentType: 'text/csv',
       })
       .expect(403);
+    const unauthenticatedCommit = await request(app)
+      .post(`/api/imports/${readyJobId}/commit`)
+      .set('Origin', environment.APP_ORIGIN)
+      .expect(401);
+    const untrustedCommit = await request(app)
+      .post(`/api/imports/${readyJobId}/commit`)
+      .set('Origin', 'https://attacker.invalid')
+      .set('Cookie', cookieA)
+      .expect(403);
 
     expect(unauthenticated.body.error.code).toBe('UNAUTHENTICATED');
     expect(untrusted.body.error.code).toBe('UNTRUSTED_ORIGIN');
+    expect(unauthenticatedCommit.body.error.code).toBe('UNAUTHENTICATED');
+    expect(untrustedCommit.body.error.code).toBe('UNTRUSTED_ORIGIN');
   });
 
   it('rejects invalid upload shape, media type, and files over 5 MB', async () => {
@@ -491,6 +749,13 @@ integrationDescribe('invoice import preview with PostgreSQL', () => {
         filename,
         contentType: 'text/csv',
       });
+  }
+
+  function commitJob(cookie: string, importJobId: string) {
+    return request(app)
+      .post(`/api/imports/${importJobId}/commit`)
+      .set('Origin', environment.APP_ORIGIN)
+      .set('Cookie', cookie);
   }
 
   async function login(email: string): Promise<string> {
