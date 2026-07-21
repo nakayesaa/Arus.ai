@@ -9,6 +9,7 @@ import { PrismaAccountLifecycleRepository } from './repositories/account-lifecyc
 import { PrismaReceivablesRepository } from './repositories/receivables.repository.js';
 import { AccountLifecycleService } from './services/account-lifecycle.service.js';
 import { AuthService } from './services/auth.service.js';
+import { CollectionQueueService } from './services/collection-queue.service.js';
 import { DashboardService } from './services/dashboard.service.js';
 import { InvoiceImportService } from './services/invoice-import.service.js';
 import { ReceivablesService } from './services/receivables.service.js';
@@ -34,6 +35,9 @@ const receivablesService = new ReceivablesService({
 const dashboardService = new DashboardService({
   repository: receivablesRepository,
 });
+const collectionQueueService = new CollectionQueueService({
+  repository: receivablesRepository,
+});
 const invoiceImportService = new InvoiceImportService({
   repository: new PrismaInvoiceImportRepository(database),
   logger,
@@ -44,6 +48,7 @@ const app = createApp({
   receivablesService,
   invoiceImportService,
   dashboardService,
+  collectionQueueService,
   environment,
   logger,
 });
