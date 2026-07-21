@@ -89,6 +89,39 @@ test('keeps invoice search, state, aging, and business date in the URL', async (
   await expect(page.getByText('Boundary Customer')).toHaveCount(0);
 });
 
+test('renders the seeded collection queue in exact priority order', async ({
+  page,
+}) => {
+  await page.goto(`/collection-queue?asOfDate=${AS_OF_DATE}`);
+
+  await expect(
+    page.getByRole('heading', { name: 'Collection Queue' }),
+  ).toBeVisible();
+  await expect(page.getByText('4 invoices prioritized')).toBeVisible();
+  await expect(page.getByText('Deterministic priority')).toBeVisible();
+
+  const rows = page.locator('tbody tr');
+  await expect(rows).toHaveCount(4);
+  await expect(rows.nth(0)).toContainText('INV-2026-0074');
+  await expect(rows.nth(0)).toContainText('487.60');
+  await expect(rows.nth(0)).toContainText(/Amount\s*472\.50/u);
+  await expect(rows.nth(1)).toContainText('INV-2026-0418');
+  await expect(rows.nth(1)).toContainText('222.20');
+  await expect(rows.nth(2)).toContainText('INV-2026-0090');
+  await expect(rows.nth(2)).toContainText('155.00');
+  await expect(rows.nth(2)).toContainText('Due soon · uncontacted');
+  await expect(rows.nth(3)).toContainText('INV-2026-0060');
+  await expect(rows.nth(3)).toContainText('128.20');
+  await expect(page.getByText('Boundary Customer')).toHaveCount(0);
+
+  await rows.nth(0).getByRole('link', { name: 'INV-2026-0074' }).click();
+  await expect(page).toHaveURL(
+    new RegExp(
+      `/invoices/30000000-0000-4000-8000-000000000002\\?asOfDate=${AS_OF_DATE}$`,
+    ),
+  );
+});
+
 async function login(page: Page): Promise<void> {
   const password = process.env.DEMO_SEED_PASSWORD;
   if (!password) {
