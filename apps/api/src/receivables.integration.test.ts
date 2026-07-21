@@ -13,6 +13,7 @@ import { createDatabaseClient } from './lib/database.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
 import { PrismaReceivablesRepository } from './repositories/receivables.repository.js';
 import { AuthService } from './services/auth.service.js';
+import { CollectionQueueService } from './services/collection-queue.service.js';
 import { DashboardService } from './services/dashboard.service.js';
 import { ReceivablesService } from './services/receivables.service.js';
 
@@ -224,10 +225,15 @@ integrationDescribe('receivables with PostgreSQL', () => {
       repository: receivablesRepository,
       clock,
     });
+    const collectionQueueService = new CollectionQueueService({
+      repository: receivablesRepository,
+      clock,
+    });
     app = createApp({
       authService,
       receivablesService,
       dashboardService,
+      collectionQueueService,
       environment,
       logger,
     });
@@ -273,10 +279,62 @@ integrationDescribe('receivables with PostgreSQL', () => {
     const debtors = await request(app).get('/api/debtors').expect(401);
     const invoices = await request(app).get('/api/invoices').expect(401);
     const dashboard = await request(app).get('/api/dashboard').expect(401);
+    const queue = await request(app).get('/api/collection-queue').expect(401);
 
     expect(debtors.body.error.code).toBe('UNAUTHENTICATED');
     expect(invoices.body.error.code).toBe('UNAUTHENTICATED');
     expect(dashboard.body.error.code).toBe('UNAUTHENTICATED');
+    expect(queue.body.error.code).toBe('UNAUTHENTICATED');
+  });
+
+  it('returns a stable tenant queue with sorting before pagination', async () => {
+    const firstPage = await request(app)
+      .get('/api/collection-queue?asOfDate=2026-07-16&page=1&limit=1')
+      .set('Cookie', cookieA)
+      .expect(200);
+    const secondPage = await request(app)
+      .get('/api/collection-queue?asOfDate=2026-07-16&page=2&limit=1')
+      .set('Cookie', cookieA)
+      .expect(200);
+
+    expect(firstPage.headers['cache-control']).toBe('no-store');
+    expect(firstPage.body.pagination).toEqual({
+      page: 1,
+      limit: 1,
+      total: 2,
+      totalPages: 2,
+    });
+    expect(firstPage.body.meta).toEqual({ asOfDate: '2026-07-16' });
+    expect(firstPage.body.data[0]).toMatchObject({
+      id: partialInvoiceId,
+      invoiceNumber: 'INV-SHARED-001',
+      outstandingAmount: '135000000.00',
+      state: 'PARTIALLY_PAID',
+      aging: { daysOverdue: 47 },
+      lastContactDate: null,
+      nextFollowUpDate: null,
+      promiseStatus: null,
+      hasOpenDispute: false,
+      daysSinceLastContact: 30,
+      reasons: ['OVERDUE'],
+      priority: {
+        score: '222.20',
+        components: {
+          amount: '202.50',
+          aging: '4.70',
+          stale: '15.00',
+          promise: '0.00',
+          dueSoon: '0.00',
+        },
+      },
+    });
+    expect(secondPage.body.data[0]).toMatchObject({
+      id: reversedInvoiceId,
+      priority: { score: '128.20' },
+    });
+    expect(JSON.stringify([firstPage.body, secondPage.body])).not.toContain(
+      tenantBInvoiceId,
+    );
   });
 
   it('reconciles dashboard totals and aging from tenant source records', async () => {
@@ -475,6 +533,14 @@ integrationDescribe('receivables with PostgreSQL', () => {
       code: 'INVALID_AS_OF_DATE',
       fields: { asOfDate: expect.any(String) },
     });
+    const queue = await request(app)
+      .get('/api/collection-queue?asOfDate=2026-02-30')
+      .set('Cookie', cookieA)
+      .expect(400);
+    expect(queue.body.error).toMatchObject({
+      code: 'INVALID_AS_OF_DATE',
+      fields: { asOfDate: expect.any(String) },
+    });
   });
 
   it('creates and updates a normalized debtor with atomic audit events', async () => {
@@ -656,6 +722,14 @@ integrationDescribe('receivables with PostgreSQL', () => {
       openInvoiceCount: 1,
     });
     expect(JSON.stringify(dashboard.body)).not.toContain(partialInvoiceId);
+
+    const queue = await request(app)
+      .get('/api/collection-queue?asOfDate=2026-07-16')
+      .set('Cookie', cookieB)
+      .expect(200);
+    expect(queue.body.data.map(recordId)).toEqual([tenantBInvoiceId]);
+    expect(JSON.stringify(queue.body)).not.toContain(partialInvoiceId);
+    expect(JSON.stringify(queue.body)).not.toContain(reversedInvoiceId);
   });
 
   async function login(email: string): Promise<string> {
