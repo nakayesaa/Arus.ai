@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 
 import { parseInvoiceCsv } from './invoice-csv-parser.js';
+import { classifyInvoiceImportRows } from './invoice-import-classifier.js';
 import { validateInvoiceImportRows } from './invoice-import-normalizer.js';
 
 const fixtureRoot = new URL(
@@ -99,6 +100,37 @@ describe('parseInvoiceCsv', () => {
     await expect(
       parseInvoiceCsv(Buffer.from([header, ...rows].join('\n'))),
     ).rejects.toMatchObject({ code: 'TOO_MANY_ROWS' });
+  });
+
+  it('keeps the browser E2E mixed preview fixture deterministic', async () => {
+    const parsed = await parseInvoiceCsv(await fixture('mixed-preview.csv'));
+    const rows = classifyInvoiceImportRows(
+      validateInvoiceImportRows(parsed.rows),
+      {
+        debtors: [
+          {
+            id: '20000000-0000-4000-8000-000000000001',
+            code: 'CUST-001',
+            normalizedCode: 'cust-001',
+            name: 'PT Sinar Abadi Retail',
+            normalizedName: 'pt sinar abadi retail',
+          },
+        ],
+        existingInvoiceNumbers: new Set(),
+      },
+    );
+
+    expect(parsed.warnings).toEqual([
+      expect.objectContaining({ code: 'UNKNOWN_COLUMN', field: 'header' }),
+    ]);
+    expect(rows.map((row) => row.result)).toEqual([
+      'VALID',
+      'VALID',
+      'DUPLICATE',
+      'INVALID',
+      'INVALID',
+    ]);
+    expect(rows.filter((row) => row.warnings.length > 0)).toHaveLength(1);
   });
 });
 
