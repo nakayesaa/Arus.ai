@@ -18,12 +18,18 @@ import {
   ApiContractError,
   ApiTimeoutError,
 } from '@/lib/api-client/errors';
-import { listInvoiceImportRows, previewInvoiceCsv } from '@/lib/imports/client';
+import {
+  commitInvoiceImportJob,
+  listInvoiceImportRows,
+  previewInvoiceCsv,
+} from '@/lib/imports/client';
 import type {
+  InvoiceImportCommit,
   InvoiceImportJob,
   InvoiceImportRowsResponse,
 } from '@/lib/imports/contracts';
 
+import { InvoiceImportCommitPanel } from './invoice-import-commit';
 import { InvoiceImportResults } from './invoice-import-results';
 import styles from './invoice-import-preview.module.css';
 import type { ImportResultFilter, ImportUiError } from './types';
@@ -31,23 +37,35 @@ import type { ImportResultFilter, ImportUiError } from './types';
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ROWS_PER_PAGE = 25;
 
-export function InvoiceImportPreview() {
+export function InvoiceImportPreview({
+  organizationName,
+}: {
+  organizationName: string;
+}) {
   const [file, setFile] = useState<File | null>(null);
   const [job, setJob] = useState<InvoiceImportJob | null>(null);
   const [rows, setRows] = useState<InvoiceImportRowsResponse | null>(null);
   const [resultFilter, setResultFilter] = useState<ImportResultFilter>('ALL');
   const [uploading, setUploading] = useState(false);
   const [rowsLoading, setRowsLoading] = useState(false);
+  const [reviewingCommit, setReviewingCommit] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const [commitResult, setCommitResult] = useState<InvoiceImportCommit | null>(
+    null,
+  );
   const [dragging, setDragging] = useState(false);
   const [uploadError, setUploadError] = useState<ImportUiError | null>(null);
   const [rowsError, setRowsError] = useState<ImportUiError | null>(null);
+  const [commitError, setCommitError] = useState<ImportUiError | null>(null);
   const uploadAbort = useRef<AbortController | null>(null);
   const rowsAbort = useRef<AbortController | null>(null);
+  const commitAbort = useRef<AbortController | null>(null);
 
   useEffect(
     () => () => {
       uploadAbort.current?.abort();
       rowsAbort.current?.abort();
+      commitAbort.current?.abort();
     },
     [],
   );
@@ -55,11 +73,15 @@ export function InvoiceImportPreview() {
   function selectFile(nextFile: File | undefined): void {
     uploadAbort.current?.abort();
     rowsAbort.current?.abort();
+    commitAbort.current?.abort();
     setDragging(false);
     setJob(null);
     setRows(null);
     setResultFilter('ALL');
     setRowsError(null);
+    setReviewingCommit(false);
+    setCommitResult(null);
+    setCommitError(null);
 
     const validationError = nextFile ? validateFile(nextFile) : null;
     setFile(validationError ? null : (nextFile ?? null));
@@ -72,6 +94,7 @@ export function InvoiceImportPreview() {
 
     uploadAbort.current?.abort();
     rowsAbort.current?.abort();
+    commitAbort.current?.abort();
     const controller = new AbortController();
     uploadAbort.current = controller;
     setUploading(true);
@@ -80,6 +103,9 @@ export function InvoiceImportPreview() {
     setJob(null);
     setRows(null);
     setResultFilter('ALL');
+    setReviewingCommit(false);
+    setCommitResult(null);
+    setCommitError(null);
 
     try {
       const nextJob = await previewInvoiceCsv(file, controller.signal);
@@ -126,21 +152,49 @@ export function InvoiceImportPreview() {
   }
 
   function changeFilter(filter: ImportResultFilter): void {
-    if (!job || job.status !== 'READY' || filter === resultFilter) return;
+    if (!isInspectableJob(job) || filter === resultFilter) return;
     setResultFilter(filter);
     setRows(null);
     void loadRows(job.id, filter, 1);
   }
 
   function changePage(page: number): void {
-    if (!job || job.status !== 'READY') return;
+    if (!isInspectableJob(job)) return;
     setRows(null);
     void loadRows(job.id, resultFilter, page);
   }
 
   function retryRows(): void {
-    if (!job || job.status !== 'READY') return;
+    if (!isInspectableJob(job)) return;
     void loadRows(job.id, resultFilter, rows?.pagination.page ?? 1);
+  }
+
+  async function commitPreview(): Promise<void> {
+    if (!job || job.status !== 'READY' || committing) return;
+
+    commitAbort.current?.abort();
+    const controller = new AbortController();
+    commitAbort.current = controller;
+    setCommitting(true);
+    setCommitError(null);
+
+    try {
+      const result = await commitInvoiceImportJob(job.id, controller.signal);
+      if (controller.signal.aborted) return;
+      setCommitResult(result);
+      setJob(result.job);
+      setReviewingCommit(false);
+      setResultFilter('COMMITTED');
+      setRows(null);
+      await loadRows(result.job.id, 'COMMITTED', 1);
+    } catch (error) {
+      if (!isAbortError(error)) setCommitError(toCommitUiError(error));
+    } finally {
+      if (commitAbort.current === controller) {
+        commitAbort.current = null;
+        setCommitting(false);
+      }
+    }
   }
 
   return (
@@ -227,7 +281,9 @@ export function InvoiceImportPreview() {
           ? `Preview ready. ${job.counts.valid} valid, ${job.counts.invalid} invalid, and ${job.counts.duplicate} duplicate rows. No receivable records changed.`
           : job?.status === 'FAILED'
             ? `Preview stopped. ${job.failure?.message ?? 'The CSV could not be parsed safely.'}`
-            : ''}
+            : job?.status === 'COMMITTED'
+              ? `Import committed. ${job.counts.valid} invoices posted once and ${job.counts.invalid + job.counts.duplicate} rows skipped.`
+              : ''}
       </p>
 
       {job && (
@@ -240,6 +296,25 @@ export function InvoiceImportPreview() {
           onFilterChange={changeFilter}
           onPageChange={changePage}
           onRetryRows={retryRows}
+          commitPanel={
+            <InvoiceImportCommitPanel
+              job={job}
+              organizationName={organizationName}
+              reviewing={reviewingCommit}
+              committing={committing}
+              result={commitResult}
+              error={commitError}
+              onReview={() => {
+                setCommitError(null);
+                setReviewingCommit(true);
+              }}
+              onCancelReview={() => {
+                setCommitError(null);
+                setReviewingCommit(false);
+              }}
+              onCommit={() => void commitPreview()}
+            />
+          }
         />
       )}
     </div>
@@ -334,7 +409,7 @@ function PreviewGuide() {
     ],
     [
       'Correct and preview again',
-      'Posting valid rows belongs to the next import stage.',
+      'Post valid rows only after reviewing the controlled commit summary.',
     ],
   ] as const;
 
@@ -450,8 +525,39 @@ function toUiError(error: unknown): ImportUiError {
   };
 }
 
+function toCommitUiError(error: unknown): ImportUiError {
+  if (error instanceof ApiClientError) {
+    return {
+      message: error.message,
+      requestId: error.body?.error.requestId,
+    };
+  }
+  if (error instanceof ApiTimeoutError) {
+    return {
+      message:
+        'The posting result was not confirmed within 60 seconds. Retry this same import safely; the server will return the original result if it already committed.',
+    };
+  }
+  if (error instanceof ApiContractError) {
+    return {
+      message:
+        'The server returned an unexpected reconciliation result. Refresh the import status before taking another action.',
+    };
+  }
+  return {
+    message:
+      'We could not reach the posting service. Retry this same import safely when the API is available.',
+  };
+}
+
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
+}
+
+function isInspectableJob(
+  job: InvoiceImportJob | null,
+): job is InvoiceImportJob {
+  return job?.status === 'READY' || job?.status === 'COMMITTED';
 }
 
 function formatFileSize(bytes: number): string {

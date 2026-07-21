@@ -32,6 +32,7 @@ interface InvoiceImportResultsProps {
   onFilterChange: (filter: ImportResultFilter) => void;
   onPageChange: (page: number) => void;
   onRetryRows: () => void;
+  commitPanel: ReactNode;
 }
 
 export function InvoiceImportResults(props: InvoiceImportResultsProps) {
@@ -47,7 +48,11 @@ export function InvoiceImportResults(props: InvoiceImportResultsProps) {
             <CheckCircle2 size={18} />
           </span>
           <div>
-            <h2 id="preview-title">Preview ready</h2>
+            <h2 id="preview-title">
+              {props.job.status === 'COMMITTED'
+                ? 'Import committed'
+                : 'Preview ready'}
+            </h2>
             <p>
               {props.job.filename} · SHA-256{' '}
               <span title={props.job.fileHash}>
@@ -56,14 +61,23 @@ export function InvoiceImportResults(props: InvoiceImportResultsProps) {
             </p>
           </div>
         </div>
-        <p className={styles.zeroWriteNotice}>
+        <p
+          className={
+            props.job.status === 'COMMITTED'
+              ? styles.committedNotice
+              : styles.zeroWriteNotice
+          }
+        >
           <ShieldCheck size={15} aria-hidden="true" />
-          Zero receivable records changed
+          {props.job.status === 'COMMITTED'
+            ? 'Posted once and reconciled'
+            : 'Zero receivable records changed'}
         </p>
       </header>
 
       <PreviewSummary job={props.job} />
       <FileWarnings warnings={props.job.fileWarnings} />
+      {props.commitPanel}
 
       <div className={styles.rowToolbar}>
         <div>
@@ -175,7 +189,11 @@ function ResultFilters({
 }) {
   const filters = [
     { value: 'ALL', label: 'All', count: job.counts.total },
-    { value: 'VALID', label: 'Valid', count: job.counts.valid },
+    {
+      value: job.status === 'COMMITTED' ? 'COMMITTED' : 'VALID',
+      label: job.status === 'COMMITTED' ? 'Committed' : 'Valid',
+      count: job.counts.valid,
+    },
     { value: 'INVALID', label: 'Invalid', count: job.counts.invalid },
     { value: 'DUPLICATE', label: 'Duplicate', count: job.counts.duplicate },
   ] as const;

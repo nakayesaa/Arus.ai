@@ -341,11 +341,18 @@
   background: rgb(112 208 173 / 10%);
 }
 
-.zeroWriteNotice {
+.zeroWriteNotice,
+.committedNotice {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
   gap: 0.5rem;
+  color: var(--green) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600;
+}
+
+.committedNotice {
   color: var(--green) !important;
   font-size: 0.75rem !important;
   font-weight: 600;
@@ -758,7 +765,8 @@
   }
 
   .compactUpload .previewButton,
-  .zeroWriteNotice {
+  .zeroWriteNotice,
+  .committedNotice {
     align-self: flex-start;
   }
 

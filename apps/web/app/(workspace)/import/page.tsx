@@ -3,12 +3,14 @@ import type { Metadata } from 'next';
 
 import { InvoiceImportPreview } from '@/components/imports/invoice-import-preview';
 import { PageHeader } from '@/components/page-header';
+import { requireServerSession } from '@/lib/auth/server';
 
 import styles from './page.module.css';
 
 export const metadata: Metadata = { title: 'Import' };
 
-export default function ImportPage() {
+export default async function ImportPage() {
+  const session = await requireServerSession();
   return (
     <div className={styles.page}>
       <PageHeader
@@ -26,7 +28,7 @@ export default function ImportPage() {
         }
       />
 
-      <InvoiceImportPreview />
+      <InvoiceImportPreview organizationName={session.organization.name} />
     </div>
   );
 }
