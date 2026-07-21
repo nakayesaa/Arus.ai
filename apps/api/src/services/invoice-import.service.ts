@@ -1,6 +1,4 @@
 import type { Logger } from 'pino';
-import { z } from 'zod';
-
 import type {
   InvoiceImportDebtorAction,
   InvoiceImportJobStatus,
@@ -10,17 +8,24 @@ import { classifyInvoiceImportRows } from '../imports/invoice-import-classifier.
 import { parseInvoiceCsv } from '../imports/invoice-csv-parser.js';
 import { validateInvoiceImportRows } from '../imports/invoice-import-normalizer.js';
 import {
-  INVOICE_IMPORT_COLUMNS,
-  INVOICE_IMPORT_DIAGNOSTIC_CODES,
+  parseInvoiceImportDiagnostics,
+  parseNormalizedInvoiceImportPayload,
+} from '../imports/invoice-import-payload.js';
+import {
   InvoiceImportFileError,
   type InvoiceImportDiagnostic,
   type NormalizedInvoiceImportPayload,
 } from '../imports/invoice-import.types.js';
 import type { InvoiceCsvUpload } from '../lib/invoice-csv-upload.js';
 import type {
+  InvoiceImportCommitRecord,
   InvoiceImportJobRecord,
   InvoiceImportRepository,
   InvoiceImportRowRecord,
+} from '../repositories/invoice-import.repository.js';
+import {
+  InvoiceImportRepositoryConflictError,
+  InvoiceImportRepositoryStateError,
 } from '../repositories/invoice-import.repository.js';
 import type { AuthContext } from './auth.service.js';
 
@@ -67,6 +72,18 @@ export interface InvoiceImportPagination {
   totalPages: number;
 }
 
+export interface InvoiceImportCommitView {
+  job: InvoiceImportJobView;
+  reconciliation: {
+    committedInvoices: number;
+    skippedRows: number;
+    createdDebtors: number;
+    openingPayments: number;
+    openingAllocatedAmount: string;
+  };
+  replayed: boolean;
+}
+
 export interface InvoiceImportServiceContract {
   previewInvoices(input: {
     context: AuthContext;
@@ -87,11 +104,20 @@ export interface InvoiceImportServiceContract {
     data: InvoiceImportRowView[];
     pagination: InvoiceImportPagination;
   }>;
+  commitInvoices(input: {
+    context: AuthContext;
+    requestId: string;
+    importJobId: string;
+  }): Promise<InvoiceImportCommitView>;
 }
 
 export class InvoiceImportServiceError extends Error {
   constructor(
-    readonly code: 'IMPORT_JOB_NOT_FOUND',
+    readonly code:
+      | 'IMPORT_COMMIT_CONFLICT'
+      | 'IMPORT_JOB_NOT_FOUND'
+      | 'IMPORT_JOB_NOT_READY'
+      | 'IMPORT_NO_VALID_ROWS',
     message: string,
   ) {
     super(message);
@@ -224,39 +250,45 @@ export class InvoiceImportService implements InvoiceImportServiceContract {
       },
     };
   }
-}
 
-const nullableString = z.string().nullable();
-const normalizedPayloadSchema = z
-  .object({
-    customerCode: nullableString,
-    normalizedCustomerCode: nullableString,
-    customerName: nullableString,
-    normalizedCustomerName: nullableString,
-    contactName: nullableString,
-    phoneNumber: nullableString,
-    email: nullableString,
-    invoiceNumber: nullableString,
-    normalizedInvoiceNumber: nullableString,
-    invoiceDate: nullableString,
-    dueDate: nullableString,
-    originalAmount: nullableString,
-    paidAmount: nullableString,
-    declaredOutstandingAmount: nullableString,
-    calculatedOutstandingAmount: nullableString,
-    salesperson: nullableString,
-    branch: nullableString,
-    notes: nullableString,
-  })
-  .strict();
-const diagnosticSchema = z
-  .object({
-    code: z.enum(INVOICE_IMPORT_DIAGNOSTIC_CODES),
-    field: z.enum([...INVOICE_IMPORT_COLUMNS, 'file', 'header']).optional(),
-    message: z.string(),
-  })
-  .strict();
-const diagnosticsSchema = z.array(diagnosticSchema);
+  async commitInvoices(input: {
+    context: AuthContext;
+    requestId: string;
+    importJobId: string;
+  }): Promise<InvoiceImportCommitView> {
+    try {
+      const record = await this.options.repository.commitReadyJob({
+        organizationId: input.context.organization.id,
+        actorId: input.context.user.id,
+        requestId: input.requestId,
+        importJobId: input.importJobId,
+      });
+      if (!record) throw importJobNotFound();
+      return toCommitView(record);
+    } catch (error) {
+      if (error instanceof InvoiceImportServiceError) throw error;
+      if (error instanceof InvoiceImportRepositoryStateError) {
+        if (error.reason === 'NO_VALID_ROWS') {
+          throw new InvoiceImportServiceError(
+            'IMPORT_NO_VALID_ROWS',
+            'This preview has no valid invoice rows to commit',
+          );
+        }
+        throw new InvoiceImportServiceError(
+          'IMPORT_JOB_NOT_READY',
+          'Only a ready invoice import can be committed',
+        );
+      }
+      if (error instanceof InvoiceImportRepositoryConflictError) {
+        throw new InvoiceImportServiceError(
+          'IMPORT_COMMIT_CONFLICT',
+          'Receivable data changed after this preview. Generate a fresh preview before committing.',
+        );
+      }
+      throw error;
+    }
+  }
+}
 
 function toJobView(record: InvoiceImportJobRecord): InvoiceImportJobView {
   return {
@@ -274,7 +306,7 @@ function toJobView(record: InvoiceImportJobRecord): InvoiceImportJobView {
     fileWarnings:
       record.fileWarnings === null
         ? []
-        : diagnosticsSchema.parse(record.fileWarnings),
+        : parseInvoiceImportDiagnostics(record.fileWarnings),
     failure:
       record.failureCode && record.failureMessage
         ? { code: record.failureCode, message: record.failureMessage }
@@ -291,9 +323,9 @@ function toRowView(record: InvoiceImportRowRecord): InvoiceImportRowView {
     id: record.id,
     rowNumber: record.rowNumber,
     result: record.result,
-    payload: normalizedPayloadSchema.parse(record.normalizedPayload),
-    errors: diagnosticsSchema.parse(record.errors),
-    warnings: diagnosticsSchema.parse(record.warnings),
+    payload: parseNormalizedInvoiceImportPayload(record.normalizedPayload),
+    errors: parseInvoiceImportDiagnostics(record.errors),
+    warnings: parseInvoiceImportDiagnostics(record.warnings),
     debtor: {
       action: record.debtorAction,
       matchedDebtorId: record.matchedDebtorId,
@@ -301,6 +333,16 @@ function toRowView(record: InvoiceImportRowRecord): InvoiceImportRowView {
     committedInvoiceId: record.committedInvoiceId,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
+  };
+}
+
+function toCommitView(
+  record: InvoiceImportCommitRecord,
+): InvoiceImportCommitView {
+  return {
+    job: toJobView(record.job),
+    reconciliation: record.reconciliation,
+    replayed: record.replayed,
   };
 }
 

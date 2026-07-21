@@ -36,6 +36,12 @@ export function createInvoiceImportRouter(
   );
   router.get('/api/imports/:id', authenticate, controller.getJob);
   router.get('/api/imports/:id/rows', authenticate, controller.listRows);
+  router.post(
+    '/api/imports/:id/commit',
+    trustedOrigin,
+    authenticate,
+    controller.commitInvoices,
+  );
 
   return router;
 }

@@ -39,6 +39,7 @@ export function createInvoiceImportController(
   previewInvoices: RequestHandler;
   getJob: RequestHandler;
   listRows: RequestHandler;
+  commitInvoices: RequestHandler;
 } {
   const previewInvoices: RequestHandler = async (request, response, next) => {
     try {
@@ -82,7 +83,21 @@ export function createInvoiceImportController(
     }
   };
 
-  return { previewInvoices, getJob, listRows };
+  const commitInvoices: RequestHandler = async (request, response, next) => {
+    try {
+      const params = parse(idParamsSchema, request.params);
+      const result = await options.invoiceImportService.commitInvoices({
+        context: authenticatedContext(response),
+        requestId: response.locals.requestId,
+        importJobId: params.id,
+      });
+      response.status(200).json({ data: result });
+    } catch (error) {
+      next(mapInvoiceImportError(error));
+    }
+  };
+
+  return { previewInvoices, getJob, listRows, commitInvoices };
 }
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
@@ -113,7 +128,13 @@ function mapInvoiceImportError(error: unknown): unknown {
     return new HttpError(error.status, error.code, error.message);
   }
   if (error instanceof InvoiceImportServiceError) {
-    return new HttpError(404, error.code, error.message);
+    const status =
+      error.code === 'IMPORT_JOB_NOT_FOUND'
+        ? 404
+        : error.code === 'IMPORT_NO_VALID_ROWS'
+          ? 422
+          : 409;
+    return new HttpError(status, error.code, error.message);
   }
   return error;
 }
