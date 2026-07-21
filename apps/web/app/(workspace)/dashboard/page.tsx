@@ -1,255 +1,274 @@
+import { ArrowRight, CheckCircle2, Layers3, ShieldCheck } from 'lucide-react';
 import type { Metadata } from 'next';
-import {
-  AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
-  CircleDollarSign,
-  Clock3,
-  FileWarning,
-  ShieldCheck,
-  UserRound,
-} from 'lucide-react';
 import Link from 'next/link';
 
 import { PageHeader } from '@/components/page-header';
+import type {
+  DashboardAgingMetric,
+  DashboardExposure,
+} from '@/lib/dashboard/contracts';
+import { getDashboard } from '@/lib/dashboard/server';
+import { formatBusinessDate, formatRupiah } from '@/lib/formatters';
+import { businessDateQuery } from '@/lib/receivables/page-query';
+import type { PageSearchParams } from '@/lib/url-query';
+
+import styles from './page.module.css';
 
 export const metadata: Metadata = {
   title: 'Collections Inbox',
 };
 
-const summary = [
-  {
-    label: 'Overdue exposure',
-    value: 'Rp 1,84 miliar',
-    detail: '42 open invoices',
-    tone: null,
-  },
-  {
-    label: 'Needs action',
-    value: '26',
-    detail: 'across 11 debtors',
-    tone: null,
-  },
-  {
-    label: 'Broken promises',
-    value: '7',
-    detail: 'Rp 412 jt at risk',
-    tone: 'critical',
-  },
-  {
-    label: 'Next-action coverage',
-    value: '94%',
-    detail: '4 invoices missing',
-    tone: 'attention',
-  },
-] as const;
+interface DashboardPageProps {
+  searchParams: Promise<PageSearchParams>;
+}
 
-const exceptions = [
-  {
-    type: 'Broken promise',
-    tone: 'critical',
-    icon: AlertTriangle,
-    debtor: 'PT Sinar Abadi Retail',
-    reason: 'Promise for 15 July was not fulfilled',
-    amount: 'Rp 185.000.000',
-    owner: 'Maya',
-    due: '45 min',
-    href: '/invoices/INV-2026-0418',
-  },
-  {
-    type: 'No next action',
-    tone: 'attention',
-    icon: Clock3,
-    debtor: 'CV Karya Prima',
-    reason: 'Invoice is 37 days overdue without a scheduled follow-up',
-    amount: 'Rp 142.500.000',
-    owner: 'Alex',
-    due: 'Today',
-    href: '/invoices',
-  },
-  {
-    type: 'Payment review',
-    tone: 'attention',
-    icon: CircleDollarSign,
-    debtor: 'PT Arta Medika',
-    reason: 'Incoming payment has not been allocated to an invoice',
-    amount: 'Rp 28.000.000',
-    owner: 'Maya',
-    due: '11:30',
-    href: '/payments',
-  },
-  {
-    type: 'Open dispute',
-    tone: 'blocked',
-    icon: FileWarning,
-    debtor: 'UD Sentosa Makmur',
-    reason: 'Proof of delivery requested by client finance',
-    amount: 'Rp 64.000.000',
-    owner: 'Dimas',
-    due: '14:00',
-    href: '/collection-queue',
-  },
-] as const;
+export default async function DashboardPage({
+  searchParams,
+}: DashboardPageProps) {
+  const rawSearchParams = await searchParams;
+  const requestedDate = businessDateQuery(rawSearchParams);
+  const result = await getDashboard(requestedDate);
+  const { summary } = result.data;
+  const asOfDate = result.meta.asOfDate;
+  const invoiceHref = `/invoices?asOfDate=${asOfDate}`;
+  const queueHref = `/collection-queue?asOfDate=${asOfDate}`;
 
-const schedule = [
-  ['10:00', 'Review 3 reminder drafts', 'Customer-facing approval'],
-  ['11:30', 'Allocate PAY-0072', 'PT Arta Medika'],
-  ['14:00', 'Dispute review', 'UD Sentosa Makmur'],
-] as const;
+  const summaryMetrics = [
+    {
+      label: 'Total receivables',
+      value: formatRupiah(summary.totalAr),
+      detail: `${formatCount(summary.openInvoiceCount, 'open invoice')}`,
+      href: invoiceHref,
+      tone: 'neutral',
+    },
+    {
+      label: 'Overdue exposure',
+      value: formatRupiah(summary.totalOverdue),
+      detail: formatCount(summary.overdueInvoiceCount, 'overdue invoice'),
+      href: queueHref,
+      tone: 'attention',
+    },
+    {
+      label: 'Overdue rate',
+      value: `${summary.overduePercent}%`,
+      detail: 'Share of current AR',
+      href: queueHref,
+      tone: 'attention',
+    },
+    {
+      label: 'Aging coverage',
+      value: `${activeAgingBuckets(result.data.aging)} / 6`,
+      detail: 'Buckets with exposure',
+      href: '#aging-distribution',
+      tone: 'neutral',
+    },
+  ] as const;
 
-export default function DashboardPage() {
   return (
-    <div className="dashboard-page">
+    <div className={styles.page}>
       <PageHeader
         title="Collections Inbox"
-        eyebrow="Thursday, 16 July"
-        description="Today’s exceptions, ownership, and collection movement."
+        eyebrow={`As of ${formatBusinessDate(asOfDate)}`}
+        description="Exact receivable exposure, aging concentration, and the invoices that require attention."
         action={
-          <Link className="primary-button" href="/collection-queue">
-            Open approval queue <ArrowRight size={14} />
+          <Link className="primary-button" href={queueHref}>
+            Open collection queue <ArrowRight size={14} aria-hidden="true" />
           </Link>
         }
       />
 
-      <div className="dashboard-layout">
-        <main className="dashboard-main">
-          <section
-            className="operational-summary"
-            aria-label="Collection summary"
-          >
-            {summary.map((metric) => (
-              <div className="summary-metric" key={metric.label}>
+      <div className={styles.layout}>
+        <main className={styles.main}>
+          <nav className={styles.summary} aria-label="Receivables summary">
+            {summaryMetrics.map((metric) => (
+              <Link
+                href={metric.href}
+                key={metric.label}
+                data-tone={metric.tone}
+              >
                 <span>{metric.label}</span>
-                <strong
-                  className={metric.tone ? `tone-${metric.tone}` : undefined}
-                >
-                  {metric.value}
-                </strong>
+                <strong>{metric.value}</strong>
                 <small>{metric.detail}</small>
-              </div>
+              </Link>
             ))}
-          </section>
+          </nav>
 
           <section
-            className="exception-section"
-            aria-labelledby="attention-title"
+            className={styles.exposure}
+            aria-labelledby="overdue-exposure-title"
           >
-            <header className="section-heading-row">
+            <header className={styles.sectionHeader}>
               <div>
-                <h2 id="attention-title">Needs attention</h2>
-                <p>Exceptions that require a decision or human follow-up.</p>
+                <h2 id="overdue-exposure-title">Largest overdue exposure</h2>
+                <p>
+                  Highest outstanding balances already past their contractual
+                  due date.
+                </p>
               </div>
-              <Link href="/collection-queue">
-                View all 26 <ArrowRight size={13} />
+              <Link href={queueHref}>
+                Review queue <ArrowRight size={13} aria-hidden="true" />
               </Link>
             </header>
 
-            <div className="exception-list">
-              {exceptions.map(({ icon: Icon, ...exception }) => (
-                <Link
-                  className="exception-row"
-                  href={exception.href}
-                  key={`${exception.type}-${exception.debtor}`}
-                >
-                  <span className={`exception-icon tone-${exception.tone}`}>
-                    <Icon size={15} strokeWidth={1.8} aria-hidden="true" />
-                  </span>
-                  <span className="exception-identity">
-                    <strong>{exception.debtor}</strong>
-                    <small>{exception.reason}</small>
-                  </span>
-                  <span className={`exception-state tone-${exception.tone}`}>
-                    {exception.type}
-                  </span>
-                  <strong className="exception-amount">
-                    {exception.amount}
-                  </strong>
-                  <span className="exception-owner">
-                    <UserRound size={13} aria-hidden="true" /> {exception.owner}
-                  </span>
-                  <span className="exception-due">{exception.due}</span>
-                  <ArrowRight
-                    className="exception-arrow"
-                    size={14}
-                    aria-hidden="true"
+            {result.data.largestOverdue.length > 0 ? (
+              <div className={styles.exposureList}>
+                {result.data.largestOverdue.map((invoice) => (
+                  <ExposureRow
+                    invoice={invoice}
+                    asOfDate={asOfDate}
+                    key={invoice.id}
                   />
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          <section
-            className="automation-strip"
-            aria-labelledby="automation-title"
-          >
-            <span className="automation-icon" aria-hidden="true">
-              <ShieldCheck size={16} />
-            </span>
-            <div>
-              <h2 id="automation-title">Routine scheduling is active</h2>
-              <p>
-                Internal prioritization and next actions are automated. Customer
-                reminders still require approval.
-              </p>
-            </div>
-            <Link href="/settings">Review policy</Link>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptyExposure} role="status">
+                <CheckCircle2 size={18} aria-hidden="true" />
+                <div>
+                  <strong>No overdue receivables</strong>
+                  <p>
+                    Current balances remain visible in the aging distribution.
+                  </p>
+                </div>
+              </div>
+            )}
           </section>
         </main>
 
         <aside
-          className="dashboard-context"
-          aria-label="Today’s operational context"
+          className={styles.context}
+          id="aging-distribution"
+          aria-labelledby="aging-title"
         >
-          <section className="context-section">
-            <header>
-              <div>
-                <span>Today</span>
-                <strong>3 scheduled reviews</strong>
-              </div>
-              <Clock3 size={15} aria-hidden="true" />
-            </header>
-            <div className="schedule-list">
-              {schedule.map(([time, title, meta]) => (
-                <div className="schedule-row" key={`${time}-${title}`}>
-                  <time>{time}</time>
-                  <span>
-                    <strong>{title}</strong>
-                    <small>{meta}</small>
-                  </span>
-                </div>
-              ))}
+          <header className={styles.railHeader}>
+            <div>
+              <h2 id="aging-title">Aging distribution</h2>
+              <p>Exact outstanding exposure by contractual aging bucket.</p>
             </div>
-          </section>
+            <Layers3 size={16} aria-hidden="true" />
+          </header>
 
-          <section className="context-section context-movement">
-            <header>
-              <div>
-                <span>Recent movement</span>
-                <strong>Since yesterday</strong>
-              </div>
-              <CheckCircle2 size={15} aria-hidden="true" />
-            </header>
-            <dl>
-              <div>
-                <dt>Payments recorded</dt>
-                <dd>Rp 486 jt</dd>
-              </div>
-              <div>
-                <dt>Promises kept</dt>
-                <dd>3 of 4</dd>
-              </div>
-              <div>
-                <dt>Invoices resolved</dt>
-                <dd>9</dd>
-              </div>
-            </dl>
-          </section>
+          <ExposureRail
+            aging={result.data.aging}
+            totalAr={summary.totalAr}
+            asOfDate={asOfDate}
+          />
 
-          <Link className="context-report-link" href="/reports">
-            Open weekly report <ArrowRight size={13} />
-          </Link>
+          <nav className={styles.agingList} aria-label="Aging buckets">
+            {result.data.aging.map((metric) => (
+              <Link
+                className={styles.agingRow}
+                href={agingHref(metric.bucket, asOfDate)}
+                key={metric.bucket}
+              >
+                <span className={styles.agingIdentity}>
+                  <strong>{agingLabel(metric.bucket)}</strong>
+                  <small>{formatCount(metric.invoiceCount, 'invoice')}</small>
+                </span>
+                <strong className={styles.agingAmount}>
+                  {formatRupiah(metric.outstandingAmount)}
+                </strong>
+              </Link>
+            ))}
+          </nav>
+
+          <div className={styles.reconciliation}>
+            <ShieldCheck size={15} aria-hidden="true" />
+            <p>
+              Derived from invoice originals minus non-reversed allocations. No
+              competing balance ledger is stored.
+            </p>
+          </div>
         </aside>
       </div>
     </div>
   );
+}
+
+function ExposureRow({
+  invoice,
+  asOfDate,
+}: {
+  invoice: DashboardExposure;
+  asOfDate: string;
+}) {
+  return (
+    <Link
+      className={styles.exposureRow}
+      href={`/invoices/${invoice.id}?asOfDate=${asOfDate}`}
+    >
+      <span className={styles.identity}>
+        <strong>{invoice.debtor.name}</strong>
+        <small>
+          {invoice.invoiceNumber}
+          {invoice.debtor.code ? ` · ${invoice.debtor.code}` : ''}
+        </small>
+      </span>
+      <span className={styles.dueDate}>
+        Due {formatBusinessDate(invoice.dueDate)}
+      </span>
+      <span className={styles.aging}>
+        {invoice.daysOverdue.toLocaleString('id-ID')} days overdue
+      </span>
+      <strong className={styles.amount}>
+        {formatRupiah(invoice.outstandingAmount)}
+      </strong>
+      <ArrowRight className={styles.rowArrow} size={14} aria-hidden="true" />
+    </Link>
+  );
+}
+
+function ExposureRail({
+  aging,
+  totalAr,
+  asOfDate,
+}: {
+  aging: DashboardAgingMetric[];
+  totalAr: string;
+  asOfDate: string;
+}) {
+  const total = Number(totalAr);
+  const active = aging.filter((metric) => Number(metric.outstandingAmount) > 0);
+
+  if (total === 0 || active.length === 0) {
+    return <div className={styles.rail} aria-label="No aging exposure" />;
+  }
+
+  return (
+    <div className={styles.rail} aria-label="Aging exposure distribution">
+      {active.map((metric) => (
+        <Link
+          data-bucket={metric.bucket}
+          href={agingHref(metric.bucket, asOfDate)}
+          key={metric.bucket}
+          style={{ flexGrow: Number(metric.outstandingAmount) / total }}
+          aria-label={`${agingLabel(metric.bucket)}: ${formatRupiah(metric.outstandingAmount)}`}
+          title={`${agingLabel(metric.bucket)} · ${formatRupiah(metric.outstandingAmount)}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function agingHref(bucket: string, asOfDate: string): string {
+  return `/invoices?agingBucket=${bucket}&asOfDate=${asOfDate}`;
+}
+
+function agingLabel(bucket: string): string {
+  const labels: Record<string, string> = {
+    CURRENT: 'Current',
+    OVERDUE_1_7: '1–7 days overdue',
+    OVERDUE_8_30: '8–30 days overdue',
+    OVERDUE_31_60: '31–60 days overdue',
+    OVERDUE_61_90: '61–90 days overdue',
+    OVERDUE_90_PLUS: '90+ days overdue',
+  };
+  return labels[bucket] ?? bucket;
+}
+
+function activeAgingBuckets(aging: DashboardAgingMetric[]): number {
+  return aging.filter((metric) => Number(metric.outstandingAmount) > 0).length;
+}
+
+function formatCount(count: number, label: string): string {
+  return `${count.toLocaleString('id-ID')} ${label}${count === 1 ? '' : 's'}`;
 }
