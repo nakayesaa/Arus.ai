@@ -1,0 +1,210 @@
+.table {
+  min-width: 1235px;
+}
+
+.table th {
+  height: 40px;
+}
+
+.table td {
+  height: 62px;
+}
+
+.table tbody tr {
+  transition: background var(--motion-fast) var(--ease-out-quart);
+}
+
+.method {
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  background: #080a0b;
+  text-align: left;
+}
+
+.method > span:last-child {
+  display: inline-grid;
+  gap: 2px;
+  padding: 11px 0;
+  vertical-align: middle;
+}
+
+.method strong {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.method small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 450;
+}
+
+.methodIcon {
+  display: inline-grid;
+  width: 27px;
+  height: 27px;
+  margin-right: 10px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--green);
+  background: rgb(112 208 173 / 6%);
+  vertical-align: middle;
+}
+
+.identity {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.identity > a,
+.identity > small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity > small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.trigger {
+  display: grid;
+  min-width: 0;
+  align-items: center;
+  grid-template-columns: 7px minmax(0, max-content);
+  column-gap: 7px;
+}
+
+.trigger > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 0 3px rgb(90 166 245 / 9%);
+}
+
+.trigger[data-tone='critical'] > span {
+  background: var(--red);
+  box-shadow: 0 0 0 3px rgb(240 117 109 / 9%);
+}
+
+.trigger[data-tone='attention'] > span {
+  background: var(--amber);
+  box-shadow: 0 0 0 3px rgb(229 174 88 / 9%);
+}
+
+.trigger strong,
+.trigger small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trigger strong {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.trigger small {
+  grid-column: 2;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.priority {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.score {
+  display: grid;
+  width: 58px;
+  flex: 0 0 58px;
+  gap: 1px;
+}
+
+.score strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 680;
+  letter-spacing: -0.015em;
+}
+
+.score small {
+  color: var(--green);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.factors {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.factor {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  padding: 0 8px;
+  border-left: 1px solid var(--border-soft);
+}
+
+.factor:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.factor small,
+.factor strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.factor small {
+  color: var(--muted-dark);
+  font-size: 8px;
+}
+
+.factor strong {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 580;
+}
+
+.openInvoice {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--muted-dark);
+  transition:
+    color var(--motion-fast) var(--ease-out-quart),
+    background var(--motion-fast) var(--ease-out-quart);
+}
+
+.openInvoice:hover {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table tbody tr,
+  .openInvoice {
+    transition: none;
+  }
+}
