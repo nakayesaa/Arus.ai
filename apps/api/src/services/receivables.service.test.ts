@@ -118,6 +118,10 @@ class FakeReceivablesRepository implements ReceivablesRepository {
       : this.invoices;
   }
 
+  async listCollectionQueueCandidates(): Promise<[]> {
+    return [];
+  }
+
   async findInvoice(): Promise<InvoiceDetailRecord | null> {
     return this.invoiceRecord;
   }

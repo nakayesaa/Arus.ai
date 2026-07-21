@@ -42,6 +42,13 @@ export interface InvoiceDetailRecord extends InvoiceCalculationRecord {
   }>;
 }
 
+export interface CollectionQueueSourceRecord extends InvoiceCalculationRecord {
+  lastContactDate: string | null;
+  nextFollowUpDate: string | null;
+  promiseStatus: 'ACTIVE' | 'DUE' | 'BROKEN' | 'FULFILLED' | 'CANCELLED' | null;
+  hasOpenDispute: boolean;
+}
+
 export interface DebtorDetailRecord extends DebtorRecord {
   invoices: InvoiceCalculationRecord[];
 }
@@ -87,6 +94,10 @@ export interface ReceivablesRepository {
     debtorIds?: readonly string[] | undefined;
     take: number;
   }): Promise<InvoiceCalculationRecord[]>;
+  listCollectionQueueCandidates(input: {
+    organizationId: string;
+    take: number;
+  }): Promise<CollectionQueueSourceRecord[]>;
   findInvoice(
     organizationId: string,
     invoiceId: string,
@@ -274,6 +285,22 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
       select: invoiceCalculationSelect,
     });
     return records.map(toInvoiceCalculationRecord);
+  }
+
+  async listCollectionQueueCandidates(input: {
+    organizationId: string;
+    take: number;
+  }): Promise<CollectionQueueSourceRecord[]> {
+    const records = await this.listInvoiceCandidates(input);
+    return records.map((record) => ({
+      ...record,
+      // Days 7–8 add these source events. Until then, their persisted absence is
+      // represented explicitly instead of manufacturing queue activity.
+      lastContactDate: null,
+      nextFollowUpDate: null,
+      promiseStatus: null,
+      hasOpenDispute: false,
+    }));
   }
 
   async findInvoice(
