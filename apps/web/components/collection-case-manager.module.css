@@ -37,59 +37,6 @@
   text-transform: uppercase;
 }
 
-.signalStrip {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 6px;
-}
-
-.signal {
-  display: grid;
-  min-width: 86px;
-  gap: 2px;
-  padding: 7px 9px;
-  border: 1px solid var(--border-soft);
-  border-radius: 7px;
-  background: rgb(7 9 10 / 58%);
-}
-
-.signal::before {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  content: '';
-  background: var(--blue);
-  box-shadow: 0 0 8px currentColor;
-}
-
-.signal[data-tone='amber']::before {
-  color: #d7a85c;
-  background: #d7a85c;
-}
-
-.signal[data-tone='red']::before {
-  color: var(--red);
-  background: var(--red);
-}
-
-.signal[data-tone='green']::before {
-  color: var(--green);
-  background: var(--green);
-}
-
-.signal span {
-  color: var(--muted-dark);
-  font-size: 8px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.signal strong {
-  color: var(--text-soft);
-  font-size: 10px;
-  font-weight: 630;
-}
-
 .feedbackRegion {
   display: grid;
   gap: 6px;
@@ -533,14 +480,6 @@
   .header {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .signalStrip {
-    width: 100%;
-  }
-
-  .signal {
-    flex: 1;
   }
 
   .lanes {

@@ -93,9 +93,6 @@ export function CollectionCaseManager({
   const livePromise = promises.find(
     (promise) => promise.status === 'ACTIVE' || promise.status === 'DUE',
   );
-  const openDisputeCount = disputes.filter(
-    (dispute) => dispute.status === 'OPEN',
-  ).length;
 
   async function execute(
     key: string,
@@ -254,20 +251,6 @@ export function CollectionCaseManager({
             Turn customer commitments into dates, and isolate exceptions before
             they distort the queue.
           </p>
-        </div>
-        <div className={styles.signalStrip} aria-label="Current case state">
-          <CaseSignal
-            label="Promise"
-            value={livePromise ? humanizeEnum(livePromise.status) : 'None live'}
-            tone={livePromise?.status === 'DUE' ? 'amber' : 'blue'}
-          />
-          <CaseSignal
-            label="Disputes"
-            value={
-              openDisputeCount === 0 ? 'Clear' : `${openDisputeCount} open`
-            }
-            tone={openDisputeCount > 0 ? 'red' : 'green'}
-          />
         </div>
       </header>
 
@@ -557,23 +540,6 @@ export function CollectionCaseManager({
         </section>
       </div>
     </section>
-  );
-}
-
-function CaseSignal({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: 'blue' | 'amber' | 'red' | 'green';
-}) {
-  return (
-    <div className={styles.signal} data-tone={tone}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
   );
 }
 
