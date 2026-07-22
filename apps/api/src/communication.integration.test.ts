@@ -19,6 +19,7 @@ import { PrismaReceivablesRepository } from './repositories/receivables.reposito
 import { AuthService } from './services/auth.service.js';
 import { CollectionQueueService } from './services/collection-queue.service.js';
 import { CommunicationService } from './services/communication.service.js';
+import { ReceivablesService } from './services/receivables.service.js';
 
 const integrationDescribe = describe.runIf(
   process.env.RUN_DATABASE_INTEGRATION_TESTS === 'true',
@@ -34,6 +35,7 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
   const invoiceAId = randomUUID();
   const invoiceBId = randomUUID();
   const queueRefreshInvoiceId = randomUUID();
+  const timelineInvoiceId = randomUUID();
   const password = `communication-${randomUUID()}`;
   const emailA = `communication-a-${randomUUID()}@integration.arus.local`;
   const emailB = `communication-b-${randomUUID()}@integration.arus.local`;
@@ -153,6 +155,16 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
           dueDate: databaseDate('2026-06-30'),
           originalAmount: '1000000.00',
         },
+        {
+          id: timelineInvoiceId,
+          organizationId: organizationAId,
+          debtorId: debtorAId,
+          invoiceNumber: 'INV-COMM-TIMELINE',
+          normalizedInvoiceNumber: 'inv-comm-timeline',
+          invoiceDate: databaseDate('2026-06-01'),
+          dueDate: databaseDate('2026-06-30'),
+          originalAmount: '1000000.00',
+        },
       ],
     });
 
@@ -165,14 +177,20 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
       repository: new PrismaCommunicationRepository(database),
       clock: () => occurredAt,
     });
+    const receivablesRepository = new PrismaReceivablesRepository(database);
     const collectionQueueService = new CollectionQueueService({
-      repository: new PrismaReceivablesRepository(database),
+      repository: receivablesRepository,
+      clock: () => occurredAt,
+    });
+    const receivablesService = new ReceivablesService({
+      repository: receivablesRepository,
       clock: () => occurredAt,
     });
     app = createApp({
       authService,
       collectionQueueService,
       communicationService,
+      receivablesService,
       environment,
       logger,
     });
@@ -306,6 +324,45 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
       nextFollowUpDate: '2026-07-17',
       daysSinceLastContact: 0,
       priority: { score: '3.10', components: { stale: '0.00' } },
+    });
+  });
+
+  it('returns the recorded actor, time, and follow-up in invoice history', async () => {
+    const notes = 'Customer confirmed the invoice reached treasury.';
+    const created = await postCommunication({
+      cookie: cookieA,
+      invoiceId: timelineInvoiceId,
+      operationKey: randomUUID(),
+      body: {
+        channel: 'EMAIL',
+        notes,
+        nextFollowUpDate: '2026-07-17',
+      },
+    }).expect(201);
+
+    const response = await request(app)
+      .get(`/api/invoices/${timelineInvoiceId}?asOfDate=2026-07-10`)
+      .set('Cookie', cookieA)
+      .expect(200);
+
+    expect(response.body.meta).toEqual({
+      asOfDate: '2026-07-10',
+      workflowBusinessDate: '2026-07-16',
+    });
+    expect(response.body.data.nextFollowUpSuggestion).toEqual({
+      date: '2026-07-17',
+      basis: 'STANDARD_NEXT_DAY',
+    });
+    expect(response.body.data.communications).toHaveLength(1);
+    expect(response.body.data.communications[0]).toEqual({
+      id: created.body.data.id,
+      occurredAt: created.body.data.occurredAt,
+      channel: 'EMAIL',
+      notes,
+      nextFollowUpDate: '2026-07-17',
+      actor: created.body.data.actor,
+      createdAt: created.body.data.createdAt,
+      updatedAt: created.body.data.updatedAt,
     });
   });
 
