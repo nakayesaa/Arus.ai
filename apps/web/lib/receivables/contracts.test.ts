@@ -101,11 +101,35 @@ describe('receivables contracts', () => {
             },
           },
         ],
+        communications: [
+          {
+            id: '484d170a-e4cd-4936-837b-1719c0910139',
+            occurredAt: '2026-07-15T03:30:00.000Z',
+            channel: 'CALL',
+            notes: 'Accounts payable confirmed review.',
+            nextFollowUpDate: '2026-07-17',
+            actor: {
+              id: '59665926-cb08-47de-87ad-bc28b2cf05ae',
+              name: 'Alya Putri',
+              role: 'OPERATOR',
+            },
+            createdAt: '2026-07-15T03:30:00.000Z',
+            updatedAt: '2026-07-15T03:30:00.000Z',
+          },
+        ],
+        nextFollowUpSuggestion: {
+          date: '2026-07-17',
+          basis: 'STANDARD_NEXT_DAY',
+        },
       },
-      meta: { asOfDate: '2026-07-16' },
+      meta: {
+        asOfDate: '2026-07-16',
+        workflowBusinessDate: '2026-07-16',
+      },
     });
 
     expect(parsed.data.allocations[0]?.payment.bankReference).toBe('BCA-REF-1');
+    expect(parsed.data.communications[0]?.actor.role).toBe('OPERATOR');
   });
 
   it('serializes only normalized supported list filters', () => {

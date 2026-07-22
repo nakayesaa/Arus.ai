@@ -51,6 +51,7 @@ const collectionQueueItemSchema = z
       })
       .strict(),
     lastContactDate: nullableDateSchema,
+    lastContactAt: z.iso.datetime({ offset: true }).nullable(),
     nextFollowUpDate: nullableDateSchema,
     promiseStatus: z
       .enum(['ACTIVE', 'DUE', 'BROKEN', 'FULFILLED', 'CANCELLED'])

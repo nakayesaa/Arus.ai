@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+import {
+  communicationTimelineEntrySchema,
+  nextFollowUpSuggestionSchema,
+} from '../communications/contracts';
+
 export const invoiceStates = ['OPEN', 'PARTIALLY_PAID', 'PAID'] as const;
 export const agingBuckets = [
   'CURRENT',
@@ -114,8 +119,12 @@ export const invoiceListResponseSchema = z.object({
 export const invoiceDetailResponseSchema = z.object({
   data: invoiceSchema.extend({
     allocations: z.array(allocationSchema).max(10_000),
+    communications: z.array(communicationTimelineEntrySchema).max(10_000),
+    nextFollowUpSuggestion: nextFollowUpSuggestionSchema,
   }),
-  meta: responseMetaSchema,
+  meta: responseMetaSchema
+    .extend({ workflowBusinessDate: businessDateSchema })
+    .strict(),
 });
 
 export type InvoiceState = z.infer<typeof invoiceStateSchema>;
