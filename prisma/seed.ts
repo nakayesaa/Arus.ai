@@ -6,6 +6,7 @@ import bcrypt from 'bcrypt';
 import { PrismaClient } from '../apps/api/src/generated/prisma/client.js';
 import {
   seedAllocations,
+  seedCommunications,
   seedDebtors,
   seedInvoices,
   seedOrganizations,
@@ -128,6 +129,27 @@ async function main(): Promise<void> {
     });
   }
 
+  for (const communication of seedCommunications) {
+    await prisma.communication.upsert({
+      where: { id: communication.id },
+      update: {
+        organizationId: communication.organizationId,
+        invoiceId: communication.invoiceId,
+        actorId: communication.actorId,
+        operationKey: communication.operationKey,
+        occurredAt: new Date(communication.occurredAt),
+        channel: communication.channel,
+        notes: communication.notes,
+        nextFollowUpDate: asDatabaseDate(communication.nextFollowUpDate),
+      },
+      create: {
+        ...communication,
+        occurredAt: new Date(communication.occurredAt),
+        nextFollowUpDate: asDatabaseDate(communication.nextFollowUpDate),
+      },
+    });
+  }
+
   for (const payment of seedPayments) {
     await prisma.payment.upsert({
       where: { id: payment.id },
@@ -178,6 +200,7 @@ async function main(): Promise<void> {
       `${seedUsers.length} users`,
       `${seedDebtors.length} debtors`,
       `${seedInvoices.length} invoices`,
+      `${seedCommunications.length} communications`,
       `${seedPayments.length} payments`,
       `and ${seedAllocations.length} allocations`,
     ].join(', '),

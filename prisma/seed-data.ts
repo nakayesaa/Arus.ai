@@ -1,4 +1,7 @@
-import { MembershipRole } from '../apps/api/src/generated/prisma/enums.js';
+import {
+  CommunicationChannel,
+  MembershipRole,
+} from '../apps/api/src/generated/prisma/enums.js';
 
 export const seedOrganizations = [
   {
@@ -153,6 +156,33 @@ export const seedInvoices = [
     dueDate: '2026-06-30',
     originalAmount: '10000000.00',
     description: 'Cross-tenant invoice identity boundary',
+  },
+] as const;
+
+export const seedCommunications = [
+  {
+    id: '60000000-0000-4000-8000-000000000001',
+    organizationId: seedOrganizations[0].id,
+    invoiceId: seedInvoices[0].id,
+    actorId: seedUsers[0].id,
+    operationKey: '70000000-0000-4000-8000-000000000001',
+    occurredAt: '2026-07-11T03:00:00.000Z',
+    channel: CommunicationChannel.EMAIL,
+    notes:
+      'Sent invoice evidence to accounts payable for internal approval review.',
+    nextFollowUpDate: '2026-07-14',
+  },
+  {
+    id: '60000000-0000-4000-8000-000000000002',
+    organizationId: seedOrganizations[0].id,
+    invoiceId: seedInvoices[0].id,
+    actorId: seedUsers[1].id,
+    operationKey: '70000000-0000-4000-8000-000000000002',
+    occurredAt: '2026-07-14T03:30:00.000Z',
+    channel: CommunicationChannel.CALL,
+    notes:
+      'Accounts payable confirmed the invoice is in approval. Follow up after finance review.',
+    nextFollowUpDate: '2026-07-18',
   },
 ] as const;
 
