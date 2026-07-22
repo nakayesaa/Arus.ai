@@ -47,6 +47,25 @@ enum CommunicationChannel {
   OTHER
 }
 
+enum PromiseFinalStatus {
+  FULFILLED
+  CANCELLED
+}
+
+enum DisputeCategory {
+  MISSING_POD
+  WRONG_AMOUNT
+  WRONG_QUANTITY
+  QUALITY
+  ADMINISTRATIVE
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  RESOLVED
+}
+
 model Organization {
   id        String   @id @default(uuid()) @db.Uuid
   name      String   @db.VarChar(200)
@@ -62,6 +81,8 @@ model Organization {
   payments       Payment[]
   allocations    PaymentAllocation[]
   communications Communication[]
+  promises       PromiseToPay[]
+  disputes       Dispute[]
   importJobs     InvoiceImportJob[]
   importRows     InvoiceImportRow[]
 }
@@ -82,6 +103,10 @@ model User {
   createdPayments    Payment[]           @relation("PaymentCreator")
   createdAllocations PaymentAllocation[] @relation("AllocationCreator")
   communications     Communication[]     @relation("CommunicationActor")
+  createdPromises    PromiseToPay[]      @relation("PromiseCreator")
+  cancelledPromises  PromiseToPay[]      @relation("PromiseCanceller")
+  createdDisputes    Dispute[]           @relation("DisputeCreator")
+  resolvedDisputes   Dispute[]           @relation("DisputeResolver")
   createdImportJobs  InvoiceImportJob[]  @relation("InvoiceImportCreator")
 }
 
@@ -197,6 +222,8 @@ model Invoice {
   debtor         Debtor              @relation(fields: [debtorId], references: [id], onDelete: Restrict)
   allocations    PaymentAllocation[]
   communications Communication[]
+  promises       PromiseToPay[]
+  disputes       Dispute[]
   importRow      InvoiceImportRow?   @relation("CommittedInvoice")
 
   @@index([organizationId, dueDate])
@@ -225,6 +252,65 @@ model Communication {
   @@unique([organizationId, operationKey])
   @@index([organizationId, invoiceId, occurredAt])
   @@index([organizationId, createdAt])
+}
+
+model PromiseToPay {
+  id                       String              @id @default(uuid()) @db.Uuid
+  organizationId           String              @db.Uuid
+  invoiceId                String              @db.Uuid
+  amount                   Decimal             @db.Decimal(18, 2)
+  promiseDate              DateTime            @db.Date
+  createdById              String              @db.Uuid
+  createdByRole            MembershipRole
+  operationKey             String              @db.Uuid
+  finalStatus              PromiseFinalStatus?
+  fulfilledAt              DateTime?           @db.Timestamptz(3)
+  cancelledAt              DateTime?           @db.Timestamptz(3)
+  cancelledById            String?             @db.Uuid
+  cancelledByRole          MembershipRole?
+  cancelReason             String?             @db.VarChar(500)
+  cancellationOperationKey String?             @db.Uuid
+  createdAt                DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime            @updatedAt @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  invoice      Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation("PromiseCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  cancelledBy  User?        @relation("PromiseCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, operationKey], map: "PromiseToPay_org_operation_key")
+  @@unique([organizationId, cancellationOperationKey], map: "PromiseToPay_org_cancel_operation_key")
+  @@index([organizationId, invoiceId, promiseDate])
+  @@index([organizationId, finalStatus, promiseDate])
+}
+
+model Dispute {
+  id                     String          @id @default(uuid()) @db.Uuid
+  organizationId         String          @db.Uuid
+  invoiceId              String          @db.Uuid
+  category               DisputeCategory
+  details                String          @db.VarChar(2000)
+  status                 DisputeStatus   @default(OPEN)
+  createdById            String          @db.Uuid
+  createdByRole          MembershipRole
+  operationKey           String          @db.Uuid
+  resolvedById           String?         @db.Uuid
+  resolvedByRole         MembershipRole?
+  resolvedAt             DateTime?       @db.Timestamptz(3)
+  resolutionNote         String?         @db.VarChar(1000)
+  resolutionOperationKey String?         @db.Uuid
+  createdAt              DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime        @updatedAt @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  invoice      Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation("DisputeCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  resolvedBy   User?        @relation("DisputeResolver", fields: [resolvedById], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, operationKey], map: "Dispute_org_operation_key")
+  @@unique([organizationId, resolutionOperationKey], map: "Dispute_org_resolution_operation_key")
+  @@index([organizationId, invoiceId, status, createdAt])
+  @@index([organizationId, status, createdAt])
 }
 
 model Payment {
