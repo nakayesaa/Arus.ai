@@ -15,6 +15,7 @@ import { createCommunicationRouter } from './routes/communication.routes.js';
 import { createDashboardRouter } from './routes/dashboard.routes.js';
 import { healthRouter } from './routes/health.routes.js';
 import { createInvoiceImportRouter } from './routes/invoice-import.routes.js';
+import { createPromiseRouter } from './routes/promise.routes.js';
 import { createReceivablesRouter } from './routes/receivables.routes.js';
 import type { AccountLifecycleServiceContract } from './services/account-lifecycle.service.js';
 import type { AuthServiceContract } from './services/auth.service.js';
@@ -22,6 +23,7 @@ import type { CollectionQueueServiceContract } from './services/collection-queue
 import type { CommunicationServiceContract } from './services/communication.service.js';
 import type { DashboardServiceContract } from './services/dashboard.service.js';
 import type { InvoiceImportServiceContract } from './services/invoice-import.service.js';
+import type { PromiseServiceContract } from './services/promise.service.js';
 import type { ReceivablesServiceContract } from './services/receivables.service.js';
 
 interface CreateAppOptions {
@@ -32,6 +34,7 @@ interface CreateAppOptions {
   dashboardService?: DashboardServiceContract;
   collectionQueueService?: CollectionQueueServiceContract;
   communicationService?: CommunicationServiceContract;
+  promiseService?: PromiseServiceContract;
   environment?: Environment;
   logger?: Logger;
 }
@@ -104,6 +107,15 @@ export function createApp(options: CreateAppOptions): Express {
       createCommunicationRouter({
         authService: options.authService,
         communicationService: options.communicationService,
+        environment,
+      }),
+    );
+  }
+  if (options.promiseService) {
+    app.use(
+      createPromiseRouter({
+        authService: options.authService,
+        promiseService: options.promiseService,
         environment,
       }),
     );

@@ -6,6 +6,7 @@ import { createLogger } from './lib/logger.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
 import { PrismaCommunicationRepository } from './repositories/communication.repository.js';
 import { PrismaInvoiceImportRepository } from './repositories/invoice-import.repository.js';
+import { PrismaPromiseRepository } from './repositories/promise.repository.js';
 import { PrismaAccountLifecycleRepository } from './repositories/account-lifecycle.repository.js';
 import { PrismaReceivablesRepository } from './repositories/receivables.repository.js';
 import { AccountLifecycleService } from './services/account-lifecycle.service.js';
@@ -14,6 +15,7 @@ import { CollectionQueueService } from './services/collection-queue.service.js';
 import { CommunicationService } from './services/communication.service.js';
 import { DashboardService } from './services/dashboard.service.js';
 import { InvoiceImportService } from './services/invoice-import.service.js';
+import { PromiseService } from './services/promise.service.js';
 import { ReceivablesService } from './services/receivables.service.js';
 
 const environment = loadEnvironment();
@@ -43,6 +45,9 @@ const collectionQueueService = new CollectionQueueService({
 const communicationService = new CommunicationService({
   repository: new PrismaCommunicationRepository(database),
 });
+const promiseService = new PromiseService({
+  repository: new PrismaPromiseRepository(database),
+});
 const invoiceImportService = new InvoiceImportService({
   repository: new PrismaInvoiceImportRepository(database),
   logger,
@@ -55,6 +60,7 @@ const app = createApp({
   dashboardService,
   collectionQueueService,
   communicationService,
+  promiseService,
   environment,
   logger,
 });
