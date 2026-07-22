@@ -117,6 +117,43 @@ describe('receivables contracts', () => {
             updatedAt: '2026-07-15T03:30:00.000Z',
           },
         ],
+        promises: [
+          {
+            id: '799cf6df-4c9d-4f55-b38e-dde42f5b817b',
+            amount: '40000000.00',
+            promiseDate: '2026-07-20',
+            status: 'ACTIVE',
+            fulfilledAt: null,
+            cancelledAt: null,
+            cancelReason: null,
+            createdBy: {
+              id: '59665926-cb08-47de-87ad-bc28b2cf05ae',
+              name: 'Alya Putri',
+              role: 'OPERATOR',
+            },
+            cancelledBy: null,
+            createdAt: '2026-07-15T03:30:00.000Z',
+            updatedAt: '2026-07-15T03:30:00.000Z',
+          },
+        ],
+        disputes: [
+          {
+            id: 'ec5f7ebd-73f1-48c4-b234-d39e1210c9cb',
+            category: 'WRONG_AMOUNT',
+            details: 'Customer reported a tax mismatch.',
+            status: 'OPEN',
+            resolutionNote: null,
+            createdBy: {
+              id: '59665926-cb08-47de-87ad-bc28b2cf05ae',
+              name: 'Alya Putri',
+              role: 'OPERATOR',
+            },
+            resolvedBy: null,
+            resolvedAt: null,
+            createdAt: '2026-07-15T03:30:00.000Z',
+            updatedAt: '2026-07-15T03:30:00.000Z',
+          },
+        ],
         nextFollowUpSuggestion: {
           date: '2026-07-17',
           basis: 'STANDARD_NEXT_DAY',
@@ -131,6 +168,8 @@ describe('receivables contracts', () => {
 
     expect(parsed.data.allocations[0]?.payment.bankReference).toBe('BCA-REF-1');
     expect(parsed.data.communications[0]?.actor.role).toBe('OPERATOR');
+    expect(parsed.data.promises[0]?.status).toBe('ACTIVE');
+    expect(parsed.data.disputes[0]?.status).toBe('OPEN');
   });
 
   it('serializes only normalized supported list filters', () => {

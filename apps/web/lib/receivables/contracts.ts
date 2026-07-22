@@ -4,6 +4,10 @@ import {
   communicationTimelineEntrySchema,
   nextFollowUpSuggestionSchema,
 } from '../communications/contracts';
+import {
+  disputeViewSchema,
+  promiseViewSchema,
+} from '../collection-cases/contracts';
 
 export const invoiceStates = ['OPEN', 'PARTIALLY_PAID', 'PAID'] as const;
 export const agingBuckets = [
@@ -120,6 +124,8 @@ export const invoiceDetailResponseSchema = z.object({
   data: invoiceSchema.extend({
     allocations: z.array(allocationSchema).max(10_000),
     communications: z.array(communicationTimelineEntrySchema).max(10_000),
+    promises: z.array(promiseViewSchema).max(10_000),
+    disputes: z.array(disputeViewSchema).max(10_000),
     nextFollowUpSuggestion: nextFollowUpSuggestionSchema,
   }),
   meta: responseMetaSchema
