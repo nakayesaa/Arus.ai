@@ -92,28 +92,38 @@ test('keeps invoice search, state, aging, and business date in the URL', async (
 test('renders the seeded collection queue in exact priority order', async ({
   page,
 }) => {
+  await page.goto(`/dashboard?asOfDate=${AS_OF_DATE}`);
+  await expect(
+    page.getByText('Broken promises', { exact: true }).locator('..'),
+  ).toContainText('1');
+  await expect(
+    page.getByText('Open disputes', { exact: true }).locator('..'),
+  ).toContainText('1');
+
   await page.goto(`/collection-queue?asOfDate=${AS_OF_DATE}`);
 
   await expect(
     page.getByRole('heading', { name: 'Collection Queue' }),
   ).toBeVisible();
-  await expect(page.getByText('4 invoices prioritized')).toBeVisible();
-  await expect(page.getByText('Deterministic priority')).toBeVisible();
+  await expect(page.getByText('3 invoices prioritized')).toBeVisible();
 
   const rows = page.locator('tbody tr');
-  await expect(rows).toHaveCount(4);
+  await expect(rows).toHaveCount(3);
   await expect(rows.nth(0)).toContainText('INV-2026-0074');
-  await expect(rows.nth(0)).toContainText('487.60');
+  await expect(rows.nth(0)).toContainText('507.60');
+  await expect(rows.nth(0)).toContainText('Broken promise');
   await expect(rows.nth(0)).toContainText(/Amount\s*472\.50/u);
   await expect(rows.nth(1)).toContainText('INV-2026-0418');
-  await expect(rows.nth(1)).toContainText('208.20');
+  await expect(rows.nth(1)).toContainText('218.20');
+  await expect(rows.nth(1)).toContainText('Promise due');
   await expect(rows.nth(1)).toContainText('Last 14 Jul 2026');
   await expect(rows.nth(1)).toContainText('Due 18 Jul 2026');
   await expect(rows.nth(2)).toContainText('INV-2026-0090');
   await expect(rows.nth(2)).toContainText('155.00');
   await expect(rows.nth(2)).toContainText('Due soon · uncontacted');
-  await expect(rows.nth(3)).toContainText('INV-2026-0060');
-  await expect(rows.nth(3)).toContainText('128.20');
+  await expect(page.getByRole('link', { name: 'INV-2026-0060' })).toHaveCount(
+    0,
+  );
   await expect(page.getByText('Boundary Customer')).toHaveCount(0);
 
   await rows.nth(0).getByRole('link', { name: 'INV-2026-0074' }).click();
