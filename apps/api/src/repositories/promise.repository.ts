@@ -100,6 +100,19 @@ export class PrismaPromiseRepository implements PromiseRepository {
       const record = await this.database.$transaction(
         async (transaction) => {
           await lockInvoice(transaction, input.invoiceId);
+          const replay = await transaction.promiseToPay.findUnique({
+            where: {
+              organizationId_operationKey: {
+                organizationId: input.organizationId,
+                operationKey: input.operationKey,
+              },
+            },
+            select: promiseSelect,
+          });
+          if (replay) {
+            assertCreateReplayMatches(replay, input);
+            return { record: toPromiseRecord(replay), replayed: true };
+          }
           const invoice = await transaction.invoice.findFirst({
             where: {
               id: input.invoiceId,
@@ -197,11 +210,11 @@ export class PrismaPromiseRepository implements PromiseRepository {
               },
             },
           });
-          return toPromiseRecord(promise);
+          return { record: toPromiseRecord(promise), replayed: false };
         },
-        { isolationLevel: 'Serializable' },
+        { isolationLevel: 'ReadCommitted' },
       );
-      return record ? { record, replayed: false } : null;
+      return record;
     } catch (error) {
       if (!isUniqueConflict(error)) throw error;
       return this.recoverCreateReplay(input);
@@ -276,7 +289,7 @@ export class PrismaPromiseRepository implements PromiseRepository {
           });
           return { record: toPromiseRecord(cancelled), replayed: false };
         },
-        { isolationLevel: 'Serializable' },
+        { isolationLevel: 'ReadCommitted' },
       );
       return result;
     } catch (error) {
@@ -302,15 +315,10 @@ export class PrismaPromiseRepository implements PromiseRepository {
       },
       select: promiseSelect,
     });
-    if (
-      !existing ||
-      existing.invoiceId !== input.invoiceId ||
-      existing.createdBy.id !== input.actorId ||
-      existing.amount.toFixed(2) !== formatMoney(parseMoney(input.amount)) ||
-      databaseDate(existing.promiseDate) !== input.promiseDate
-    ) {
+    if (!existing) {
       throw new PromiseRepositoryConflictError('IDEMPOTENCY_CONFLICT');
     }
+    assertCreateReplayMatches(existing, input);
     return { record: toPromiseRecord(existing), replayed: true };
   }
 
@@ -390,6 +398,30 @@ function toPromiseRecord(record: {
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
+}
+
+function assertCreateReplayMatches(
+  existing: {
+    invoiceId: string;
+    amount: { toFixed(scale: number): string };
+    promiseDate: Date;
+    createdBy: { id: string };
+  },
+  input: {
+    invoiceId: string;
+    actorId: string;
+    amount: string;
+    promiseDate: string;
+  },
+): void {
+  if (
+    existing.invoiceId !== input.invoiceId ||
+    existing.createdBy.id !== input.actorId ||
+    existing.amount.toFixed(2) !== formatMoney(parseMoney(input.amount)) ||
+    databaseDate(existing.promiseDate) !== input.promiseDate
+  ) {
+    throw new PromiseRepositoryConflictError('IDEMPOTENCY_CONFLICT');
+  }
 }
 
 function toDatabaseDate(value: string): Date {

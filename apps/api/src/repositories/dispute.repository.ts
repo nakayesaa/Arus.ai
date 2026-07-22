@@ -113,7 +113,7 @@ export class PrismaDisputeRepository implements DisputeRepository {
           });
           return toDisputeRecord(dispute);
         },
-        { isolationLevel: 'Serializable' },
+        { isolationLevel: 'ReadCommitted' },
       );
       return record ? { record, replayed: false } : null;
     } catch (error) {
@@ -189,7 +189,7 @@ export class PrismaDisputeRepository implements DisputeRepository {
           });
           return { record: toDisputeRecord(resolved), replayed: false };
         },
-        { isolationLevel: 'Serializable' },
+        { isolationLevel: 'ReadCommitted' },
       );
     } catch (error) {
       if (!isUniqueConflict(error)) throw error;

@@ -8,7 +8,10 @@ export async function lockInvoice(
   transaction: Prisma.TransactionClient,
   invoiceId: string,
 ): Promise<void> {
-  await transaction.$queryRaw`
-    SELECT pg_advisory_xact_lock(hashtextextended(${invoiceId}, 0))
+  await transaction.$queryRaw<Array<{ acquired: boolean }>>`
+    SELECT true AS "acquired"
+    FROM (
+      SELECT pg_advisory_xact_lock(hashtextextended(CAST(${invoiceId} AS text), 0))
+    ) AS "invoice_lock"
   `;
 }
