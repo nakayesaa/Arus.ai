@@ -35,6 +35,10 @@ describe('collection queue service', () => {
         dueDate: '2026-05-30',
         originalAmount: '185000000.00',
         allocations: [{ amount: '50000000.00', reversed: false }],
+        latestCommunication: {
+          occurredAt: new Date('2026-07-14T03:30:00.000Z'),
+          nextFollowUpDate: '2026-07-18',
+        },
       }),
       invoice({
         id: '30000000-0000-4000-8000-000000000002',
@@ -77,6 +81,7 @@ describe('collection queue service', () => {
 
     expect(listCollectionQueueCandidates).toHaveBeenCalledWith({
       organizationId: context.organization.id,
+      communicationOccurredBefore: new Date('2026-07-16T17:00:00.000Z'),
       take: 10_001,
     });
     expect(firstPage.pagination).toEqual({
@@ -91,8 +96,15 @@ describe('collection queue service', () => {
     ]);
     expect(firstPage.data.map((item) => item.priority.score)).toEqual([
       '487.60',
-      '222.20',
+      '208.20',
     ]);
+    expect(firstPage.data[1]).toMatchObject({
+      lastContactAt: '2026-07-14T03:30:00.000Z',
+      lastContactDate: '2026-07-14',
+      nextFollowUpDate: '2026-07-18',
+      daysSinceLastContact: 2,
+      priority: { components: { stale: '1.00' } },
+    });
     expect(secondPage.data.map((item) => item.invoiceNumber)).toEqual([
       'INV-DUE-SOON',
     ]);
@@ -185,8 +197,7 @@ function invoice(
     allocations: [],
     createdAt: new Date('2026-07-01T00:00:00.000Z'),
     updatedAt: new Date('2026-07-01T00:00:00.000Z'),
-    lastContactDate: null,
-    nextFollowUpDate: null,
+    latestCommunication: null,
     promiseStatus: null,
     hasOpenDispute: false,
     ...overrides,

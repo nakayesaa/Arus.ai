@@ -1,4 +1,5 @@
 import {
+  addCalendarDays,
   calculateCollectionQueueCandidate,
   compareCollectionQueueCandidates,
   DomainError,
@@ -9,7 +10,10 @@ import {
   type InvoiceState,
 } from '@arus/domain';
 
-import { businessDateInTimeZone } from '../lib/business-date.js';
+import {
+  businessDateInTimeZone,
+  startOfBusinessDateInTimeZone,
+} from '../lib/business-date.js';
 import type {
   CollectionQueueSourceRecord,
   ReceivablesRepository,
@@ -30,6 +34,7 @@ export interface CollectionQueueItemView {
     daysToDue: number;
     daysOverdue: number;
   };
+  lastContactAt: string | null;
   lastContactDate: string | null;
   nextFollowUpDate: string | null;
   promiseStatus: CollectionPromiseStatus | null;
@@ -100,6 +105,10 @@ export class CollectionQueueService implements CollectionQueueServiceContract {
     const records = await this.options.repository.listCollectionQueueCandidates(
       {
         organizationId: input.context.organization.id,
+        communicationOccurredBefore: startOfBusinessDateInTimeZone(
+          addCalendarDays(asOfDate, 1),
+          input.context.organization.timezone,
+        ),
         take: MAX_QUEUE_INVOICES + 1,
       },
     );
@@ -110,7 +119,11 @@ export class CollectionQueueService implements CollectionQueueServiceContract {
       );
     }
 
-    const queue = deriveQueue(records, asOfDate);
+    const queue = deriveQueue(
+      records,
+      asOfDate,
+      input.context.organization.timezone,
+    );
     const total = queue.length;
     const totalPages = total === 0 ? 0 : Math.ceil(total / input.limit);
     const start = (input.page - 1) * input.limit;
@@ -154,27 +167,38 @@ export class CollectionQueueService implements CollectionQueueServiceContract {
 function deriveQueue(
   records: readonly CollectionQueueSourceRecord[],
   asOfDate: string,
+  timeZone: string,
 ): CollectionQueueItemView[] {
   return records
-    .map((record) => ({
-      record,
-      candidate: calculateCollectionQueueCandidate({
-        invoiceId: record.id,
-        originalAmount: record.originalAmount,
-        allocations: record.allocations,
-        dueDate: record.dueDate,
-        asOfDate,
-        lastContactDate: record.lastContactDate,
-        nextFollowUpDate: record.nextFollowUpDate,
-        promiseStatus: record.promiseStatus,
-        hasOpenDispute: record.hasOpenDispute,
-      }),
-    }))
+    .map((record) => {
+      const lastContactDate = record.latestCommunication
+        ? businessDateInTimeZone(
+            record.latestCommunication.occurredAt,
+            timeZone,
+          )
+        : null;
+      return {
+        record,
+        lastContactDate,
+        candidate: calculateCollectionQueueCandidate({
+          invoiceId: record.id,
+          originalAmount: record.originalAmount,
+          allocations: record.allocations,
+          dueDate: record.dueDate,
+          asOfDate,
+          lastContactDate,
+          nextFollowUpDate:
+            record.latestCommunication?.nextFollowUpDate ?? null,
+          promiseStatus: record.promiseStatus,
+          hasOpenDispute: record.hasOpenDispute,
+        }),
+      };
+    })
     .filter(({ candidate }) => candidate.eligible)
     .sort((left, right) =>
       compareCollectionQueueCandidates(left.candidate, right.candidate),
     )
-    .map(({ record, candidate }) => ({
+    .map(({ record, candidate, lastContactDate }) => ({
       id: record.id,
       invoiceNumber: record.invoiceNumber,
       debtor: record.debtor,
@@ -186,8 +210,10 @@ function deriveQueue(
         daysToDue: candidate.aging.daysToDue,
         daysOverdue: candidate.aging.daysOverdue,
       },
-      lastContactDate: record.lastContactDate,
-      nextFollowUpDate: record.nextFollowUpDate,
+      lastContactAt:
+        record.latestCommunication?.occurredAt.toISOString() ?? null,
+      lastContactDate,
+      nextFollowUpDate: record.latestCommunication?.nextFollowUpDate ?? null,
       promiseStatus: record.promiseStatus,
       hasOpenDispute: record.hasOpenDispute,
       daysSinceLastContact: candidate.daysSinceLastContact,

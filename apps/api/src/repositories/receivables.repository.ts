@@ -43,8 +43,10 @@ export interface InvoiceDetailRecord extends InvoiceCalculationRecord {
 }
 
 export interface CollectionQueueSourceRecord extends InvoiceCalculationRecord {
-  lastContactDate: string | null;
-  nextFollowUpDate: string | null;
+  latestCommunication: {
+    occurredAt: Date;
+    nextFollowUpDate: string | null;
+  } | null;
   promiseStatus: 'ACTIVE' | 'DUE' | 'BROKEN' | 'FULFILLED' | 'CANCELLED' | null;
   hasOpenDispute: boolean;
 }
@@ -96,6 +98,7 @@ export interface ReceivablesRepository {
   }): Promise<InvoiceCalculationRecord[]>;
   listCollectionQueueCandidates(input: {
     organizationId: string;
+    communicationOccurredBefore: Date;
     take: number;
   }): Promise<CollectionQueueSourceRecord[]>;
   findInvoice(
@@ -289,18 +292,35 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
 
   async listCollectionQueueCandidates(input: {
     organizationId: string;
+    communicationOccurredBefore: Date;
     take: number;
   }): Promise<CollectionQueueSourceRecord[]> {
-    const records = await this.listInvoiceCandidates(input);
-    return records.map((record) => ({
-      ...record,
-      // Days 7–8 add these source events. Until then, their persisted absence is
-      // represented explicitly instead of manufacturing queue activity.
-      lastContactDate: null,
-      nextFollowUpDate: null,
-      promiseStatus: null,
-      hasOpenDispute: false,
-    }));
+    const records = await this.database.invoice.findMany({
+      where: {
+        organizationId: input.organizationId,
+        deletedAt: null,
+      },
+      orderBy: [{ dueDate: 'asc' }, { id: 'asc' }],
+      take: input.take,
+      select: collectionQueueInvoiceSelect(input.communicationOccurredBefore),
+    });
+    return records.map((record) => {
+      const latestCommunication = record.communications[0];
+      return {
+        ...toInvoiceCalculationRecord(record),
+        latestCommunication: latestCommunication
+          ? {
+              occurredAt: latestCommunication.occurredAt,
+              nextFollowUpDate: nullableDatabaseDate(
+                latestCommunication.nextFollowUpDate,
+              ),
+            }
+          : null,
+        // Days 8 adds these source events to the same bounded query.
+        promiseStatus: null,
+        hasOpenDispute: false,
+      };
+    });
   }
 
   async findInvoice(
@@ -371,6 +391,20 @@ const invoiceCalculationSelect = {
   },
 } satisfies Prisma.InvoiceSelect;
 
+function collectionQueueInvoiceSelect(
+  communicationOccurredBefore: Date,
+): Prisma.InvoiceSelect {
+  return {
+    ...invoiceCalculationSelect,
+    communications: {
+      where: { occurredAt: { lt: communicationOccurredBefore } },
+      orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+      take: 1,
+      select: { occurredAt: true, nextFollowUpDate: true },
+    },
+  } satisfies Prisma.InvoiceSelect;
+}
+
 const allocationHistorySelect = {
   id: true,
   amount: true,
@@ -431,6 +465,10 @@ function toInvoiceCalculationRecord(record: {
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
+}
+
+function nullableDatabaseDate(value: Date | null): string | null {
+  return value ? databaseDate(value) : null;
 }
 
 function mapUniqueConflict(error: unknown): unknown {
