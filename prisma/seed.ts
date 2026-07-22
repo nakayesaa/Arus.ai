@@ -8,9 +8,11 @@ import {
   seedAllocations,
   seedCommunications,
   seedDebtors,
+  seedDisputes,
   seedInvoices,
   seedOrganizations,
   seedPayments,
+  seedPromises,
   seedUsers,
 } from './seed-data.js';
 
@@ -151,6 +153,61 @@ async function main(): Promise<void> {
     });
   }
 
+  for (const promise of seedPromises) {
+    await prisma.promiseToPay.upsert({
+      where: { id: promise.id },
+      update: {
+        organizationId: promise.organizationId,
+        invoiceId: promise.invoiceId,
+        amount: promise.amount,
+        promiseDate: asDatabaseDate(promise.promiseDate),
+        createdById: promise.createdById,
+        createdByRole: promise.createdByRole,
+        operationKey: promise.operationKey,
+        finalStatus: promise.finalStatus,
+        fulfilledAt: asTimestamp(promise.fulfilledAt),
+        cancelledAt: asTimestamp(promise.cancelledAt),
+        cancelledById: promise.cancelledById,
+        cancelledByRole: promise.cancelledByRole,
+        cancelReason: promise.cancelReason,
+        cancellationOperationKey: promise.cancellationOperationKey,
+      },
+      create: {
+        ...promise,
+        promiseDate: asDatabaseDate(promise.promiseDate),
+        fulfilledAt: asTimestamp(promise.fulfilledAt),
+        cancelledAt: asTimestamp(promise.cancelledAt),
+        createdAt: new Date(promise.createdAt),
+      },
+    });
+  }
+
+  for (const dispute of seedDisputes) {
+    await prisma.dispute.upsert({
+      where: { id: dispute.id },
+      update: {
+        organizationId: dispute.organizationId,
+        invoiceId: dispute.invoiceId,
+        category: dispute.category,
+        details: dispute.details,
+        status: dispute.status,
+        createdById: dispute.createdById,
+        createdByRole: dispute.createdByRole,
+        operationKey: dispute.operationKey,
+        resolvedById: dispute.resolvedById,
+        resolvedByRole: dispute.resolvedByRole,
+        resolvedAt: asTimestamp(dispute.resolvedAt),
+        resolutionNote: dispute.resolutionNote,
+        resolutionOperationKey: dispute.resolutionOperationKey,
+      },
+      create: {
+        ...dispute,
+        resolvedAt: asTimestamp(dispute.resolvedAt),
+        createdAt: new Date(dispute.createdAt),
+      },
+    });
+  }
+
   for (const payment of seedPayments) {
     await prisma.payment.upsert({
       where: { id: payment.id },
@@ -202,6 +259,8 @@ async function main(): Promise<void> {
       `${seedDebtors.length} debtors`,
       `${seedInvoices.length} invoices`,
       `${seedCommunications.length} communications`,
+      `${seedPromises.length} promises`,
+      `${seedDisputes.length} disputes`,
       `${seedPayments.length} payments`,
       `and ${seedAllocations.length} allocations`,
     ].join(', '),
@@ -210,6 +269,10 @@ async function main(): Promise<void> {
 
 function asDatabaseDate(value: string): Date {
   return new Date(`${value}T00:00:00.000Z`);
+}
+
+function asTimestamp(value: string | null): Date | null {
+  return value ? new Date(value) : null;
 }
 
 try {
