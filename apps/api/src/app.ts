@@ -13,6 +13,7 @@ import { createAuthRouter } from './routes/auth.routes.js';
 import { createCollectionQueueRouter } from './routes/collection-queue.routes.js';
 import { createCommunicationRouter } from './routes/communication.routes.js';
 import { createDashboardRouter } from './routes/dashboard.routes.js';
+import { createDisputeRouter } from './routes/dispute.routes.js';
 import { healthRouter } from './routes/health.routes.js';
 import { createInvoiceImportRouter } from './routes/invoice-import.routes.js';
 import { createPromiseRouter } from './routes/promise.routes.js';
@@ -22,6 +23,7 @@ import type { AuthServiceContract } from './services/auth.service.js';
 import type { CollectionQueueServiceContract } from './services/collection-queue.service.js';
 import type { CommunicationServiceContract } from './services/communication.service.js';
 import type { DashboardServiceContract } from './services/dashboard.service.js';
+import type { DisputeServiceContract } from './services/dispute.service.js';
 import type { InvoiceImportServiceContract } from './services/invoice-import.service.js';
 import type { PromiseServiceContract } from './services/promise.service.js';
 import type { ReceivablesServiceContract } from './services/receivables.service.js';
@@ -35,6 +37,7 @@ interface CreateAppOptions {
   collectionQueueService?: CollectionQueueServiceContract;
   communicationService?: CommunicationServiceContract;
   promiseService?: PromiseServiceContract;
+  disputeService?: DisputeServiceContract;
   environment?: Environment;
   logger?: Logger;
 }
@@ -116,6 +119,15 @@ export function createApp(options: CreateAppOptions): Express {
       createPromiseRouter({
         authService: options.authService,
         promiseService: options.promiseService,
+        environment,
+      }),
+    );
+  }
+  if (options.disputeService) {
+    app.use(
+      createDisputeRouter({
+        authService: options.authService,
+        disputeService: options.disputeService,
         environment,
       }),
     );

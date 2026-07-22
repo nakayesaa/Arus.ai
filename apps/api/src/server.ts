@@ -5,6 +5,7 @@ import { createDatabaseClient } from './lib/database.js';
 import { createLogger } from './lib/logger.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
 import { PrismaCommunicationRepository } from './repositories/communication.repository.js';
+import { PrismaDisputeRepository } from './repositories/dispute.repository.js';
 import { PrismaInvoiceImportRepository } from './repositories/invoice-import.repository.js';
 import { PrismaPromiseRepository } from './repositories/promise.repository.js';
 import { PrismaAccountLifecycleRepository } from './repositories/account-lifecycle.repository.js';
@@ -13,6 +14,7 @@ import { AccountLifecycleService } from './services/account-lifecycle.service.js
 import { AuthService } from './services/auth.service.js';
 import { CollectionQueueService } from './services/collection-queue.service.js';
 import { CommunicationService } from './services/communication.service.js';
+import { DisputeService } from './services/dispute.service.js';
 import { DashboardService } from './services/dashboard.service.js';
 import { InvoiceImportService } from './services/invoice-import.service.js';
 import { PromiseService } from './services/promise.service.js';
@@ -48,6 +50,9 @@ const communicationService = new CommunicationService({
 const promiseService = new PromiseService({
   repository: new PrismaPromiseRepository(database),
 });
+const disputeService = new DisputeService({
+  repository: new PrismaDisputeRepository(database),
+});
 const invoiceImportService = new InvoiceImportService({
   repository: new PrismaInvoiceImportRepository(database),
   logger,
@@ -61,6 +66,7 @@ const app = createApp({
   collectionQueueService,
   communicationService,
   promiseService,
+  disputeService,
   environment,
   logger,
 });
