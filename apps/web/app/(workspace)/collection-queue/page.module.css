@@ -1,5 +1,5 @@
 .table {
-  min-width: 1235px;
+  min-width: 1410px;
 }
 
 .table th {
@@ -78,6 +78,37 @@
   align-items: center;
   grid-template-columns: 7px minmax(0, max-content);
   column-gap: 7px;
+}
+
+.contactRhythm {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.contactRhythm strong,
+.contactRhythm small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contactRhythm strong {
+  color: var(--text-soft);
+  font-size: 10px;
+  font-weight: 610;
+}
+
+.contactRhythm small {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted-dark);
+  font-size: 9px;
+}
+
+.contactRhythm small[data-due='true'] {
+  color: var(--amber);
 }
 
 .trigger > span {

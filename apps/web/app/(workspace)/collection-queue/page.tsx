@@ -1,4 +1,9 @@
-import { ArrowRight, ReceiptText, SlidersHorizontal } from 'lucide-react';
+import {
+  ArrowRight,
+  CalendarClock,
+  ReceiptText,
+  SlidersHorizontal,
+} from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -128,9 +133,10 @@ function QueueTable({
         <col style={{ width: 170 }} />
         <col style={{ width: 230 }} />
         <col style={{ width: 155 }} />
-        <col style={{ width: 145 }} />
+        <col style={{ width: 140 }} />
         <col style={{ width: 190 }} />
-        <col style={{ width: 300 }} />
+        <col style={{ width: 185 }} />
+        <col style={{ width: 285 }} />
         <col style={{ width: 45 }} />
       </colgroup>
       <thead>
@@ -139,6 +145,7 @@ function QueueTable({
           <th>Debtor</th>
           <th>Outstanding</th>
           <th>Aging</th>
+          <th>Contact rhythm</th>
           <th>Queue trigger</th>
           <th>Priority anatomy</th>
           <th aria-label="Open invoice" />
@@ -189,6 +196,9 @@ function QueueRow({
         </Pill>
       </td>
       <td>
+        <ContactRhythm item={item} asOfDate={asOfDate} />
+      </td>
+      <td>
         <span className={styles.trigger} data-tone={reasonTone(primaryReason)}>
           <span aria-hidden="true" />
           <strong>{reasonLabel(primaryReason)}</strong>
@@ -210,6 +220,33 @@ function QueueRow({
         </Link>
       </td>
     </tr>
+  );
+}
+
+function ContactRhythm({
+  item,
+  asOfDate,
+}: {
+  item: CollectionQueueItem;
+  asOfDate: string;
+}) {
+  const followUpDue = Boolean(
+    item.nextFollowUpDate && item.nextFollowUpDate <= asOfDate,
+  );
+  return (
+    <span className={styles.contactRhythm}>
+      <strong>
+        {item.lastContactDate
+          ? `Last ${formatBusinessDate(item.lastContactDate)}`
+          : 'Never contacted'}
+      </strong>
+      <small data-due={followUpDue || undefined}>
+        <CalendarClock size={10} aria-hidden="true" />
+        {item.nextFollowUpDate
+          ? `${followUpDue ? 'Due' : 'Next'} ${formatBusinessDate(item.nextFollowUpDate)}`
+          : 'No follow-up set'}
+      </small>
+    </span>
   );
 }
 

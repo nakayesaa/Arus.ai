@@ -106,7 +106,9 @@ test('renders the seeded collection queue in exact priority order', async ({
   await expect(rows.nth(0)).toContainText('487.60');
   await expect(rows.nth(0)).toContainText(/Amount\s*472\.50/u);
   await expect(rows.nth(1)).toContainText('INV-2026-0418');
-  await expect(rows.nth(1)).toContainText('222.20');
+  await expect(rows.nth(1)).toContainText('208.20');
+  await expect(rows.nth(1)).toContainText('Last 14 Jul 2026');
+  await expect(rows.nth(1)).toContainText('Due 18 Jul 2026');
   await expect(rows.nth(2)).toContainText('INV-2026-0090');
   await expect(rows.nth(2)).toContainText('155.00');
   await expect(rows.nth(2)).toContainText('Due soon · uncontacted');
@@ -120,6 +122,47 @@ test('renders the seeded collection queue in exact priority order', async ({
       `/invoices/30000000-0000-4000-8000-000000000002\\?asOfDate=${AS_OF_DATE}$`,
     ),
   );
+});
+
+test('records external contact and refreshes invoice and queue evidence', async ({
+  page,
+}) => {
+  await page.goto(`/invoices/${PARTIAL_INVOICE_ID}`);
+
+  await expect(
+    page.getByRole('heading', { name: 'Communication timeline' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Contact happened outside Arus').first(),
+  ).toBeVisible();
+
+  const composer = page.getByRole('region', { name: 'Log external contact' });
+  const nextFollowUp = composer.getByLabel('Next follow-up');
+  await expect(nextFollowUp).not.toHaveValue('');
+  const expectedFollowUp = await nextFollowUp.inputValue();
+
+  await composer
+    .getByLabel('Outcome notes')
+    .fill('E2E: customer confirmed the invoice is in today’s payment run.');
+  await composer.getByRole('button', { name: 'Record contact' }).click();
+
+  await expect(
+    composer.getByText('Contact secured. Queue priority refreshed.'),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'E2E: customer confirmed the invoice is in today’s payment run.',
+    ),
+  ).toBeVisible();
+
+  await page.goto('/collection-queue');
+  const queueRow = page
+    .getByRole('row')
+    .filter({ has: page.getByRole('link', { name: 'INV-2026-0418' }) });
+  await expect(queueRow).toContainText(
+    `Next ${displayBusinessDate(expectedFollowUp)}`,
+  );
+  await expect(queueRow).not.toContainText('Never contacted');
 });
 
 async function login(page: Page): Promise<void> {
@@ -137,4 +180,13 @@ async function login(page: Page): Promise<void> {
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+}
+
+function displayBusinessDate(value: string): string {
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${value}T00:00:00.000Z`));
 }
