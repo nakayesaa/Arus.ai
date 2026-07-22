@@ -190,6 +190,7 @@ describe('ReceivablesService', () => {
 
     expect(result.asOfDate).toBe('2026-07-10');
     expect(result.workflowBusinessDate).toBe('2026-07-16');
+    expect(result.organizationTimeZone).toBe('Asia/Jakarta');
     expect(result.data.nextFollowUpSuggestion).toEqual({
       date: '2026-07-17',
       basis: 'STANDARD_NEXT_DAY',

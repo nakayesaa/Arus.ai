@@ -123,7 +123,10 @@ export const invoiceDetailResponseSchema = z.object({
     nextFollowUpSuggestion: nextFollowUpSuggestionSchema,
   }),
   meta: responseMetaSchema
-    .extend({ workflowBusinessDate: businessDateSchema })
+    .extend({
+      workflowBusinessDate: businessDateSchema,
+      timeZone: z.string().min(1).max(100),
+    })
     .strict(),
 });
 

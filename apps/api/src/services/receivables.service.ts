@@ -147,6 +147,7 @@ export interface ReceivablesServiceContract {
     data: InvoiceDetailView;
     asOfDate: string;
     workflowBusinessDate: string;
+    organizationTimeZone: string;
   }>;
 }
 
@@ -349,6 +350,7 @@ export class ReceivablesService implements ReceivablesServiceContract {
     data: InvoiceDetailView;
     asOfDate: string;
     workflowBusinessDate: string;
+    organizationTimeZone: string;
   }> {
     const asOfDate = this.resolveAsOfDate(input.context, input.asOfDate);
     const workflowBusinessDate = businessDateInTimeZone(
@@ -382,6 +384,7 @@ export class ReceivablesService implements ReceivablesServiceContract {
       },
       asOfDate,
       workflowBusinessDate,
+      organizationTimeZone: input.context.organization.timezone,
     };
   }
 

@@ -42,6 +42,23 @@ export function formatBusinessDate(value: string): string {
   return shortDate.format(date);
 }
 
+export function formatTimestamp(value: string, timeZone: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime()))
+    throw new Error(`Invalid timestamp: ${value}`);
+
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+    timeZoneName: 'short',
+  }).format(date);
+}
+
 export function initials(value: string): string {
   const words = value.trim().split(/\s+/u).filter(Boolean);
   if (words.length === 0) return '—';

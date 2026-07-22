@@ -348,6 +348,7 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
     expect(response.body.meta).toEqual({
       asOfDate: '2026-07-10',
       workflowBusinessDate: '2026-07-16',
+      timeZone: 'Asia/Jakarta',
     });
     expect(response.body.data.nextFollowUpSuggestion).toEqual({
       date: '2026-07-17',

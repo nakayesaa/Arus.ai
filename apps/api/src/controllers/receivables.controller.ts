@@ -193,6 +193,7 @@ export function createReceivablesController(
         meta: {
           asOfDate: result.asOfDate,
           workflowBusinessDate: result.workflowBusinessDate,
+          timeZone: result.organizationTimeZone,
         },
       });
     } catch (error) {

@@ -125,6 +125,7 @@ describe('receivables contracts', () => {
       meta: {
         asOfDate: '2026-07-16',
         workflowBusinessDate: '2026-07-16',
+        timeZone: 'Asia/Jakarta',
       },
     });
 

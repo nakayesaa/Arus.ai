@@ -5,6 +5,7 @@ import {
   formatCompactNumber,
   formatDuePosition,
   formatRupiah,
+  formatTimestamp,
   humanizeEnum,
   initials,
 } from './formatters';
@@ -30,6 +31,13 @@ describe('display formatters', () => {
     expect(() => formatBusinessDate('2026-02-30')).toThrow(
       'Invalid business date',
     );
+  });
+
+  it('formats activity timestamps in the tenant timezone', () => {
+    const result = formatTimestamp('2026-07-16T03:30:00.000Z', 'Asia/Jakarta');
+
+    expect(result).toContain('16 Jul 2026');
+    expect(result).toContain('10.30');
   });
 
   it('formats safe counts and rejects unsafe values', () => {
