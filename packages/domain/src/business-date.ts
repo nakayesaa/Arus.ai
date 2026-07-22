@@ -37,6 +37,29 @@ export function differenceInCalendarDays(
   );
 }
 
+export function addCalendarDays(value: string, days: number): BusinessDate {
+  if (!Number.isSafeInteger(days)) {
+    throw new DomainError(
+      'INVALID_DATE_OFFSET',
+      'Calendar date offset must be a safe integer',
+    );
+  }
+
+  const result = new Date(
+    (epochDay(parseBusinessDate(value)) + days) * MILLISECONDS_PER_DAY,
+  );
+  const year = result.getUTCFullYear();
+  if (year < 1 || year > 9999) {
+    throw new DomainError(
+      'INVALID_DATE_OFFSET',
+      'Calendar date offset is outside the supported year range',
+    );
+  }
+  const month = String(result.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(result.getUTCDate()).padStart(2, '0');
+  return parseBusinessDate(`${String(year).padStart(4, '0')}-${month}-${day}`);
+}
+
 function epochDay(value: BusinessDate): number {
   const [year, month, day] = value.split('-').map(Number) as [
     number,
