@@ -7,6 +7,7 @@ import {
   promiseAcceptsReplacement,
   PromiseStatus,
   validatePromiseAmount,
+  validatePromiseDate,
 } from './collection-workflow.js';
 
 describe('promise lifecycle', () => {
@@ -57,6 +58,21 @@ describe('promise lifecycle', () => {
     expect(() =>
       validatePromiseAmount({ amount: '1.01', outstandingAmount: '1.00' }),
     ).toThrowError(/cannot exceed/u);
+  });
+
+  it('accepts today or a future promise date and rejects the past', () => {
+    expect(
+      validatePromiseDate({
+        promiseDate: '2026-07-16',
+        asOfDate: '2026-07-16',
+      }),
+    ).toBe('2026-07-16');
+    expect(() =>
+      validatePromiseDate({
+        promiseDate: '2026-07-15',
+        asOfDate: '2026-07-16',
+      }),
+    ).toThrowError(/cannot be before/u);
   });
 
   it('fulfills only once post-promise allocations cover the amount', () => {

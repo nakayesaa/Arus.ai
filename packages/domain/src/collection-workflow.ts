@@ -78,6 +78,21 @@ export function validatePromiseAmount(input: {
   return formatMoney(amount);
 }
 
+export function validatePromiseDate(input: {
+  promiseDate: string;
+  asOfDate: string;
+}): string {
+  const promiseDate = parseBusinessDate(input.promiseDate);
+  const asOfDate = parseBusinessDate(input.asOfDate);
+  if (differenceInCalendarDays(promiseDate, asOfDate) < 0) {
+    throw new DomainError(
+      'PROMISE_DATE_IN_PAST',
+      'Promise date cannot be before the current business date',
+    );
+  }
+  return promiseDate;
+}
+
 export function isPromiseFulfilled(input: {
   promiseAmount: string;
   allocatedAfterPromise: string;

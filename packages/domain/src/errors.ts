@@ -10,6 +10,7 @@ export type DomainErrorCode =
   | 'ORIGINAL_AMOUNT_NOT_POSITIVE'
   | 'OVER_ALLOCATED'
   | 'PROMISE_AMOUNT_NOT_POSITIVE'
+  | 'PROMISE_DATE_IN_PAST'
   | 'PROMISE_EXCEEDS_OUTSTANDING';
 
 export class DomainError extends Error {
