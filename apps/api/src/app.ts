@@ -11,6 +11,7 @@ import { requestIdMiddleware } from './middleware/request-id.js';
 import { createAccountLifecycleRouter } from './routes/account-lifecycle.routes.js';
 import { createAuthRouter } from './routes/auth.routes.js';
 import { createCollectionQueueRouter } from './routes/collection-queue.routes.js';
+import { createCommunicationRouter } from './routes/communication.routes.js';
 import { createDashboardRouter } from './routes/dashboard.routes.js';
 import { healthRouter } from './routes/health.routes.js';
 import { createInvoiceImportRouter } from './routes/invoice-import.routes.js';
@@ -18,6 +19,7 @@ import { createReceivablesRouter } from './routes/receivables.routes.js';
 import type { AccountLifecycleServiceContract } from './services/account-lifecycle.service.js';
 import type { AuthServiceContract } from './services/auth.service.js';
 import type { CollectionQueueServiceContract } from './services/collection-queue.service.js';
+import type { CommunicationServiceContract } from './services/communication.service.js';
 import type { DashboardServiceContract } from './services/dashboard.service.js';
 import type { InvoiceImportServiceContract } from './services/invoice-import.service.js';
 import type { ReceivablesServiceContract } from './services/receivables.service.js';
@@ -29,6 +31,7 @@ interface CreateAppOptions {
   invoiceImportService?: InvoiceImportServiceContract;
   dashboardService?: DashboardServiceContract;
   collectionQueueService?: CollectionQueueServiceContract;
+  communicationService?: CommunicationServiceContract;
   environment?: Environment;
   logger?: Logger;
 }
@@ -92,6 +95,15 @@ export function createApp(options: CreateAppOptions): Express {
       createCollectionQueueRouter({
         authService: options.authService,
         collectionQueueService: options.collectionQueueService,
+        environment,
+      }),
+    );
+  }
+  if (options.communicationService) {
+    app.use(
+      createCommunicationRouter({
+        authService: options.authService,
+        communicationService: options.communicationService,
         environment,
       }),
     );

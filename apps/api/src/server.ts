@@ -4,12 +4,14 @@ import { createAccountEmailSender } from './lib/account-email.js';
 import { createDatabaseClient } from './lib/database.js';
 import { createLogger } from './lib/logger.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
+import { PrismaCommunicationRepository } from './repositories/communication.repository.js';
 import { PrismaInvoiceImportRepository } from './repositories/invoice-import.repository.js';
 import { PrismaAccountLifecycleRepository } from './repositories/account-lifecycle.repository.js';
 import { PrismaReceivablesRepository } from './repositories/receivables.repository.js';
 import { AccountLifecycleService } from './services/account-lifecycle.service.js';
 import { AuthService } from './services/auth.service.js';
 import { CollectionQueueService } from './services/collection-queue.service.js';
+import { CommunicationService } from './services/communication.service.js';
 import { DashboardService } from './services/dashboard.service.js';
 import { InvoiceImportService } from './services/invoice-import.service.js';
 import { ReceivablesService } from './services/receivables.service.js';
@@ -38,6 +40,9 @@ const dashboardService = new DashboardService({
 const collectionQueueService = new CollectionQueueService({
   repository: receivablesRepository,
 });
+const communicationService = new CommunicationService({
+  repository: new PrismaCommunicationRepository(database),
+});
 const invoiceImportService = new InvoiceImportService({
   repository: new PrismaInvoiceImportRepository(database),
   logger,
@@ -49,6 +54,7 @@ const app = createApp({
   invoiceImportService,
   dashboardService,
   collectionQueueService,
+  communicationService,
   environment,
   logger,
 });
