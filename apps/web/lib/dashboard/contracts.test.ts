@@ -36,12 +36,17 @@ describe('dashboard contracts', () => {
             agingBucket: 'OVERDUE_1_7',
           },
         ],
+        workflows: { brokenPromiseCount: 1, openDisputeCount: 2 },
       },
       meta: { asOfDate: '2026-07-16' },
     });
 
     expect(parsed.data.summary.totalAr).toBe('615000000.00');
     expect(parsed.data.aging).toHaveLength(6);
+    expect(parsed.data.workflows).toEqual({
+      brokenPromiseCount: 1,
+      openDisputeCount: 2,
+    });
   });
 
   it('rejects rounded or abbreviated money strings', () => {
@@ -57,6 +62,7 @@ describe('dashboard contracts', () => {
           },
           aging: [],
           largestOverdue: [],
+          workflows: { brokenPromiseCount: 0, openDisputeCount: 0 },
         },
         meta: { asOfDate: '2026-07-16' },
       }),

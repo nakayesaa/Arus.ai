@@ -49,6 +49,12 @@ const dashboardSchema = z
           .strict(),
       )
       .max(5),
+    workflows: z
+      .object({
+        brokenPromiseCount: countSchema,
+        openDisputeCount: countSchema,
+      })
+      .strict(),
   })
   .strict();
 

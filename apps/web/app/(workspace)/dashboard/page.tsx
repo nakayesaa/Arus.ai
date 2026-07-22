@@ -1,4 +1,11 @@
-import { ArrowRight, CheckCircle2, Layers3, ShieldCheck } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  CalendarClock,
+  CheckCircle2,
+  Layers3,
+  ShieldCheck,
+} from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
@@ -92,6 +99,60 @@ export default async function DashboardPage({
               </Link>
             ))}
           </nav>
+
+          <section
+            className={styles.workflowPulse}
+            aria-labelledby="pulse-title"
+          >
+            <header>
+              <span>Operational pulse</span>
+              <h2 id="pulse-title">
+                Promises kept visible. Exceptions contained.
+              </h2>
+            </header>
+            <div className={styles.workflowSignals}>
+              <Link
+                href={queueHref}
+                data-alert={
+                  result.data.workflows.brokenPromiseCount > 0 || undefined
+                }
+              >
+                <span className={styles.workflowIcon} aria-hidden="true">
+                  <CalendarClock size={15} />
+                </span>
+                <span>
+                  <strong>{result.data.workflows.brokenPromiseCount}</strong>
+                  <small>Broken promises</small>
+                </span>
+                <p>
+                  {result.data.workflows.brokenPromiseCount > 0
+                    ? 'Commitments missed and raised in queue priority.'
+                    : 'No customer commitment has slipped past its date.'}
+                </p>
+                <ArrowRight size={13} aria-hidden="true" />
+              </Link>
+              <Link
+                href={invoiceHref}
+                data-alert={
+                  result.data.workflows.openDisputeCount > 0 || undefined
+                }
+              >
+                <span className={styles.workflowIcon} aria-hidden="true">
+                  <AlertTriangle size={15} />
+                </span>
+                <span>
+                  <strong>{result.data.workflows.openDisputeCount}</strong>
+                  <small>Open disputes</small>
+                </span>
+                <p>
+                  {result.data.workflows.openDisputeCount > 0
+                    ? 'Exceptions held outside normal collection action.'
+                    : 'No invoice is paused by an unresolved exception.'}
+                </p>
+                <ArrowRight size={13} aria-hidden="true" />
+              </Link>
+            </div>
+          </section>
 
           <section
             className={styles.exposure}

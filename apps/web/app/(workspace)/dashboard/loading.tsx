@@ -30,6 +30,14 @@ export default function DashboardLoading() {
               </div>
             ))}
           </div>
+          <div className={styles.workflowPulse} aria-hidden="true">
+            <span className={`${styles.skeleton} ${styles.skeletonValue}`} />
+            <div className={styles.workflowSignals}>
+              {Array.from({ length: 2 }, (_, index) => (
+                <div className={styles.skeletonRow} key={index} />
+              ))}
+            </div>
+          </div>
           <section className={styles.exposure} aria-label="Loading exposures">
             <div className={styles.sectionHeader}>
               <span className={`${styles.skeleton} ${styles.skeletonValue}`} />
