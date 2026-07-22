@@ -6,7 +6,9 @@ import {
   InvoiceState,
   parseBusinessDate,
   parseMoney,
+  suggestNextFollowUp,
   type InvoiceAging,
+  type NextFollowUpSuggestion,
 } from '@arus/domain';
 
 import { businessDateInTimeZone } from '../lib/business-date.js';
@@ -69,6 +71,17 @@ export interface InvoiceView {
 
 export interface InvoiceDetailView extends InvoiceView {
   allocations: InvoiceDetailRecord['allocationHistory'];
+  communications: Array<{
+    id: string;
+    occurredAt: string;
+    channel: InvoiceDetailRecord['communications'][number]['channel'];
+    notes: string;
+    nextFollowUpDate: string | null;
+    actor: InvoiceDetailRecord['communications'][number]['actor'];
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  nextFollowUpSuggestion: NextFollowUpSuggestion;
 }
 
 export interface DebtorDetailView extends DebtorView {
@@ -130,7 +143,11 @@ export interface ReceivablesServiceContract {
     context: AuthContext;
     invoiceId: string;
     asOfDate?: string | undefined;
-  }): Promise<{ data: InvoiceDetailView; asOfDate: string }>;
+  }): Promise<{
+    data: InvoiceDetailView;
+    asOfDate: string;
+    workflowBusinessDate: string;
+  }>;
 }
 
 export type ReceivablesErrorCode =
@@ -328,8 +345,16 @@ export class ReceivablesService implements ReceivablesServiceContract {
     context: AuthContext;
     invoiceId: string;
     asOfDate?: string | undefined;
-  }): Promise<{ data: InvoiceDetailView; asOfDate: string }> {
+  }): Promise<{
+    data: InvoiceDetailView;
+    asOfDate: string;
+    workflowBusinessDate: string;
+  }> {
     const asOfDate = this.resolveAsOfDate(input.context, input.asOfDate);
+    const workflowBusinessDate = businessDateInTimeZone(
+      this.clock(),
+      input.context.organization.timezone,
+    );
     const record = await this.options.repository.findInvoice(
       input.context.organization.id,
       input.invoiceId,
@@ -337,12 +362,26 @@ export class ReceivablesService implements ReceivablesServiceContract {
     if (!record) {
       throw new ReceivablesError('INVOICE_NOT_FOUND', 'Invoice not found');
     }
+    assertWithinDerivationLimit(
+      record.communications.length,
+      'Communication history',
+    );
     return {
       data: {
         ...toInvoiceView(record, asOfDate),
         allocations: record.allocationHistory,
+        communications: record.communications.map((communication) => ({
+          ...communication,
+          occurredAt: communication.occurredAt.toISOString(),
+          createdAt: communication.createdAt.toISOString(),
+          updatedAt: communication.updatedAt.toISOString(),
+        })),
+        nextFollowUpSuggestion: suggestNextFollowUp({
+          asOfDate: workflowBusinessDate,
+        }),
       },
       asOfDate,
+      workflowBusinessDate,
     };
   }
 

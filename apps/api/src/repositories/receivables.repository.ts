@@ -1,4 +1,8 @@
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
+import type {
+  CommunicationChannel,
+  MembershipRole,
+} from '../generated/prisma/enums.js';
 import { databaseDate } from '../lib/business-date.js';
 
 export interface DebtorRecord {
@@ -39,6 +43,16 @@ export interface InvoiceDetailRecord extends InvoiceCalculationRecord {
       bankReference: string | null;
       isOpeningBalance: boolean;
     };
+  }>;
+  communications: Array<{
+    id: string;
+    occurredAt: Date;
+    channel: CommunicationChannel;
+    notes: string;
+    nextFollowUpDate: string | null;
+    actor: { id: string; name: string; role: MembershipRole };
+    createdAt: Date;
+    updatedAt: Date;
   }>;
 }
 
@@ -335,6 +349,11 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
           orderBy: [{ allocationDate: 'asc' }, { id: 'asc' }],
           select: allocationHistorySelect,
         },
+        communications: {
+          orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+          take: 10_001,
+          select: invoiceCommunicationSelect,
+        },
       },
     });
     if (!record) return null;
@@ -354,6 +373,19 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
           bankReference: allocation.payment.bankReference,
           isOpeningBalance: allocation.payment.isOpeningBalance,
         },
+      })),
+      communications: record.communications.map((communication) => ({
+        id: communication.id,
+        occurredAt: communication.occurredAt,
+        channel: communication.channel,
+        notes: communication.notes,
+        nextFollowUpDate: nullableDatabaseDate(communication.nextFollowUpDate),
+        actor: {
+          ...communication.actor,
+          role: communication.actorRole,
+        },
+        createdAt: communication.createdAt,
+        updatedAt: communication.updatedAt,
       })),
     };
   }
@@ -421,6 +453,18 @@ const allocationHistorySelect = {
     },
   },
 } satisfies Prisma.PaymentAllocationSelect;
+
+const invoiceCommunicationSelect = {
+  id: true,
+  occurredAt: true,
+  channel: true,
+  notes: true,
+  nextFollowUpDate: true,
+  actorRole: true,
+  actor: { select: { id: true, name: true } },
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.CommunicationSelect;
 
 function toDebtorRecord(record: {
   id: string;

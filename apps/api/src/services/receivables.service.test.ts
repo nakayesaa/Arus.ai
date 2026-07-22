@@ -68,6 +68,7 @@ class FakeReceivablesRepository implements ReceivablesRepository {
   invoiceRecord: InvoiceDetailRecord | null = {
     ...partialInvoice,
     allocationHistory: [],
+    communications: [],
   };
   conflict = false;
   createdInput: {
@@ -157,6 +158,46 @@ describe('ReceivablesService', () => {
         daysOverdue: 47,
         flags: [InvoiceFlag.OVERDUE],
       },
+    });
+  });
+
+  it('returns immutable communication facts with a current workflow suggestion', async () => {
+    const repository = new FakeReceivablesRepository();
+    repository.invoiceRecord = {
+      ...repository.invoiceRecord!,
+      communications: [
+        {
+          id: '70000000-0000-4000-8000-000000000001',
+          occurredAt: new Date('2026-07-15T04:30:00.000Z'),
+          channel: 'CALL',
+          notes: 'Accounts payable confirmed review.',
+          nextFollowUpDate: '2026-07-17',
+          actor: {
+            id: context.user.id,
+            name: context.user.name,
+            role: MembershipRole.OWNER,
+          },
+          createdAt: new Date('2026-07-15T04:30:00.000Z'),
+          updatedAt: new Date('2026-07-15T04:30:00.000Z'),
+        },
+      ],
+    };
+    const result = await testService(repository).getInvoice({
+      context,
+      invoiceId: partialInvoice.id,
+      asOfDate: '2026-07-10',
+    });
+
+    expect(result.asOfDate).toBe('2026-07-10');
+    expect(result.workflowBusinessDate).toBe('2026-07-16');
+    expect(result.data.nextFollowUpSuggestion).toEqual({
+      date: '2026-07-17',
+      basis: 'STANDARD_NEXT_DAY',
+    });
+    expect(result.data.communications[0]).toMatchObject({
+      occurredAt: '2026-07-15T04:30:00.000Z',
+      channel: 'CALL',
+      actor: { role: 'OWNER' },
     });
   });
 

@@ -188,9 +188,13 @@ export function createReceivablesController(
         invoiceId: params.id,
         ...query,
       });
-      response
-        .status(200)
-        .json({ data: result.data, meta: { asOfDate: result.asOfDate } });
+      response.status(200).json({
+        data: result.data,
+        meta: {
+          asOfDate: result.asOfDate,
+          workflowBusinessDate: result.workflowBusinessDate,
+        },
+      });
     } catch (error) {
       next(mapReceivablesError(error));
     }
