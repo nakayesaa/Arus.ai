@@ -40,6 +40,13 @@ enum InvoiceImportDebtorAction {
   WILL_CREATE
 }
 
+enum CommunicationChannel {
+  WHATSAPP
+  CALL
+  EMAIL
+  OTHER
+}
+
 model Organization {
   id        String   @id @default(uuid()) @db.Uuid
   name      String   @db.VarChar(200)
@@ -47,15 +54,16 @@ model Organization {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  memberships   Membership[]
-  auditLogs     AuditLog[]
-  accountTokens AccountToken[]
-  debtors       Debtor[]
-  invoices      Invoice[]
-  payments      Payment[]
-  allocations   PaymentAllocation[]
-  importJobs    InvoiceImportJob[]
-  importRows    InvoiceImportRow[]
+  memberships    Membership[]
+  auditLogs      AuditLog[]
+  accountTokens  AccountToken[]
+  debtors        Debtor[]
+  invoices       Invoice[]
+  payments       Payment[]
+  allocations    PaymentAllocation[]
+  communications Communication[]
+  importJobs     InvoiceImportJob[]
+  importRows     InvoiceImportRow[]
 }
 
 model User {
@@ -73,6 +81,7 @@ model User {
   accountTokens      AccountToken[]
   createdPayments    Payment[]           @relation("PaymentCreator")
   createdAllocations PaymentAllocation[] @relation("AllocationCreator")
+  communications     Communication[]     @relation("CommunicationActor")
   createdImportJobs  InvoiceImportJob[]  @relation("InvoiceImportCreator")
 }
 
@@ -184,14 +193,37 @@ model Invoice {
   updatedAt               DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt               DateTime? @db.Timestamptz(3)
 
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  debtor       Debtor              @relation(fields: [debtorId], references: [id], onDelete: Restrict)
-  allocations  PaymentAllocation[]
-  importRow    InvoiceImportRow?   @relation("CommittedInvoice")
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  debtor         Debtor              @relation(fields: [debtorId], references: [id], onDelete: Restrict)
+  allocations    PaymentAllocation[]
+  communications Communication[]
+  importRow      InvoiceImportRow?   @relation("CommittedInvoice")
 
   @@index([organizationId, dueDate])
   @@index([organizationId, debtorId])
   @@index([organizationId, deletedAt])
+}
+
+model Communication {
+  id               String               @id @default(uuid()) @db.Uuid
+  organizationId   String               @db.Uuid
+  invoiceId        String               @db.Uuid
+  actorId          String               @db.Uuid
+  operationKey     String               @db.Uuid
+  occurredAt       DateTime             @db.Timestamptz(3)
+  channel          CommunicationChannel
+  notes            String               @db.VarChar(2000)
+  nextFollowUpDate DateTime?            @db.Date
+  createdAt        DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime             @updatedAt @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  invoice      Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  actor        User         @relation("CommunicationActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, operationKey])
+  @@index([organizationId, invoiceId, occurredAt])
+  @@index([organizationId, createdAt])
 }
 
 model Payment {
