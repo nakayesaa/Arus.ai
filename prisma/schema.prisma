@@ -209,6 +209,7 @@ model Communication {
   organizationId   String               @db.Uuid
   invoiceId        String               @db.Uuid
   actorId          String               @db.Uuid
+  actorRole        MembershipRole
   operationKey     String               @db.Uuid
   occurredAt       DateTime             @db.Timestamptz(3)
   channel          CommunicationChannel

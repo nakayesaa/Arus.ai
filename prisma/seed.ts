@@ -136,6 +136,7 @@ async function main(): Promise<void> {
         organizationId: communication.organizationId,
         invoiceId: communication.invoiceId,
         actorId: communication.actorId,
+        actorRole: communication.actorRole,
         operationKey: communication.operationKey,
         occurredAt: new Date(communication.occurredAt),
         channel: communication.channel,
