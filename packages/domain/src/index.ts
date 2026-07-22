@@ -6,6 +6,7 @@ export const DOMAIN_PACKAGE = '@arus/domain' as const;
 
 export * from './business-date.js';
 export * from './collection-queue.js';
+export * from './collection-workflow.js';
 export * from './communication.js';
 export * from './dashboard.js';
 export * from './errors.js';

@@ -8,7 +8,9 @@ export type DomainErrorCode =
   | 'NEXT_FOLLOW_UP_IN_PAST'
   | 'MONEY_OUT_OF_RANGE'
   | 'ORIGINAL_AMOUNT_NOT_POSITIVE'
-  | 'OVER_ALLOCATED';
+  | 'OVER_ALLOCATED'
+  | 'PROMISE_AMOUNT_NOT_POSITIVE'
+  | 'PROMISE_EXCEEDS_OUTSTANDING';
 
 export class DomainError extends Error {
   constructor(
