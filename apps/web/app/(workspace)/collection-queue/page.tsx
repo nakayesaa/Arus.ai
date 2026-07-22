@@ -1,9 +1,4 @@
-import {
-  ArrowRight,
-  CalendarClock,
-  ReceiptText,
-  SlidersHorizontal,
-} from 'lucide-react';
+import { ArrowRight, CalendarClock, ReceiptText } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -117,18 +112,6 @@ function QueueTable({
 }) {
   return (
     <table className={`data-table aligned-data-table ${styles.table}`}>
-      <caption className={styles.method}>
-        <span className={styles.methodIcon} aria-hidden="true">
-          <SlidersHorizontal size={15} />
-        </span>
-        <span>
-          <strong>Deterministic priority</strong>
-          <small>
-            Amount + aging + stale contact + promise + due-soon. Ties use oldest
-            due date, largest balance, then invoice ID.
-          </small>
-        </span>
-      </caption>
       <colgroup>
         <col style={{ width: 170 }} />
         <col style={{ width: 230 }} />

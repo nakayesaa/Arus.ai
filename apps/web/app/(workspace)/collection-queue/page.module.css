@@ -14,46 +14,6 @@
   transition: background var(--motion-fast) var(--ease-out-quart);
 }
 
-.method {
-  padding: 0;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
-  background: #080a0b;
-  text-align: left;
-}
-
-.method > span:last-child {
-  display: inline-grid;
-  gap: 2px;
-  padding: 11px 0;
-  vertical-align: middle;
-}
-
-.method strong {
-  color: var(--text-soft);
-  font-size: 11px;
-  font-weight: 650;
-}
-
-.method small {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 450;
-}
-
-.methodIcon {
-  display: inline-grid;
-  width: 27px;
-  height: 27px;
-  margin-right: 10px;
-  place-items: center;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  color: var(--green);
-  background: rgb(112 208 173 / 6%);
-  vertical-align: middle;
-}
-
 .identity {
   display: grid;
   min-width: 0;
