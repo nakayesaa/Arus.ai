@@ -40,6 +40,7 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
   let environment: Environment;
   let app: ReturnType<typeof createApp>;
   let cookieA: string;
+  let cookieB: string;
 
   beforeAll(async () => {
     environment = loadEnvironment({
@@ -157,7 +158,7 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
       environment,
       logger,
     });
-    cookieA = await login(emailA);
+    [cookieA, cookieB] = await Promise.all([login(emailA), login(emailB)]);
   }, 30_000);
 
   afterAll(async () => {
@@ -352,6 +353,187 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
         where: { organizationId: organizationAId, operationKey },
       }),
     ).resolves.toBe(0);
+  });
+
+  it('enforces authentication, trusted origin, JSON, and operation keys', async () => {
+    const operationKey = randomUUID();
+    const body = {
+      channel: 'CALL',
+      notes: 'Security boundary test.',
+      nextFollowUpDate: null,
+    };
+    const unauthenticated = await request(app)
+      .post(`/api/invoices/${invoiceAId}/communications`)
+      .set('Origin', environment.APP_ORIGIN)
+      .set('Idempotency-Key', operationKey)
+      .send(body)
+      .expect(401);
+    const untrusted = await request(app)
+      .post(`/api/invoices/${invoiceAId}/communications`)
+      .set('Origin', 'https://attacker.invalid')
+      .set('Cookie', cookieA)
+      .set('Idempotency-Key', operationKey)
+      .send(body)
+      .expect(403);
+    const wrongMediaType = await request(app)
+      .post(`/api/invoices/${invoiceAId}/communications`)
+      .set('Origin', environment.APP_ORIGIN)
+      .set('Cookie', cookieA)
+      .set('Idempotency-Key', operationKey)
+      .set('Content-Type', 'text/plain')
+      .send('not-json')
+      .expect(415);
+    const missingKey = await request(app)
+      .post(`/api/invoices/${invoiceAId}/communications`)
+      .set('Origin', environment.APP_ORIGIN)
+      .set('Cookie', cookieA)
+      .send(body)
+      .expect(400);
+
+    expect(unauthenticated.body.error.code).toBe('UNAUTHENTICATED');
+    expect(untrusted.body.error.code).toBe('UNTRUSTED_ORIGIN');
+    expect(wrongMediaType.body.error.code).toBe('UNSUPPORTED_MEDIA_TYPE');
+    expect(missingKey.body.error).toMatchObject({
+      code: 'VALIDATION_ERROR',
+      fields: { idempotencyKey: expect.any(String) },
+    });
+  });
+
+  it('rejects forged tenant and server-owned evidence fields', async () => {
+    const countBefore = await database.communication.count({
+      where: { organizationId: organizationAId },
+    });
+    const response = await postCommunication({
+      cookie: cookieA,
+      invoiceId: invoiceAId,
+      operationKey: randomUUID(),
+      body: {
+        channel: 'EMAIL',
+        notes: 'Attempted forged context.',
+        nextFollowUpDate: null,
+        organizationId: organizationBId,
+        actorId: userBId,
+        actorRole: 'OPERATOR',
+        occurredAt: '2020-01-01T00:00:00.000Z',
+      },
+    }).expect(400);
+
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+    await expect(
+      database.communication.count({
+        where: { organizationId: organizationAId },
+      }),
+    ).resolves.toBe(countBefore);
+  });
+
+  it('hides cross-tenant invoices without creating evidence or audit', async () => {
+    const operationKeys = [randomUUID(), randomUUID()] as const;
+    const body = {
+      channel: 'OTHER',
+      notes: 'Must remain tenant hidden.',
+      nextFollowUpDate: null,
+    };
+    const fromA = await postCommunication({
+      cookie: cookieA,
+      invoiceId: invoiceBId,
+      operationKey: operationKeys[0],
+      body,
+    }).expect(404);
+    const fromB = await postCommunication({
+      cookie: cookieB,
+      invoiceId: invoiceAId,
+      operationKey: operationKeys[1],
+      body,
+    }).expect(404);
+
+    expect(fromA.body.error.code).toBe('INVOICE_NOT_FOUND');
+    expect(fromB.body.error.code).toBe('INVOICE_NOT_FOUND');
+    await expect(
+      database.communication.count({
+        where: { operationKey: { in: [...operationKeys] } },
+      }),
+    ).resolves.toBe(0);
+  });
+
+  it('rejects past schedules and directional control characters', async () => {
+    const past = await postCommunication({
+      cookie: cookieA,
+      invoiceId: invoiceAId,
+      operationKey: randomUUID(),
+      body: {
+        channel: 'CALL',
+        notes: 'Past schedule.',
+        nextFollowUpDate: '2026-07-15',
+      },
+    }).expect(422);
+    const unsafeText = await postCommunication({
+      cookie: cookieA,
+      invoiceId: invoiceAId,
+      operationKey: randomUUID(),
+      body: {
+        channel: 'CALL',
+        notes: 'Invoice \u202e001',
+        nextFollowUpDate: null,
+      },
+    }).expect(400);
+
+    expect(past.body.error).toMatchObject({
+      code: 'INVALID_NEXT_FOLLOW_UP_DATE',
+      fields: { nextFollowUpDate: expect.any(String) },
+    });
+    expect(unsafeText.body.error).toMatchObject({
+      code: 'VALIDATION_ERROR',
+      fields: { notes: 'Notes contain unsupported characters' },
+    });
+  });
+
+  it('preserves XSS-like notes as inert text data', async () => {
+    const notes = '<script>alert("collection")</script>';
+    const response = await postCommunication({
+      cookie: cookieA,
+      invoiceId: invoiceAId,
+      operationKey: randomUUID(),
+      body: { channel: 'OTHER', notes, nextFollowUpDate: null },
+    }).expect(201);
+
+    expect(response.body.data.notes).toBe(notes);
+    await expect(
+      database.communication.findUniqueOrThrow({
+        where: { id: response.body.data.id },
+        select: { notes: true },
+      }),
+    ).resolves.toEqual({ notes });
+  });
+
+  it('enforces tenant consistency at the database boundary', async () => {
+    await expect(
+      database.communication.create({
+        data: {
+          organizationId: organizationAId,
+          invoiceId: invoiceBId,
+          actorId: userAId,
+          actorRole: MembershipRole.OWNER,
+          operationKey: randomUUID(),
+          occurredAt,
+          channel: CommunicationChannel.CALL,
+          notes: 'Cross-tenant invoice reference.',
+        },
+      }),
+    ).rejects.toBeInstanceOf(Error);
+    await expect(
+      database.communication.create({
+        data: {
+          organizationId: organizationAId,
+          invoiceId: invoiceAId,
+          actorId: userBId,
+          actorRole: MembershipRole.OPERATOR,
+          operationKey: randomUUID(),
+          occurredAt,
+          channel: CommunicationChannel.CALL,
+          notes: 'Cross-tenant actor reference.',
+        },
+      }),
+    ).rejects.toBeInstanceOf(Error);
   });
 
   function postCommunication(input: {
