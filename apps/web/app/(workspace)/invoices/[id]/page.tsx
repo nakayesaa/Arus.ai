@@ -11,6 +11,7 @@ import { notFound, redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { DataState } from '@/components/data-state';
+import { CollectionCaseManager } from '@/components/collection-case-manager';
 import { CommunicationComposer } from '@/components/communication-composer';
 import { PaginationNav } from '@/components/pagination-nav';
 import { Pill } from '@/components/table-ui';
@@ -132,6 +133,14 @@ export default async function InvoiceDetailPage({
 
         <div className="record-layout">
           <div className={styles.mainStack}>
+            <CollectionCaseManager
+              invoiceId={invoice.id}
+              workflowBusinessDate={result.meta.workflowBusinessDate}
+              timeZone={result.meta.timeZone}
+              outstandingAmount={invoice.outstandingAmount}
+              promises={invoice.promises}
+              disputes={invoice.disputes}
+            />
             <section className="record-panel" aria-labelledby="activity-title">
               <header className="record-panel-header">
                 <div>
