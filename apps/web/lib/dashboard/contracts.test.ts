@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { dashboardResponseSchema } from './contracts';
+import {
+  dashboardResponseSchema,
+  dashboardWorkflowCasesQuery,
+  dashboardWorkflowCasesResponseSchema,
+} from './contracts';
 
 describe('dashboard contracts', () => {
   it('accepts exact financial metrics without coercing money', () => {
@@ -67,6 +71,45 @@ describe('dashboard contracts', () => {
         meta: { asOfDate: '2026-07-16' },
       }),
     ).toThrow();
+  });
+
+  it('validates case drill-downs and serializes their snapshot query', () => {
+    const response = dashboardWorkflowCasesResponseSchema.parse({
+      data: [
+        {
+          id: '90000000-0000-4000-8000-000000000001',
+          kind: 'OPEN_DISPUTE',
+          invoice: {
+            id: '30000000-0000-4000-8000-000000000005',
+            invoiceNumber: 'INV-2026-0060',
+            debtor: {
+              id: '20000000-0000-4000-8000-000000000003',
+              code: 'CUST-003',
+              name: 'PT Metro Teknologi Nusantara',
+            },
+            dueDate: '2026-07-09',
+            outstandingAmount: '75000000.00',
+          },
+          createdAt: '2026-07-12T03:00:00.000Z',
+          dispute: {
+            category: 'WRONG_AMOUNT',
+            details: 'Customer requested allocation reconciliation.',
+          },
+        },
+      ],
+      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      meta: { asOfDate: '2026-07-16' },
+    });
+
+    expect(response.data[0]?.kind).toBe('OPEN_DISPUTE');
+    expect(
+      dashboardWorkflowCasesQuery({
+        kind: 'OPEN_DISPUTE',
+        asOfDate: '2026-07-16',
+        page: 2,
+        limit: 10,
+      }),
+    ).toBe('kind=OPEN_DISPUTE&asOfDate=2026-07-16&page=2&limit=10');
   });
 });
 
