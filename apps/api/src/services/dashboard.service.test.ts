@@ -108,6 +108,76 @@ describe('dashboard service', () => {
     expect(listInvoiceCandidates).not.toHaveBeenCalled();
     expect(getCollectionCaseCounts).not.toHaveBeenCalled();
   });
+
+  it('returns paginated workflow cases with exact invoice exposure', async () => {
+    const listCollectionCaseSummaries = vi.fn().mockResolvedValue({
+      records: [
+        {
+          id: '90000000-0000-4000-8000-000000000001',
+          kind: 'OPEN_DISPUTE',
+          invoice: invoice({
+            id: '30000000-0000-4000-8000-000000000005',
+            invoiceNumber: 'INV-DISPUTED',
+            dueDate: '2026-07-09',
+            originalAmount: '75000000.00',
+            allocations: [{ amount: '10000000.00', reversed: true }],
+          }),
+          category: 'WRONG_AMOUNT',
+          details: 'Customer requested allocation reconciliation.',
+          createdAt: new Date('2026-07-12T03:00:00.000Z'),
+        },
+      ],
+      total: 12,
+    });
+    const service = new DashboardService({
+      repository: {
+        listCollectionCaseSummaries,
+      } as unknown as ReceivablesRepository,
+      clock: () => new Date('2026-07-16T03:00:00.000Z'),
+    });
+
+    const result = await service.listWorkflowCases({
+      context,
+      kind: 'OPEN_DISPUTE',
+      page: 2,
+      limit: 10,
+    });
+
+    expect(listCollectionCaseSummaries).toHaveBeenCalledWith({
+      organizationId: context.organization.id,
+      kind: 'OPEN_DISPUTE',
+      asOfDate: '2026-07-16',
+      workflowOccurredBefore: new Date('2026-07-16T17:00:00.000Z'),
+      skip: 10,
+      take: 10,
+    });
+    expect(result).toEqual({
+      data: [
+        {
+          id: '90000000-0000-4000-8000-000000000001',
+          kind: 'OPEN_DISPUTE',
+          invoice: {
+            id: '30000000-0000-4000-8000-000000000005',
+            invoiceNumber: 'INV-DISPUTED',
+            debtor: {
+              id: '20000000-0000-4000-8000-000000000001',
+              code: 'CUST-001',
+              name: 'PT Sinar Abadi Retail',
+            },
+            dueDate: '2026-07-09',
+            outstandingAmount: '75000000.00',
+          },
+          createdAt: '2026-07-12T03:00:00.000Z',
+          dispute: {
+            category: 'WRONG_AMOUNT',
+            details: 'Customer requested allocation reconciliation.',
+          },
+        },
+      ],
+      pagination: { page: 2, limit: 10, total: 12, totalPages: 2 },
+      asOfDate: '2026-07-16',
+    });
+  });
 });
 
 function invoice(input: {

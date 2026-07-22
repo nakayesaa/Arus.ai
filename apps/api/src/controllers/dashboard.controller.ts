@@ -17,9 +17,21 @@ const dashboardQuerySchema = z
   })
   .strict();
 
+const workflowCasesQuerySchema = z
+  .object({
+    kind: z.enum(['BROKEN_PROMISE', 'OPEN_DISPUTE']),
+    asOfDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    page: z.coerce.number().int().min(1).max(1_000).default(1),
+    limit: z.coerce.number().int().min(1).max(25).default(10),
+  })
+  .strict();
+
 export function createDashboardController(options: {
   dashboardService: DashboardServiceContract;
-}): { getDashboard: RequestHandler } {
+}): { getDashboard: RequestHandler; listWorkflowCases: RequestHandler } {
   const getDashboard: RequestHandler = async (request, response, next) => {
     try {
       const query = parse(dashboardQuerySchema, request.query);
@@ -41,7 +53,24 @@ export function createDashboardController(options: {
     }
   };
 
-  return { getDashboard };
+  const listWorkflowCases: RequestHandler = async (request, response, next) => {
+    try {
+      const query = parse(workflowCasesQuerySchema, request.query);
+      const result = await options.dashboardService.listWorkflowCases({
+        context: authenticatedContext(response),
+        ...query,
+      });
+      response.status(200).json({
+        data: result.data,
+        pagination: result.pagination,
+        meta: { asOfDate: result.asOfDate },
+      });
+    } catch (error) {
+      next(mapDashboardError(error));
+    }
+  };
+
+  return { getDashboard, listWorkflowCases };
 }
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {

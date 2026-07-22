@@ -136,6 +136,13 @@ class FakeReceivablesRepository implements ReceivablesRepository {
     return { brokenPromiseCount: 0, openDisputeCount: 0 };
   }
 
+  async listCollectionCaseSummaries(): Promise<{
+    records: [];
+    total: number;
+  }> {
+    return { records: [], total: 0 };
+  }
+
   async findInvoice(): Promise<InvoiceDetailRecord | null> {
     return this.invoiceRecord;
   }

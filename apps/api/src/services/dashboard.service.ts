@@ -7,6 +7,7 @@ import {
   parseBusinessDate,
   parseMoney,
   type AgingBucket,
+  type DisputeCategory,
 } from '@arus/domain';
 
 import {
@@ -14,6 +15,8 @@ import {
   startOfBusinessDateInTimeZone,
 } from '../lib/business-date.js';
 import type {
+  CollectionCaseKind,
+  CollectionCaseSummaryRecord,
   InvoiceCalculationRecord,
   ReceivablesRepository,
 } from '../repositories/receivables.repository.js';
@@ -51,11 +54,53 @@ export interface DashboardView {
   asOfDate: string;
 }
 
+interface WorkflowCaseInvoiceView {
+  id: string;
+  invoiceNumber: string;
+  debtor: { id: string; code: string | null; name: string };
+  dueDate: string;
+  outstandingAmount: string;
+}
+
+export type DashboardWorkflowCaseView =
+  | {
+      id: string;
+      kind: 'BROKEN_PROMISE';
+      invoice: WorkflowCaseInvoiceView;
+      createdAt: string;
+      promise: { amount: string; promiseDate: string };
+    }
+  | {
+      id: string;
+      kind: 'OPEN_DISPUTE';
+      invoice: WorkflowCaseInvoiceView;
+      createdAt: string;
+      dispute: { category: DisputeCategory; details: string };
+    };
+
+export interface DashboardWorkflowCasesView {
+  data: DashboardWorkflowCaseView[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  asOfDate: string;
+}
+
 export interface DashboardServiceContract {
   getDashboard(input: {
     context: AuthContext;
     asOfDate?: string | undefined;
   }): Promise<DashboardView>;
+  listWorkflowCases(input: {
+    context: AuthContext;
+    kind: CollectionCaseKind;
+    asOfDate?: string | undefined;
+    page: number;
+    limit: number;
+  }): Promise<DashboardWorkflowCasesView>;
 }
 
 export class DashboardError extends Error {
@@ -126,6 +171,40 @@ export class DashboardService implements DashboardServiceContract {
     };
   }
 
+  async listWorkflowCases(input: {
+    context: AuthContext;
+    kind: CollectionCaseKind;
+    asOfDate?: string | undefined;
+    page: number;
+    limit: number;
+  }): Promise<DashboardWorkflowCasesView> {
+    const asOfDate = this.resolveAsOfDate(input.context, input.asOfDate);
+    const workflowOccurredBefore = startOfBusinessDateInTimeZone(
+      addCalendarDays(asOfDate, 1),
+      input.context.organization.timezone,
+    );
+    const { records, total } =
+      await this.options.repository.listCollectionCaseSummaries({
+        organizationId: input.context.organization.id,
+        kind: input.kind,
+        asOfDate,
+        workflowOccurredBefore,
+        skip: (input.page - 1) * input.limit,
+        take: input.limit,
+      });
+
+    return {
+      data: records.map((record) => workflowCaseView(record, asOfDate)),
+      pagination: {
+        page: input.page,
+        limit: input.limit,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / input.limit),
+      },
+      asOfDate,
+    };
+  }
+
   private resolveAsOfDate(
     context: AuthContext,
     requestedDate: string | undefined,
@@ -148,6 +227,46 @@ export class DashboardService implements DashboardServiceContract {
       throw error;
     }
   }
+}
+
+function workflowCaseView(
+  record: CollectionCaseSummaryRecord,
+  asOfDate: string,
+): DashboardWorkflowCaseView {
+  const snapshot = calculateInvoiceSnapshot({
+    originalAmount: record.invoice.originalAmount,
+    allocations: record.invoice.allocations,
+    dueDate: record.invoice.dueDate,
+    asOfDate,
+  });
+  const invoice = {
+    id: record.invoice.id,
+    invoiceNumber: record.invoice.invoiceNumber,
+    debtor: record.invoice.debtor,
+    dueDate: record.invoice.dueDate,
+    outstandingAmount: snapshot.outstandingAmount,
+  };
+
+  if (record.kind === 'BROKEN_PROMISE') {
+    return {
+      id: record.id,
+      kind: record.kind,
+      invoice,
+      createdAt: record.createdAt.toISOString(),
+      promise: {
+        amount: record.amount,
+        promiseDate: record.promiseDate,
+      },
+    };
+  }
+
+  return {
+    id: record.id,
+    kind: record.kind,
+    invoice,
+    createdAt: record.createdAt.toISOString(),
+    dispute: { category: record.category, details: record.details },
+  };
 }
 
 function largestOverdue(

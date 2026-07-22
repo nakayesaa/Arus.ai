@@ -595,14 +595,94 @@ integrationDescribe('collection case workflows with PostgreSQL', () => {
       reasons: ['PROMISE_DUE', 'OVERDUE'],
     });
 
+    const brokenPromiseId = randomUUID();
+    await database.promiseToPay.create({
+      data: {
+        id: brokenPromiseId,
+        organizationId: organizationAId,
+        invoiceId: promiseInvoiceId,
+        amount: '250000.00',
+        promiseDate: databaseDate('2026-07-15'),
+        createdById: userAId,
+        createdByRole: MembershipRole.OWNER,
+        operationKey: randomUUID(),
+        createdAt: new Date('2026-07-10T03:00:00.000Z'),
+      },
+    });
+
     const dashboard = await request(app)
       .get('/api/dashboard?asOfDate=2026-07-16')
       .set('Cookie', cookieA)
       .expect(200);
     expect(dashboard.body.data.workflows).toEqual({
-      brokenPromiseCount: 0,
+      brokenPromiseCount: 1,
       openDisputeCount: 1,
     });
+
+    const brokenPromises = await request(app)
+      .get(
+        '/api/dashboard/workflow-cases?kind=BROKEN_PROMISE&asOfDate=2026-07-16&page=1&limit=10',
+      )
+      .set('Cookie', cookieA)
+      .expect(200);
+    expect(brokenPromises.body).toMatchObject({
+      data: [
+        {
+          id: brokenPromiseId,
+          kind: 'BROKEN_PROMISE',
+          invoice: {
+            id: promiseInvoiceId,
+            invoiceNumber: 'INV-CASE-PROMISE',
+            outstandingAmount: '1000000.00',
+          },
+          promise: { amount: '250000.00', promiseDate: '2026-07-15' },
+        },
+      ],
+      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      meta: { asOfDate: '2026-07-16' },
+    });
+
+    const openDisputes = await request(app)
+      .get(
+        '/api/dashboard/workflow-cases?kind=OPEN_DISPUTE&asOfDate=2026-07-16&page=1&limit=10',
+      )
+      .set('Cookie', cookieA)
+      .expect(200);
+    expect(openDisputes.body).toEqual({
+      data: [
+        {
+          id: expect.any(String),
+          kind: 'OPEN_DISPUTE',
+          invoice: {
+            id: rollbackInvoiceId,
+            invoiceNumber: 'INV-CASE-ROLLBACK',
+            debtor: {
+              id: debtorAId,
+              code: 'CASE-A',
+              name: 'Collection Case Debtor A',
+            },
+            dueDate: '2026-06-30',
+            outstandingAmount: '1000000.00',
+          },
+          createdAt: expect.any(String),
+          dispute: {
+            category: 'ADMINISTRATIVE',
+            details: 'Customer needs a corrected purchase-order reference.',
+          },
+        },
+      ],
+      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      meta: { asOfDate: '2026-07-16' },
+    });
+
+    const foreignCases = await request(app)
+      .get(
+        '/api/dashboard/workflow-cases?kind=OPEN_DISPUTE&asOfDate=2026-07-16',
+      )
+      .set('Cookie', cookieB)
+      .expect(200);
+    expect(foreignCases.body.data).toEqual([]);
+    expect(foreignCases.body.pagination.total).toBe(0);
   });
 
   it('enforces tenant consistency below the service boundary', async () => {

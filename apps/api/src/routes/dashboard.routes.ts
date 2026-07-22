@@ -27,5 +27,14 @@ export function createDashboardRouter(options: {
     authenticate,
     controller.getDashboard,
   );
+  router.get(
+    '/api/dashboard/workflow-cases',
+    (_request, response, next) => {
+      response.setHeader('Cache-Control', 'no-store');
+      next();
+    },
+    authenticate,
+    controller.listWorkflowCases,
+  );
   return router;
 }

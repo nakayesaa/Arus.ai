@@ -103,6 +103,26 @@ export interface CollectionCaseCounts {
   openDisputeCount: number;
 }
 
+export type CollectionCaseKind = 'BROKEN_PROMISE' | 'OPEN_DISPUTE';
+
+export type CollectionCaseSummaryRecord =
+  | {
+      id: string;
+      kind: 'BROKEN_PROMISE';
+      invoice: InvoiceCalculationRecord;
+      amount: string;
+      promiseDate: string;
+      createdAt: Date;
+    }
+  | {
+      id: string;
+      kind: 'OPEN_DISPUTE';
+      invoice: InvoiceCalculationRecord;
+      category: DisputeCategory;
+      details: string;
+      createdAt: Date;
+    };
+
 export interface DebtorDetailRecord extends DebtorRecord {
   invoices: InvoiceCalculationRecord[];
 }
@@ -158,6 +178,14 @@ export interface ReceivablesRepository {
     asOfDate: string;
     workflowOccurredBefore: Date;
   }): Promise<CollectionCaseCounts>;
+  listCollectionCaseSummaries(input: {
+    organizationId: string;
+    kind: CollectionCaseKind;
+    asOfDate: string;
+    workflowOccurredBefore: Date;
+    skip: number;
+    take: number;
+  }): Promise<{ records: CollectionCaseSummaryRecord[]; total: number }>;
   findInvoice(
     organizationId: string,
     invoiceId: string,
@@ -391,32 +419,87 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
     asOfDate: string;
     workflowOccurredBefore: Date;
   }): Promise<CollectionCaseCounts> {
+    const brokenPromises = brokenPromiseAsOfWhere(input);
+    const openDisputes = openDisputeAsOfWhere(input);
     const [brokenPromiseCount, openDisputeCount] =
       await this.database.$transaction([
         this.database.promiseToPay.count({
-          where: {
-            organizationId: input.organizationId,
-            createdAt: { lt: input.workflowOccurredBefore },
-            promiseDate: { lt: toDatabaseDate(input.asOfDate) },
-            OR: [
-              { finalStatus: null },
-              { fulfilledAt: { gte: input.workflowOccurredBefore } },
-              { cancelledAt: { gte: input.workflowOccurredBefore } },
-            ],
-          },
+          where: brokenPromises,
         }),
         this.database.dispute.count({
-          where: {
-            organizationId: input.organizationId,
-            createdAt: { lt: input.workflowOccurredBefore },
-            OR: [
-              { resolvedAt: null },
-              { resolvedAt: { gte: input.workflowOccurredBefore } },
-            ],
-          },
+          where: openDisputes,
         }),
       ]);
     return { brokenPromiseCount, openDisputeCount };
+  }
+
+  async listCollectionCaseSummaries(input: {
+    organizationId: string;
+    kind: CollectionCaseKind;
+    asOfDate: string;
+    workflowOccurredBefore: Date;
+    skip: number;
+    take: number;
+  }): Promise<{ records: CollectionCaseSummaryRecord[]; total: number }> {
+    if (input.kind === 'BROKEN_PROMISE') {
+      const where = brokenPromiseAsOfWhere(input);
+      const [records, total] = await this.database.$transaction([
+        this.database.promiseToPay.findMany({
+          where,
+          orderBy: [{ promiseDate: 'asc' }, { id: 'asc' }],
+          skip: input.skip,
+          take: input.take,
+          select: {
+            id: true,
+            amount: true,
+            promiseDate: true,
+            createdAt: true,
+            invoice: { select: invoiceCalculationSelect },
+          },
+        }),
+        this.database.promiseToPay.count({ where }),
+      ]);
+      return {
+        records: records.map((record) => ({
+          id: record.id,
+          kind: 'BROKEN_PROMISE' as const,
+          invoice: toInvoiceCalculationRecord(record.invoice),
+          amount: record.amount.toFixed(2),
+          promiseDate: databaseDate(record.promiseDate),
+          createdAt: record.createdAt,
+        })),
+        total,
+      };
+    }
+
+    const where = openDisputeAsOfWhere(input);
+    const [records, total] = await this.database.$transaction([
+      this.database.dispute.findMany({
+        where,
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        skip: input.skip,
+        take: input.take,
+        select: {
+          id: true,
+          category: true,
+          details: true,
+          createdAt: true,
+          invoice: { select: invoiceCalculationSelect },
+        },
+      }),
+      this.database.dispute.count({ where }),
+    ]);
+    return {
+      records: records.map((record) => ({
+        id: record.id,
+        kind: 'OPEN_DISPUTE' as const,
+        invoice: toInvoiceCalculationRecord(record.invoice),
+        category: record.category,
+        details: record.details,
+        createdAt: record.createdAt,
+      })),
+      total,
+    };
   }
 
   async findInvoice(
@@ -693,6 +776,39 @@ function nullableDatabaseDate(value: Date | null): string | null {
 
 function toDatabaseDate(value: string): Date {
   return new Date(`${value}T00:00:00.000Z`);
+}
+
+function brokenPromiseAsOfWhere(input: {
+  organizationId: string;
+  asOfDate: string;
+  workflowOccurredBefore: Date;
+}): Prisma.PromiseToPayWhereInput {
+  return {
+    organizationId: input.organizationId,
+    invoice: { organizationId: input.organizationId, deletedAt: null },
+    createdAt: { lt: input.workflowOccurredBefore },
+    promiseDate: { lt: toDatabaseDate(input.asOfDate) },
+    OR: [
+      { finalStatus: null },
+      { fulfilledAt: { gte: input.workflowOccurredBefore } },
+      { cancelledAt: { gte: input.workflowOccurredBefore } },
+    ],
+  };
+}
+
+function openDisputeAsOfWhere(input: {
+  organizationId: string;
+  workflowOccurredBefore: Date;
+}): Prisma.DisputeWhereInput {
+  return {
+    organizationId: input.organizationId,
+    invoice: { organizationId: input.organizationId, deletedAt: null },
+    createdAt: { lt: input.workflowOccurredBefore },
+    OR: [
+      { resolvedAt: null },
+      { resolvedAt: { gte: input.workflowOccurredBefore } },
+    ],
+  };
 }
 
 function mapUniqueConflict(error: unknown): unknown {
