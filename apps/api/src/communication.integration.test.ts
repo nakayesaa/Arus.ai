@@ -15,7 +15,9 @@ import {
 import { createDatabaseClient } from './lib/database.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
 import { PrismaCommunicationRepository } from './repositories/communication.repository.js';
+import { PrismaReceivablesRepository } from './repositories/receivables.repository.js';
 import { AuthService } from './services/auth.service.js';
+import { CollectionQueueService } from './services/collection-queue.service.js';
 import { CommunicationService } from './services/communication.service.js';
 
 const integrationDescribe = describe.runIf(
@@ -31,6 +33,7 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
   const debtorBId = randomUUID();
   const invoiceAId = randomUUID();
   const invoiceBId = randomUUID();
+  const queueRefreshInvoiceId = randomUUID();
   const password = `communication-${randomUUID()}`;
   const emailA = `communication-a-${randomUUID()}@integration.arus.local`;
   const emailB = `communication-b-${randomUUID()}@integration.arus.local`;
@@ -140,6 +143,16 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
           dueDate: databaseDate('2026-06-30'),
           originalAmount: '1000000.00',
         },
+        {
+          id: queueRefreshInvoiceId,
+          organizationId: organizationAId,
+          debtorId: debtorAId,
+          invoiceNumber: 'INV-COMM-QUEUE',
+          normalizedInvoiceNumber: 'inv-comm-queue',
+          invoiceDate: databaseDate('2026-06-01'),
+          dueDate: databaseDate('2026-06-30'),
+          originalAmount: '1000000.00',
+        },
       ],
     });
 
@@ -152,8 +165,13 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
       repository: new PrismaCommunicationRepository(database),
       clock: () => occurredAt,
     });
+    const collectionQueueService = new CollectionQueueService({
+      repository: new PrismaReceivablesRepository(database),
+      clock: () => occurredAt,
+    });
     app = createApp({
       authService,
+      collectionQueueService,
       communicationService,
       environment,
       logger,
@@ -259,6 +277,36 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
       },
     });
     expect(JSON.stringify(audits)).not.toContain('Accounts payable');
+  });
+
+  it('refreshes queue contact facts and score from persisted evidence', async () => {
+    const before = await queueItem(queueRefreshInvoiceId);
+    expect(before).toMatchObject({
+      lastContactAt: null,
+      nextFollowUpDate: null,
+      daysSinceLastContact: 30,
+      priority: { score: '18.10', components: { stale: '15.00' } },
+    });
+
+    await postCommunication({
+      cookie: cookieA,
+      invoiceId: queueRefreshInvoiceId,
+      operationKey: randomUUID(),
+      body: {
+        channel: 'CALL',
+        notes: 'Confirmed invoice is in the payment run.',
+        nextFollowUpDate: '2026-07-17',
+      },
+    }).expect(201);
+
+    const after = await queueItem(queueRefreshInvoiceId);
+    expect(after).toMatchObject({
+      lastContactAt: occurredAt.toISOString(),
+      lastContactDate: '2026-07-16',
+      nextFollowUpDate: '2026-07-17',
+      daysSinceLastContact: 0,
+      priority: { score: '3.10', components: { stale: '0.00' } },
+    });
   });
 
   it('replays the same operation without duplicate evidence or audit', async () => {
@@ -548,6 +596,20 @@ integrationDescribe('communication workflow with PostgreSQL', () => {
       .set('Cookie', input.cookie)
       .set('Idempotency-Key', input.operationKey)
       .send(input.body);
+  }
+
+  async function queueItem(
+    invoiceId: string,
+  ): Promise<Record<string, unknown>> {
+    const response = await request(app)
+      .get('/api/collection-queue?asOfDate=2026-07-16&limit=100')
+      .set('Cookie', cookieA)
+      .expect(200);
+    const item = (response.body.data as Array<Record<string, unknown>>).find(
+      (candidate) => candidate.id === invoiceId,
+    );
+    if (!item) throw new Error(`Queue did not include invoice ${invoiceId}`);
+    return item;
   }
 
   async function login(email: string): Promise<string> {
