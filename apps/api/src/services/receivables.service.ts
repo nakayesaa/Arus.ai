@@ -1,11 +1,13 @@
 import {
   AgingBucket,
   calculateInvoiceSnapshot,
+  derivePromiseStatus,
   DomainError,
   formatMoney,
   InvoiceState,
   parseBusinessDate,
   parseMoney,
+  PromiseStatus,
   suggestNextFollowUp,
   type InvoiceAging,
   type NextFollowUpSuggestion,
@@ -78,6 +80,31 @@ export interface InvoiceDetailView extends InvoiceView {
     notes: string;
     nextFollowUpDate: string | null;
     actor: InvoiceDetailRecord['communications'][number]['actor'];
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  promises: Array<{
+    id: string;
+    amount: string;
+    promiseDate: string;
+    status: PromiseStatus;
+    fulfilledAt: string | null;
+    cancelledAt: string | null;
+    cancelReason: string | null;
+    createdBy: InvoiceDetailRecord['promises'][number]['createdBy'];
+    cancelledBy: InvoiceDetailRecord['promises'][number]['cancelledBy'];
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  disputes: Array<{
+    id: string;
+    category: InvoiceDetailRecord['disputes'][number]['category'];
+    details: string;
+    status: InvoiceDetailRecord['disputes'][number]['status'];
+    resolutionNote: string | null;
+    createdBy: InvoiceDetailRecord['disputes'][number]['createdBy'];
+    resolvedBy: InvoiceDetailRecord['disputes'][number]['resolvedBy'];
+    resolvedAt: string | null;
     createdAt: string;
     updatedAt: string;
   }>;
@@ -368,6 +395,40 @@ export class ReceivablesService implements ReceivablesServiceContract {
       record.communications.length,
       'Communication history',
     );
+    assertWithinDerivationLimit(record.promises.length, 'Promise history');
+    assertWithinDerivationLimit(record.disputes.length, 'Dispute history');
+    const promises = record.promises.map((promise) => ({
+      id: promise.id,
+      amount: promise.amount,
+      promiseDate: promise.promiseDate,
+      status: derivePromiseStatus({
+        promiseDate: promise.promiseDate,
+        asOfDate: workflowBusinessDate,
+        finalStatus: promise.finalStatus,
+      }),
+      fulfilledAt: promise.fulfilledAt?.toISOString() ?? null,
+      cancelledAt: promise.cancelledAt?.toISOString() ?? null,
+      cancelReason: promise.cancelReason,
+      createdBy: promise.createdBy,
+      cancelledBy: promise.cancelledBy,
+      createdAt: promise.createdAt.toISOString(),
+      updatedAt: promise.updatedAt.toISOString(),
+    }));
+    const disputes = record.disputes.map((dispute) => ({
+      id: dispute.id,
+      category: dispute.category,
+      details: dispute.details,
+      status: dispute.status,
+      resolutionNote: dispute.resolutionNote,
+      createdBy: dispute.createdBy,
+      resolvedBy: dispute.resolvedBy,
+      resolvedAt: dispute.resolvedAt?.toISOString() ?? null,
+      createdAt: dispute.createdAt.toISOString(),
+      updatedAt: dispute.updatedAt.toISOString(),
+    }));
+    const activePromise = promises.find(
+      (promise) => promise.status === PromiseStatus.ACTIVE,
+    );
     return {
       data: {
         ...toInvoiceView(record, asOfDate),
@@ -378,8 +439,12 @@ export class ReceivablesService implements ReceivablesServiceContract {
           createdAt: communication.createdAt.toISOString(),
           updatedAt: communication.updatedAt.toISOString(),
         })),
+        promises,
+        disputes,
         nextFollowUpSuggestion: suggestNextFollowUp({
           asOfDate: workflowBusinessDate,
+          activePromiseDate: activePromise?.promiseDate,
+          hasOpenDispute: disputes.some((dispute) => dispute.status === 'OPEN'),
         }),
       },
       asOfDate,

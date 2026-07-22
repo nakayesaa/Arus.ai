@@ -1,4 +1,5 @@
 import {
+  addCalendarDays,
   calculateDashboardMetrics,
   calculateInvoiceSnapshot,
   DomainError,
@@ -8,7 +9,10 @@ import {
   type AgingBucket,
 } from '@arus/domain';
 
-import { businessDateInTimeZone } from '../lib/business-date.js';
+import {
+  businessDateInTimeZone,
+  startOfBusinessDateInTimeZone,
+} from '../lib/business-date.js';
 import type {
   InvoiceCalculationRecord,
   ReceivablesRepository,
@@ -40,6 +44,10 @@ export interface DashboardView {
     daysOverdue: number;
     agingBucket: AgingBucket;
   }>;
+  workflows: {
+    brokenPromiseCount: number;
+    openDisputeCount: number;
+  };
   asOfDate: string;
 }
 
@@ -77,10 +85,21 @@ export class DashboardService implements DashboardServiceContract {
     asOfDate?: string | undefined;
   }): Promise<DashboardView> {
     const asOfDate = this.resolveAsOfDate(input.context, input.asOfDate);
-    const records = await this.options.repository.listInvoiceCandidates({
-      organizationId: input.context.organization.id,
-      take: MAX_DASHBOARD_INVOICES + 1,
-    });
+    const workflowOccurredBefore = startOfBusinessDateInTimeZone(
+      addCalendarDays(asOfDate, 1),
+      input.context.organization.timezone,
+    );
+    const [records, workflows] = await Promise.all([
+      this.options.repository.listInvoiceCandidates({
+        organizationId: input.context.organization.id,
+        take: MAX_DASHBOARD_INVOICES + 1,
+      }),
+      this.options.repository.getCollectionCaseCounts({
+        organizationId: input.context.organization.id,
+        asOfDate,
+        workflowOccurredBefore,
+      }),
+    ]);
     if (records.length > MAX_DASHBOARD_INVOICES) {
       throw new DashboardError(
         'DASHBOARD_TOO_BROAD',
@@ -102,6 +121,7 @@ export class DashboardService implements DashboardServiceContract {
       },
       aging: metrics.aging,
       largestOverdue: largestOverdue(records, asOfDate),
+      workflows,
       asOfDate,
     };
   }

@@ -1,7 +1,11 @@
 import { AgingBucket, InvoiceFlag, InvoiceState } from '@arus/domain';
 import { describe, expect, it } from 'vitest';
 
-import { MembershipRole } from '../generated/prisma/enums.js';
+import {
+  DisputeCategory,
+  DisputeStatus,
+  MembershipRole,
+} from '../generated/prisma/enums.js';
 import {
   ReceivablesRepositoryConflictError,
   type DebtorDetailRecord,
@@ -69,6 +73,8 @@ class FakeReceivablesRepository implements ReceivablesRepository {
     ...partialInvoice,
     allocationHistory: [],
     communications: [],
+    promises: [],
+    disputes: [],
   };
   conflict = false;
   createdInput: {
@@ -121,6 +127,13 @@ class FakeReceivablesRepository implements ReceivablesRepository {
 
   async listCollectionQueueCandidates(): Promise<[]> {
     return [];
+  }
+
+  async getCollectionCaseCounts(): Promise<{
+    brokenPromiseCount: number;
+    openDisputeCount: number;
+  }> {
+    return { brokenPromiseCount: 0, openDisputeCount: 0 };
   }
 
   async findInvoice(): Promise<InvoiceDetailRecord | null> {
@@ -199,6 +212,74 @@ describe('ReceivablesService', () => {
       occurredAt: '2026-07-15T04:30:00.000Z',
       channel: 'CALL',
       actor: { role: 'OWNER' },
+    });
+  });
+
+  it('derives current promise and dispute views for collection decisions', async () => {
+    const repository = new FakeReceivablesRepository();
+    repository.invoiceRecord = {
+      ...repository.invoiceRecord!,
+      promises: [
+        {
+          id: '80000000-0000-4000-8000-000000000001',
+          amount: '40000000.00',
+          promiseDate: '2026-07-20',
+          finalStatus: null,
+          fulfilledAt: null,
+          cancelledAt: null,
+          cancelReason: null,
+          createdBy: {
+            id: context.user.id,
+            name: context.user.name,
+            role: context.role,
+          },
+          cancelledBy: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+      disputes: [
+        {
+          id: '85000000-0000-4000-8000-000000000001',
+          category: DisputeCategory.WRONG_AMOUNT,
+          details: 'Customer reported a tax mismatch.',
+          status: DisputeStatus.OPEN,
+          resolutionNote: null,
+          createdBy: {
+            id: context.user.id,
+            name: context.user.name,
+            role: context.role,
+          },
+          resolvedBy: null,
+          resolvedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+    };
+
+    const disputed = await testService(repository).getInvoice({
+      context,
+      invoiceId: partialInvoice.id,
+    });
+    expect(disputed.data.promises[0]).toMatchObject({ status: 'ACTIVE' });
+    expect(disputed.data.disputes[0]).toMatchObject({ status: 'OPEN' });
+    expect(disputed.data.nextFollowUpSuggestion).toEqual({
+      date: null,
+      basis: 'OPEN_DISPUTE',
+    });
+
+    repository.invoiceRecord = {
+      ...repository.invoiceRecord,
+      disputes: [],
+    };
+    const promised = await testService(repository).getInvoice({
+      context,
+      invoiceId: partialInvoice.id,
+    });
+    expect(promised.data.nextFollowUpSuggestion).toEqual({
+      date: '2026-07-19',
+      basis: 'ACTIVE_PROMISE',
     });
   });
 

@@ -1,7 +1,10 @@
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import type {
   CommunicationChannel,
+  DisputeCategory,
+  DisputeStatus,
   MembershipRole,
+  PromiseFinalStatus,
 } from '../generated/prisma/enums.js';
 import { databaseDate } from '../lib/business-date.js';
 
@@ -54,6 +57,31 @@ export interface InvoiceDetailRecord extends InvoiceCalculationRecord {
     createdAt: Date;
     updatedAt: Date;
   }>;
+  promises: Array<{
+    id: string;
+    amount: string;
+    promiseDate: string;
+    finalStatus: PromiseFinalStatus | null;
+    fulfilledAt: Date | null;
+    cancelledAt: Date | null;
+    cancelReason: string | null;
+    createdBy: { id: string; name: string; role: MembershipRole };
+    cancelledBy: { id: string; name: string; role: MembershipRole } | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+  disputes: Array<{
+    id: string;
+    category: DisputeCategory;
+    details: string;
+    status: DisputeStatus;
+    resolutionNote: string | null;
+    createdBy: { id: string; name: string; role: MembershipRole };
+    resolvedBy: { id: string; name: string; role: MembershipRole } | null;
+    resolvedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
 }
 
 export interface CollectionQueueSourceRecord extends InvoiceCalculationRecord {
@@ -61,8 +89,18 @@ export interface CollectionQueueSourceRecord extends InvoiceCalculationRecord {
     occurredAt: Date;
     nextFollowUpDate: string | null;
   } | null;
-  promiseStatus: 'ACTIVE' | 'DUE' | 'BROKEN' | 'FULFILLED' | 'CANCELLED' | null;
+  latestPromise: {
+    promiseDate: string;
+    finalStatus: PromiseFinalStatus | null;
+    fulfilledAt: Date | null;
+    cancelledAt: Date | null;
+  } | null;
   hasOpenDispute: boolean;
+}
+
+export interface CollectionCaseCounts {
+  brokenPromiseCount: number;
+  openDisputeCount: number;
 }
 
 export interface DebtorDetailRecord extends DebtorRecord {
@@ -112,9 +150,14 @@ export interface ReceivablesRepository {
   }): Promise<InvoiceCalculationRecord[]>;
   listCollectionQueueCandidates(input: {
     organizationId: string;
-    communicationOccurredBefore: Date;
+    workflowOccurredBefore: Date;
     take: number;
   }): Promise<CollectionQueueSourceRecord[]>;
+  getCollectionCaseCounts(input: {
+    organizationId: string;
+    asOfDate: string;
+    workflowOccurredBefore: Date;
+  }): Promise<CollectionCaseCounts>;
   findInvoice(
     organizationId: string,
     invoiceId: string,
@@ -306,7 +349,7 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
 
   async listCollectionQueueCandidates(input: {
     organizationId: string;
-    communicationOccurredBefore: Date;
+    workflowOccurredBefore: Date;
     take: number;
   }): Promise<CollectionQueueSourceRecord[]> {
     const records = await this.database.invoice.findMany({
@@ -316,7 +359,7 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
       },
       orderBy: [{ dueDate: 'asc' }, { id: 'asc' }],
       take: input.take,
-      select: collectionQueueInvoiceSelect(input.communicationOccurredBefore),
+      select: collectionQueueInvoiceSelect(input.workflowOccurredBefore),
     });
     return records.map((record) => {
       const latestCommunication = record.communications[0];
@@ -330,11 +373,50 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
               ),
             }
           : null,
-        // Days 8 adds these source events to the same bounded query.
-        promiseStatus: null,
-        hasOpenDispute: false,
+        latestPromise: record.promises[0]
+          ? {
+              promiseDate: databaseDate(record.promises[0].promiseDate),
+              finalStatus: record.promises[0].finalStatus,
+              fulfilledAt: record.promises[0].fulfilledAt,
+              cancelledAt: record.promises[0].cancelledAt,
+            }
+          : null,
+        hasOpenDispute: record.disputes.length > 0,
       };
     });
+  }
+
+  async getCollectionCaseCounts(input: {
+    organizationId: string;
+    asOfDate: string;
+    workflowOccurredBefore: Date;
+  }): Promise<CollectionCaseCounts> {
+    const [brokenPromiseCount, openDisputeCount] =
+      await this.database.$transaction([
+        this.database.promiseToPay.count({
+          where: {
+            organizationId: input.organizationId,
+            createdAt: { lt: input.workflowOccurredBefore },
+            promiseDate: { lt: toDatabaseDate(input.asOfDate) },
+            OR: [
+              { finalStatus: null },
+              { fulfilledAt: { gte: input.workflowOccurredBefore } },
+              { cancelledAt: { gte: input.workflowOccurredBefore } },
+            ],
+          },
+        }),
+        this.database.dispute.count({
+          where: {
+            organizationId: input.organizationId,
+            createdAt: { lt: input.workflowOccurredBefore },
+            OR: [
+              { resolvedAt: null },
+              { resolvedAt: { gte: input.workflowOccurredBefore } },
+            ],
+          },
+        }),
+      ]);
+    return { brokenPromiseCount, openDisputeCount };
   }
 
   async findInvoice(
@@ -353,6 +435,16 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
           orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
           take: 10_001,
           select: invoiceCommunicationSelect,
+        },
+        promises: {
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: 10_001,
+          select: invoicePromiseSelect,
+        },
+        disputes: {
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: 10_001,
+          select: invoiceDisputeSelect,
         },
       },
     });
@@ -386,6 +478,37 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
         },
         createdAt: communication.createdAt,
         updatedAt: communication.updatedAt,
+      })),
+      promises: record.promises.map((promise) => ({
+        id: promise.id,
+        amount: promise.amount.toFixed(2),
+        promiseDate: databaseDate(promise.promiseDate),
+        finalStatus: promise.finalStatus,
+        fulfilledAt: promise.fulfilledAt,
+        cancelledAt: promise.cancelledAt,
+        cancelReason: promise.cancelReason,
+        createdBy: { ...promise.createdBy, role: promise.createdByRole },
+        cancelledBy:
+          promise.cancelledBy && promise.cancelledByRole
+            ? { ...promise.cancelledBy, role: promise.cancelledByRole }
+            : null,
+        createdAt: promise.createdAt,
+        updatedAt: promise.updatedAt,
+      })),
+      disputes: record.disputes.map((dispute) => ({
+        id: dispute.id,
+        category: dispute.category,
+        details: dispute.details,
+        status: dispute.status,
+        resolutionNote: dispute.resolutionNote,
+        createdBy: { ...dispute.createdBy, role: dispute.createdByRole },
+        resolvedBy:
+          dispute.resolvedBy && dispute.resolvedByRole
+            ? { ...dispute.resolvedBy, role: dispute.resolvedByRole }
+            : null,
+        resolvedAt: dispute.resolvedAt,
+        createdAt: dispute.createdAt,
+        updatedAt: dispute.updatedAt,
       })),
     };
   }
@@ -424,15 +547,37 @@ const invoiceCalculationSelect = {
 } satisfies Prisma.InvoiceSelect;
 
 function collectionQueueInvoiceSelect(
-  communicationOccurredBefore: Date,
+  workflowOccurredBefore: Date,
 ): Prisma.InvoiceSelect {
   return {
     ...invoiceCalculationSelect,
     communications: {
-      where: { occurredAt: { lt: communicationOccurredBefore } },
+      where: { occurredAt: { lt: workflowOccurredBefore } },
       orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
       take: 1,
       select: { occurredAt: true, nextFollowUpDate: true },
+    },
+    promises: {
+      where: { createdAt: { lt: workflowOccurredBefore } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 1,
+      select: {
+        promiseDate: true,
+        finalStatus: true,
+        fulfilledAt: true,
+        cancelledAt: true,
+      },
+    },
+    disputes: {
+      where: {
+        createdAt: { lt: workflowOccurredBefore },
+        OR: [
+          { resolvedAt: null },
+          { resolvedAt: { gte: workflowOccurredBefore } },
+        ],
+      },
+      take: 1,
+      select: { id: true },
     },
   } satisfies Prisma.InvoiceSelect;
 }
@@ -465,6 +610,37 @@ const invoiceCommunicationSelect = {
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.CommunicationSelect;
+
+const invoicePromiseSelect = {
+  id: true,
+  amount: true,
+  promiseDate: true,
+  finalStatus: true,
+  fulfilledAt: true,
+  cancelledAt: true,
+  cancelReason: true,
+  createdByRole: true,
+  createdBy: { select: { id: true, name: true } },
+  cancelledByRole: true,
+  cancelledBy: { select: { id: true, name: true } },
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.PromiseToPaySelect;
+
+const invoiceDisputeSelect = {
+  id: true,
+  category: true,
+  details: true,
+  status: true,
+  resolutionNote: true,
+  createdByRole: true,
+  createdBy: { select: { id: true, name: true } },
+  resolvedByRole: true,
+  resolvedBy: { select: { id: true, name: true } },
+  resolvedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.DisputeSelect;
 
 function toDebtorRecord(record: {
   id: string;
@@ -513,6 +689,10 @@ function toInvoiceCalculationRecord(record: {
 
 function nullableDatabaseDate(value: Date | null): string | null {
   return value ? databaseDate(value) : null;
+}
+
+function toDatabaseDate(value: string): Date {
+  return new Date(`${value}T00:00:00.000Z`);
 }
 
 function mapUniqueConflict(error: unknown): unknown {

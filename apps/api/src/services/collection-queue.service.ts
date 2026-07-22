@@ -2,6 +2,7 @@ import {
   addCalendarDays,
   calculateCollectionQueueCandidate,
   compareCollectionQueueCandidates,
+  derivePromiseStatus,
   DomainError,
   parseBusinessDate,
   type AgingBucket,
@@ -102,13 +103,14 @@ export class CollectionQueueService implements CollectionQueueServiceContract {
     limit: number;
   }): Promise<CollectionQueueView> {
     const asOfDate = this.resolveAsOfDate(input.context, input.asOfDate);
+    const workflowOccurredBefore = startOfBusinessDateInTimeZone(
+      addCalendarDays(asOfDate, 1),
+      input.context.organization.timezone,
+    );
     const records = await this.options.repository.listCollectionQueueCandidates(
       {
         organizationId: input.context.organization.id,
-        communicationOccurredBefore: startOfBusinessDateInTimeZone(
-          addCalendarDays(asOfDate, 1),
-          input.context.organization.timezone,
-        ),
+        workflowOccurredBefore,
         take: MAX_QUEUE_INVOICES + 1,
       },
     );
@@ -123,6 +125,7 @@ export class CollectionQueueService implements CollectionQueueServiceContract {
       records,
       asOfDate,
       input.context.organization.timezone,
+      workflowOccurredBefore,
     );
     const total = queue.length;
     const totalPages = total === 0 ? 0 : Math.ceil(total / input.limit);
@@ -168,6 +171,7 @@ function deriveQueue(
   records: readonly CollectionQueueSourceRecord[],
   asOfDate: string,
   timeZone: string,
+  workflowOccurredBefore: Date,
 ): CollectionQueueItemView[] {
   return records
     .map((record) => {
@@ -177,9 +181,15 @@ function deriveQueue(
             timeZone,
           )
         : null;
+      const promiseStatus = queuePromiseStatus(
+        record,
+        asOfDate,
+        workflowOccurredBefore,
+      );
       return {
         record,
         lastContactDate,
+        promiseStatus,
         candidate: calculateCollectionQueueCandidate({
           invoiceId: record.id,
           originalAmount: record.originalAmount,
@@ -189,7 +199,7 @@ function deriveQueue(
           lastContactDate,
           nextFollowUpDate:
             record.latestCommunication?.nextFollowUpDate ?? null,
-          promiseStatus: record.promiseStatus,
+          promiseStatus,
           hasOpenDispute: record.hasOpenDispute,
         }),
       };
@@ -198,7 +208,7 @@ function deriveQueue(
     .sort((left, right) =>
       compareCollectionQueueCandidates(left.candidate, right.candidate),
     )
-    .map(({ record, candidate, lastContactDate }) => ({
+    .map(({ record, candidate, lastContactDate, promiseStatus }) => ({
       id: record.id,
       invoiceNumber: record.invoiceNumber,
       debtor: record.debtor,
@@ -214,7 +224,7 @@ function deriveQueue(
         record.latestCommunication?.occurredAt.toISOString() ?? null,
       lastContactDate,
       nextFollowUpDate: record.latestCommunication?.nextFollowUpDate ?? null,
-      promiseStatus: record.promiseStatus,
+      promiseStatus,
       hasOpenDispute: record.hasOpenDispute,
       daysSinceLastContact: candidate.daysSinceLastContact,
       reasons: candidate.reasons,
@@ -223,4 +233,29 @@ function deriveQueue(
         components: candidate.priority.components,
       },
     }));
+}
+
+function queuePromiseStatus(
+  record: CollectionQueueSourceRecord,
+  asOfDate: string,
+  workflowOccurredBefore: Date,
+): CollectionPromiseStatus | null {
+  const promise = record.latestPromise;
+  if (!promise) return null;
+
+  const finalStatus =
+    promise.finalStatus === 'FULFILLED' &&
+    promise.fulfilledAt &&
+    promise.fulfilledAt < workflowOccurredBefore
+      ? 'FULFILLED'
+      : promise.finalStatus === 'CANCELLED' &&
+          promise.cancelledAt &&
+          promise.cancelledAt < workflowOccurredBefore
+        ? 'CANCELLED'
+        : null;
+  return derivePromiseStatus({
+    promiseDate: promise.promiseDate,
+    asOfDate,
+    finalStatus,
+  });
 }

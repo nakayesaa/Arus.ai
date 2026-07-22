@@ -13,9 +13,13 @@ import { createDatabaseClient } from './lib/database.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
 import { PrismaDisputeRepository } from './repositories/dispute.repository.js';
 import { PrismaPromiseRepository } from './repositories/promise.repository.js';
+import { PrismaReceivablesRepository } from './repositories/receivables.repository.js';
 import { AuthService } from './services/auth.service.js';
+import { CollectionQueueService } from './services/collection-queue.service.js';
+import { DashboardService } from './services/dashboard.service.js';
 import { DisputeService } from './services/dispute.service.js';
 import { PromiseService } from './services/promise.service.js';
+import { ReceivablesService } from './services/receivables.service.js';
 
 const integrationDescribe = describe.runIf(
   process.env.RUN_DATABASE_INTEGRATION_TESTS === 'true',
@@ -159,8 +163,21 @@ integrationDescribe('collection case workflows with PostgreSQL', () => {
       environment,
       logger,
     });
+    const receivablesRepository = new PrismaReceivablesRepository(database);
     app = createApp({
       authService,
+      receivablesService: new ReceivablesService({
+        repository: receivablesRepository,
+        clock: () => occurredAt,
+      }),
+      collectionQueueService: new CollectionQueueService({
+        repository: receivablesRepository,
+        clock: () => occurredAt,
+      }),
+      dashboardService: new DashboardService({
+        repository: receivablesRepository,
+        clock: () => occurredAt,
+      }),
       promiseService: new PromiseService({
         repository: new PrismaPromiseRepository(database),
         clock: () => occurredAt,
@@ -517,6 +534,75 @@ integrationDescribe('collection case workflows with PostgreSQL', () => {
     await expect(
       database.dispute.count({ where: { operationKey: disputeKey } }),
     ).resolves.toBe(0);
+  });
+
+  it('projects promises and disputes into invoice, queue, and dashboard decisions', async () => {
+    await postPromise(cookieA, validationInvoiceId, randomUUID(), {
+      amount: '100.00',
+      promiseDate: '2026-07-16',
+    }).expect(201);
+    await postDispute(cookieA, rollbackInvoiceId, randomUUID(), {
+      category: DisputeCategory.ADMINISTRATIVE,
+      details: 'Customer needs a corrected purchase-order reference.',
+    }).expect(201);
+
+    const promisedInvoice = await request(app)
+      .get(`/api/invoices/${validationInvoiceId}`)
+      .set('Cookie', cookieA)
+      .expect(200);
+    expect(promisedInvoice.body.data.promises).toEqual([
+      expect.objectContaining({
+        amount: '100.00',
+        promiseDate: '2026-07-16',
+        status: 'DUE',
+      }),
+    ]);
+    const disputedInvoice = await request(app)
+      .get(`/api/invoices/${rollbackInvoiceId}`)
+      .set('Cookie', cookieA)
+      .expect(200);
+    expect(disputedInvoice.body.data).toMatchObject({
+      disputes: [
+        {
+          id: expect.any(String),
+          category: 'ADMINISTRATIVE',
+          details: 'Customer needs a corrected purchase-order reference.',
+          status: 'OPEN',
+          resolutionNote: null,
+          createdBy: { id: userAId, name: 'Collection Owner A', role: 'OWNER' },
+          resolvedBy: null,
+          resolvedAt: null,
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String),
+        },
+      ],
+      nextFollowUpSuggestion: { date: null, basis: 'OPEN_DISPUTE' },
+    });
+
+    const queue = await request(app)
+      .get('/api/collection-queue?asOfDate=2026-07-16&limit=100')
+      .set('Cookie', cookieA)
+      .expect(200);
+    const queueIds = queue.body.data.map((item: { id: string }) => item.id);
+    expect(queueIds).toContain(validationInvoiceId);
+    expect(queueIds).not.toContain(rollbackInvoiceId);
+    expect(
+      queue.body.data.find(
+        (item: { id: string }) => item.id === validationInvoiceId,
+      ),
+    ).toMatchObject({
+      promiseStatus: 'DUE',
+      reasons: ['PROMISE_DUE', 'OVERDUE'],
+    });
+
+    const dashboard = await request(app)
+      .get('/api/dashboard?asOfDate=2026-07-16')
+      .set('Cookie', cookieA)
+      .expect(200);
+    expect(dashboard.body.data.workflows).toEqual({
+      brokenPromiseCount: 0,
+      openDisputeCount: 1,
+    });
   });
 
   it('enforces tenant consistency below the service boundary', async () => {

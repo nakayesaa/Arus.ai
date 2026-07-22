@@ -39,8 +39,15 @@ describe('dashboard service', () => {
         originalAmount: '315000000.00',
       }),
     ]);
+    const getCollectionCaseCounts = vi.fn().mockResolvedValue({
+      brokenPromiseCount: 3,
+      openDisputeCount: 2,
+    });
     const service = new DashboardService({
-      repository: { listInvoiceCandidates } as unknown as ReceivablesRepository,
+      repository: {
+        listInvoiceCandidates,
+        getCollectionCaseCounts,
+      } as unknown as ReceivablesRepository,
       clock: () => new Date('2026-07-16T03:00:00.000Z'),
     });
 
@@ -49,6 +56,11 @@ describe('dashboard service', () => {
     expect(listInvoiceCandidates).toHaveBeenCalledWith({
       organizationId: context.organization.id,
       take: 10_001,
+    });
+    expect(getCollectionCaseCounts).toHaveBeenCalledWith({
+      organizationId: context.organization.id,
+      asOfDate: '2026-07-16',
+      workflowOccurredBefore: new Date('2026-07-16T17:00:00.000Z'),
     });
     expect(result).toMatchObject({
       asOfDate: '2026-07-16',
@@ -71,13 +83,21 @@ describe('dashboard service', () => {
           daysOverdue: 47,
         },
       ],
+      workflows: {
+        brokenPromiseCount: 3,
+        openDisputeCount: 2,
+      },
     });
   });
 
   it('rejects impossible calendar dates before reading source records', async () => {
     const listInvoiceCandidates = vi.fn();
+    const getCollectionCaseCounts = vi.fn();
     const service = new DashboardService({
-      repository: { listInvoiceCandidates } as unknown as ReceivablesRepository,
+      repository: {
+        listInvoiceCandidates,
+        getCollectionCaseCounts,
+      } as unknown as ReceivablesRepository,
     });
 
     await expect(
@@ -86,6 +106,7 @@ describe('dashboard service', () => {
       code: 'INVALID_AS_OF_DATE',
     } satisfies Partial<DashboardError>);
     expect(listInvoiceCandidates).not.toHaveBeenCalled();
+    expect(getCollectionCaseCounts).not.toHaveBeenCalled();
   });
 });
 

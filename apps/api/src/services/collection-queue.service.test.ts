@@ -45,6 +45,12 @@ describe('collection queue service', () => {
         invoiceNumber: 'INV-LARGEST',
         dueDate: '2026-07-15',
         originalAmount: '315000000.00',
+        latestPromise: {
+          promiseDate: '2026-07-15',
+          finalStatus: null,
+          fulfilledAt: null,
+          cancelledAt: null,
+        },
       }),
       invoice({
         id: '30000000-0000-4000-8000-000000000003',
@@ -81,7 +87,7 @@ describe('collection queue service', () => {
 
     expect(listCollectionQueueCandidates).toHaveBeenCalledWith({
       organizationId: context.organization.id,
-      communicationOccurredBefore: new Date('2026-07-16T17:00:00.000Z'),
+      workflowOccurredBefore: new Date('2026-07-16T17:00:00.000Z'),
       take: 10_001,
     });
     expect(firstPage.pagination).toEqual({
@@ -95,9 +101,14 @@ describe('collection queue service', () => {
       'INV-PARTIAL',
     ]);
     expect(firstPage.data.map((item) => item.priority.score)).toEqual([
-      '487.60',
+      '507.60',
       '208.20',
     ]);
+    expect(firstPage.data[0]).toMatchObject({
+      promiseStatus: 'BROKEN',
+      reasons: ['PROMISE_BROKEN', 'OVERDUE'],
+      priority: { components: { promise: '20.00' } },
+    });
     expect(firstPage.data[1]).toMatchObject({
       lastContactAt: '2026-07-14T03:30:00.000Z',
       lastContactDate: '2026-07-14',
@@ -198,7 +209,7 @@ function invoice(
     createdAt: new Date('2026-07-01T00:00:00.000Z'),
     updatedAt: new Date('2026-07-01T00:00:00.000Z'),
     latestCommunication: null,
-    promiseStatus: null,
+    latestPromise: null,
     hasOpenDispute: false,
     ...overrides,
   };

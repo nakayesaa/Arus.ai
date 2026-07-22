@@ -32,6 +32,7 @@ export function createDashboardController(options: {
           summary: result.summary,
           aging: result.aging,
           largestOverdue: result.largestOverdue,
+          workflows: result.workflows,
         },
         meta: { asOfDate: result.asOfDate },
       });
