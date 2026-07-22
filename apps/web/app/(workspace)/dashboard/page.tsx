@@ -248,9 +248,16 @@ function ExposureRail({
           href={agingHref(metric.bucket, asOfDate)}
           key={metric.bucket}
           style={{ flexGrow: Number(metric.outstandingAmount) / total }}
-          aria-label={`${agingLabel(metric.bucket)}: ${formatRupiah(metric.outstandingAmount)}`}
-          title={`${agingLabel(metric.bucket)} · ${formatRupiah(metric.outstandingAmount)}`}
-        />
+          aria-label={`${agingLabel(metric.bucket)}: ${formatRupiah(metric.outstandingAmount)}, ${formatCount(metric.invoiceCount, 'invoice')}`}
+        >
+          <span className={styles.railTooltip} aria-hidden="true">
+            <strong>{formatRupiah(metric.outstandingAmount)}</strong>
+            <small>
+              {agingLabel(metric.bucket)} ·{' '}
+              {formatCount(metric.invoiceCount, 'invoice')}
+            </small>
+          </span>
+        </Link>
       ))}
     </div>
   );

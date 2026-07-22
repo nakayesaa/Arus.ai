@@ -100,6 +100,11 @@ test('renders the seeded collection queue in exact priority order', async ({
   await expect(
     page.getByText('Open disputes', { exact: true }).locator('..'),
   ).toContainText('1');
+  const agingSegment = page.getByRole('link', {
+    name: /1–7 days overdue:.*390\.000\.000.*2 invoices/u,
+  });
+  await agingSegment.hover();
+  await expect(agingSegment.getByText('Rp\u00a0390.000.000')).toBeVisible();
 
   await page.goto(`/collection-queue?asOfDate=${AS_OF_DATE}`);
 
