@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 const AS_OF_DATE = '2026-07-16';
 const SINAR_DEBTOR_ID = '20000000-0000-4000-8000-000000000001';
 const PARTIAL_INVOICE_ID = '30000000-0000-4000-8000-000000000001';
+const DISPUTED_INVOICE_ID = '30000000-0000-4000-8000-000000000005';
 
 test.beforeEach(async ({ page }) => {
   await login(page);
@@ -132,6 +133,40 @@ test('renders the seeded collection queue in exact priority order', async ({
       `/invoices/30000000-0000-4000-8000-000000000002\\?asOfDate=${AS_OF_DATE}$`,
     ),
   );
+});
+
+test('drills from dashboard workflow signals into the exact invoice', async ({
+  page,
+}) => {
+  await page.goto(`/dashboard?asOfDate=${AS_OF_DATE}`);
+
+  await page.getByRole('button', { name: /Broken promises/u }).click();
+  const promiseDialog = page.getByRole('dialog', { name: 'Broken promises' });
+  await expect(promiseDialog).toBeVisible();
+  await expect(
+    promiseDialog.getByRole('link', { name: 'Open invoice INV-2026-0074' }),
+  ).toBeVisible();
+  await expect(promiseDialog).toContainText('Promised Rp\u00a0100.000.000');
+  await promiseDialog
+    .getByRole('button', { name: 'Close workflow list' })
+    .click();
+  await expect(promiseDialog).toBeHidden();
+
+  await page.getByRole('button', { name: /Open disputes/u }).click();
+  const disputeDialog = page.getByRole('dialog', { name: 'Open disputes' });
+  await expect(disputeDialog).toContainText('Wrong amount');
+  await expect(disputeDialog).toContainText(
+    'Customer requested reconciliation after a payment allocation was reversed.',
+  );
+  await disputeDialog
+    .getByRole('link', { name: 'Open invoice INV-2026-0060' })
+    .click();
+  await expect(page).toHaveURL(
+    new RegExp(`/invoices/${DISPUTED_INVOICE_ID}\\?asOfDate=${AS_OF_DATE}$`),
+  );
+  await expect(
+    page.getByRole('heading', { name: 'INV-2026-0060' }),
+  ).toBeVisible();
 });
 
 test('records external contact and refreshes invoice and queue evidence', async ({
