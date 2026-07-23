@@ -6,6 +6,10 @@ import {
   PromiseFinalStatus,
 } from '../apps/api/src/generated/prisma/enums.js';
 
+export const demoAsOfDate = validDemoDate(
+  process.env.DEMO_TODAY ?? '2026-07-23',
+);
+
 export const seedOrganizations = [
   {
     id: '00000000-0000-4000-8000-000000000001',
@@ -46,7 +50,7 @@ export const seedUsers = [
   },
 ] as const;
 
-export const seedDebtors = [
+const baseSeedDebtors = [
   {
     id: '20000000-0000-4000-8000-000000000001',
     organizationId: seedOrganizations[0].id,
@@ -93,15 +97,55 @@ export const seedDebtors = [
   },
 ] as const;
 
-export const seedInvoices = [
+const generatedDebtorNames = [
+  'PT Arunika Distribusi',
+  'CV Berkah Mandiri',
+  'PT Nusantara Medika',
+  'PT Karya Sentosa Teknik',
+  'CV Lautan Pangan',
+  'PT Prima Kemasan',
+  'PT Griya Furnindo',
+  'CV Tumbuh Bersama',
+  'PT Bintang Timur Niaga',
+  'PT Delta Sarana Digital',
+  'CV Sumber Makmur',
+  'PT Wahana Konstruksi',
+] as const;
+
+const generatedSeedDebtors = generatedDebtorNames.map((name, index) => {
+  const sequence = index + 4;
+  return {
+    id: seedId('2', index + 101),
+    organizationId: seedOrganizations[0].id,
+    code: `CUST-${String(sequence).padStart(3, '0')}`,
+    normalizedCode: `cust-${String(sequence).padStart(3, '0')}`,
+    name,
+    normalizedName: name.toLocaleLowerCase('id-ID'),
+    contactName: [
+      'Sari Wulandari',
+      'Fajar Ramadhan',
+      'Nadia Permata',
+      'Rizky Hidayat',
+    ][index % 4]!,
+    phoneNumber: `+62 812 1000 ${String(sequence).padStart(4, '0')}`,
+    email: `finance-${String(sequence).padStart(3, '0')}@demo-customer.example`,
+  };
+});
+
+export const seedDebtors = [
+  ...baseSeedDebtors,
+  ...generatedSeedDebtors,
+] as const;
+
+const baseSeedInvoices = [
   {
     id: '30000000-0000-4000-8000-000000000001',
     organizationId: seedOrganizations[0].id,
     debtorId: seedDebtors[0].id,
     invoiceNumber: 'INV-2026-0418',
     normalizedInvoiceNumber: 'inv-2026-0418',
-    invoiceDate: '2026-04-30',
-    dueDate: '2026-05-30',
+    invoiceDate: shiftDate(demoAsOfDate, -84),
+    dueDate: shiftDate(demoAsOfDate, -54),
     originalAmount: '185000000.00',
     description: 'Synthetic partial-payment boundary invoice',
   },
@@ -111,8 +155,8 @@ export const seedInvoices = [
     debtorId: seedDebtors[1].id,
     invoiceNumber: 'INV-2026-0074',
     normalizedInvoiceNumber: 'inv-2026-0074',
-    invoiceDate: '2026-06-15',
-    dueDate: '2026-07-15',
+    invoiceDate: shiftDate(demoAsOfDate, -38),
+    dueDate: shiftDate(demoAsOfDate, -8),
     originalAmount: '315000000.00',
     description: 'Synthetic open overdue invoice',
   },
@@ -122,8 +166,8 @@ export const seedInvoices = [
     debtorId: seedDebtors[2].id,
     invoiceNumber: 'INV-2026-0090',
     normalizedInvoiceNumber: 'inv-2026-0090',
-    invoiceDate: '2026-06-23',
-    dueDate: '2026-07-23',
+    invoiceDate: shiftDate(demoAsOfDate, -30),
+    dueDate: demoAsOfDate,
     originalAmount: '90000000.00',
     description: 'Synthetic due-soon invoice',
   },
@@ -133,8 +177,8 @@ export const seedInvoices = [
     debtorId: seedDebtors[0].id,
     invoiceNumber: 'INV-2026-0020',
     normalizedInvoiceNumber: 'inv-2026-0020',
-    invoiceDate: '2026-03-17',
-    dueDate: '2026-04-16',
+    invoiceDate: shiftDate(demoAsOfDate, -128),
+    dueDate: shiftDate(demoAsOfDate, -98),
     originalAmount: '50000000.00',
     description: 'Synthetic fully-paid historical invoice',
   },
@@ -144,8 +188,8 @@ export const seedInvoices = [
     debtorId: seedDebtors[2].id,
     invoiceNumber: 'INV-2026-0060',
     normalizedInvoiceNumber: 'inv-2026-0060',
-    invoiceDate: '2026-06-09',
-    dueDate: '2026-07-09',
+    invoiceDate: shiftDate(demoAsOfDate, -44),
+    dueDate: shiftDate(demoAsOfDate, -14),
     originalAmount: '75000000.00',
     description: 'Synthetic reversed-allocation invoice',
   },
@@ -162,7 +206,37 @@ export const seedInvoices = [
   },
 ] as const;
 
-export const seedCommunications = [
+const generatedDueOffsets = [
+  21, 14, 7, 2, 0, -3, -9, -18, -27, -42, -68, -96,
+] as const;
+
+const generatedSeedInvoices = Array.from({ length: 75 }, (_, index) => {
+  const debtor = seedDebtors[index % 15]!;
+  const dueDate = shiftDate(
+    demoAsOfDate,
+    generatedDueOffsets[index % generatedDueOffsets.length]!,
+  );
+  const amount = 8_000_000 + (index % 12) * 7_500_000;
+  const sequence = index + 1_001;
+  return {
+    id: seedId('3', index + 101),
+    organizationId: seedOrganizations[0].id,
+    debtorId: debtor.id,
+    invoiceNumber: `INV-2026-${sequence}`,
+    normalizedInvoiceNumber: `inv-2026-${sequence}`,
+    invoiceDate: shiftDate(dueDate, -30),
+    dueDate,
+    originalAmount: money(amount),
+    description: `Synthetic demo receivable ${sequence}`,
+  };
+});
+
+export const seedInvoices = [
+  ...baseSeedInvoices,
+  ...generatedSeedInvoices,
+] as const;
+
+const baseSeedCommunications = [
   {
     id: '60000000-0000-4000-8000-000000000001',
     organizationId: seedOrganizations[0].id,
@@ -170,11 +244,11 @@ export const seedCommunications = [
     actorId: seedUsers[0].id,
     actorRole: MembershipRole.OWNER,
     operationKey: '70000000-0000-4000-8000-000000000001',
-    occurredAt: '2026-07-11T03:00:00.000Z',
+    occurredAt: `${shiftDate(demoAsOfDate, -12)}T03:00:00.000Z`,
     channel: CommunicationChannel.EMAIL,
     notes:
       'Sent invoice evidence to accounts payable for internal approval review.',
-    nextFollowUpDate: '2026-07-14',
+    nextFollowUpDate: shiftDate(demoAsOfDate, -9),
   },
   {
     id: '60000000-0000-4000-8000-000000000002',
@@ -183,21 +257,51 @@ export const seedCommunications = [
     actorId: seedUsers[1].id,
     actorRole: MembershipRole.OPERATOR,
     operationKey: '70000000-0000-4000-8000-000000000002',
-    occurredAt: '2026-07-14T03:30:00.000Z',
+    occurredAt: `${shiftDate(demoAsOfDate, -9)}T03:30:00.000Z`,
     channel: CommunicationChannel.CALL,
     notes:
       'Accounts payable confirmed the invoice is in approval. Follow up after finance review.',
-    nextFollowUpDate: '2026-07-18',
+    nextFollowUpDate: shiftDate(demoAsOfDate, -5),
   },
 ] as const;
 
-export const seedPromises = [
+const generatedSeedCommunications = Array.from({ length: 10 }, (_, index) => {
+  const occurredDate = shiftDate(demoAsOfDate, -(index + 1));
+  return {
+    id: seedId('6', index + 101),
+    organizationId: seedOrganizations[0].id,
+    invoiceId: generatedSeedInvoices[index + 5]!.id,
+    actorId: seedUsers[index % 2]!.id,
+    actorRole: index % 2 === 0 ? MembershipRole.OWNER : MembershipRole.OPERATOR,
+    operationKey: seedId('7', index + 101),
+    occurredAt: `${occurredDate}T03:00:00.000Z`,
+    channel: [
+      CommunicationChannel.WHATSAPP,
+      CommunicationChannel.CALL,
+      CommunicationChannel.EMAIL,
+    ][index % 3]!,
+    notes: [
+      'Accounts payable confirmed the invoice is queued for approval.',
+      'Customer requested the supporting delivery document.',
+      'Finance contact confirmed the proposed payment date.',
+      'Follow-up completed; internal approval is still in progress.',
+    ][index % 4]!,
+    nextFollowUpDate: shiftDate(demoAsOfDate, (index % 5) - 2),
+  };
+});
+
+export const seedCommunications = [
+  ...baseSeedCommunications,
+  ...generatedSeedCommunications,
+] as const;
+
+const baseSeedPromises = [
   {
     id: '80000000-0000-4000-8000-000000000001',
     organizationId: seedOrganizations[0].id,
     invoiceId: seedInvoices[0].id,
     amount: '75000000.00',
-    promiseDate: '2026-07-16',
+    promiseDate: shiftDate(demoAsOfDate, -7),
     createdById: seedUsers[1].id,
     createdByRole: MembershipRole.OPERATOR,
     operationKey: '81000000-0000-4000-8000-000000000001',
@@ -208,14 +312,14 @@ export const seedPromises = [
     cancelledByRole: null,
     cancelReason: null,
     cancellationOperationKey: null,
-    createdAt: '2026-07-14T03:30:00.000Z',
+    createdAt: `${shiftDate(demoAsOfDate, -9)}T03:30:00.000Z`,
   },
   {
     id: '80000000-0000-4000-8000-000000000002',
     organizationId: seedOrganizations[0].id,
     invoiceId: seedInvoices[1].id,
     amount: '100000000.00',
-    promiseDate: '2026-07-15',
+    promiseDate: shiftDate(demoAsOfDate, -8),
     createdById: seedUsers[0].id,
     createdByRole: MembershipRole.OWNER,
     operationKey: '81000000-0000-4000-8000-000000000002',
@@ -226,14 +330,14 @@ export const seedPromises = [
     cancelledByRole: null,
     cancelReason: null,
     cancellationOperationKey: null,
-    createdAt: '2026-07-10T02:00:00.000Z',
+    createdAt: `${shiftDate(demoAsOfDate, -13)}T02:00:00.000Z`,
   },
   {
     id: '80000000-0000-4000-8000-000000000003',
     organizationId: seedOrganizations[0].id,
     invoiceId: seedInvoices[2].id,
     amount: '45000000.00',
-    promiseDate: '2026-07-23',
+    promiseDate: demoAsOfDate,
     createdById: seedUsers[1].id,
     createdByRole: MembershipRole.OPERATOR,
     operationKey: '81000000-0000-4000-8000-000000000003',
@@ -244,47 +348,103 @@ export const seedPromises = [
     cancelledByRole: null,
     cancelReason: null,
     cancellationOperationKey: null,
-    createdAt: '2026-07-15T04:00:00.000Z',
+    createdAt: `${shiftDate(demoAsOfDate, -8)}T04:00:00.000Z`,
   },
   {
     id: '80000000-0000-4000-8000-000000000004',
     organizationId: seedOrganizations[0].id,
     invoiceId: seedInvoices[3].id,
     amount: '50000000.00',
-    promiseDate: '2026-04-16',
+    promiseDate: shiftDate(demoAsOfDate, -98),
     createdById: seedUsers[0].id,
     createdByRole: MembershipRole.OWNER,
     operationKey: '81000000-0000-4000-8000-000000000004',
     finalStatus: PromiseFinalStatus.FULFILLED,
-    fulfilledAt: '2026-04-15T03:00:00.000Z',
+    fulfilledAt: `${shiftDate(demoAsOfDate, -99)}T03:00:00.000Z`,
     cancelledAt: null,
     cancelledById: null,
     cancelledByRole: null,
     cancelReason: null,
     cancellationOperationKey: null,
-    createdAt: '2026-04-10T03:00:00.000Z',
+    createdAt: `${shiftDate(demoAsOfDate, -104)}T03:00:00.000Z`,
   },
   {
     id: '80000000-0000-4000-8000-000000000005',
     organizationId: seedOrganizations[0].id,
     invoiceId: seedInvoices[0].id,
     amount: '25000000.00',
-    promiseDate: '2026-07-12',
+    promiseDate: shiftDate(demoAsOfDate, -11),
     createdById: seedUsers[0].id,
     createdByRole: MembershipRole.OWNER,
     operationKey: '81000000-0000-4000-8000-000000000005',
     finalStatus: PromiseFinalStatus.CANCELLED,
     fulfilledAt: null,
-    cancelledAt: '2026-07-11T05:00:00.000Z',
+    cancelledAt: `${shiftDate(demoAsOfDate, -12)}T05:00:00.000Z`,
     cancelledById: seedUsers[0].id,
     cancelledByRole: MembershipRole.OWNER,
     cancelReason: 'Customer corrected the proposed payment schedule.',
     cancellationOperationKey: '82000000-0000-4000-8000-000000000005',
-    createdAt: '2026-07-10T03:00:00.000Z',
+    createdAt: `${shiftDate(demoAsOfDate, -13)}T03:00:00.000Z`,
   },
 ] as const;
 
-export const seedDisputes = [
+const generatedSeedPromises = Array.from({ length: 8 }, (_, index) => {
+  const status = index % 4;
+  const promiseDate =
+    status === 0
+      ? shiftDate(demoAsOfDate, 3 + index)
+      : status === 1
+        ? shiftDate(demoAsOfDate, -(index + 1))
+        : shiftDate(demoAsOfDate, -(index % 3));
+  const finalStatus =
+    status === 2
+      ? PromiseFinalStatus.FULFILLED
+      : status === 3
+        ? PromiseFinalStatus.CANCELLED
+        : null;
+  return {
+    id: seedId('8', index + 101),
+    organizationId: seedOrganizations[0].id,
+    invoiceId: generatedSeedInvoices[index + 16]!.id,
+    amount: money(5_000_000 + (index % 3) * 2_500_000),
+    promiseDate,
+    createdById: seedUsers[index % 2]!.id,
+    createdByRole:
+      index % 2 === 0 ? MembershipRole.OWNER : MembershipRole.OPERATOR,
+    operationKey: seedId('8', index + 201),
+    finalStatus,
+    fulfilledAt:
+      finalStatus === PromiseFinalStatus.FULFILLED
+        ? `${shiftDate(demoAsOfDate, -1)}T03:00:00.000Z`
+        : null,
+    cancelledAt:
+      finalStatus === PromiseFinalStatus.CANCELLED
+        ? `${shiftDate(demoAsOfDate, -2)}T03:00:00.000Z`
+        : null,
+    cancelledById:
+      finalStatus === PromiseFinalStatus.CANCELLED ? seedUsers[0].id : null,
+    cancelledByRole:
+      finalStatus === PromiseFinalStatus.CANCELLED
+        ? MembershipRole.OWNER
+        : null,
+    cancelReason:
+      finalStatus === PromiseFinalStatus.CANCELLED
+        ? 'Customer replaced the commitment with a revised schedule.'
+        : null,
+    cancellationOperationKey:
+      finalStatus === PromiseFinalStatus.CANCELLED
+        ? seedId('8', index + 301)
+        : null,
+    createdAt: `${shiftDate(demoAsOfDate, -(index + 8))}T03:00:00.000Z`,
+  };
+});
+
+export const seedPromises = [
+  ...baseSeedPromises,
+  ...generatedSeedPromises,
+] as const;
+
+const baseSeedDisputes = [
   {
     id: '90000000-0000-4000-8000-000000000001',
     organizationId: seedOrganizations[0].id,
@@ -301,7 +461,7 @@ export const seedDisputes = [
     resolvedAt: null,
     resolutionNote: null,
     resolutionOperationKey: null,
-    createdAt: '2026-07-12T03:00:00.000Z',
+    createdAt: `${shiftDate(demoAsOfDate, -11)}T03:00:00.000Z`,
   },
   {
     id: '90000000-0000-4000-8000-000000000002',
@@ -315,19 +475,58 @@ export const seedDisputes = [
     operationKey: '91000000-0000-4000-8000-000000000002',
     resolvedById: seedUsers[1].id,
     resolvedByRole: MembershipRole.OPERATOR,
-    resolvedAt: '2026-07-13T04:00:00.000Z',
+    resolvedAt: `${shiftDate(demoAsOfDate, -10)}T04:00:00.000Z`,
     resolutionNote: 'Proof of delivery shared and acknowledged by AP.',
     resolutionOperationKey: '92000000-0000-4000-8000-000000000002',
-    createdAt: '2026-07-11T03:00:00.000Z',
+    createdAt: `${shiftDate(demoAsOfDate, -12)}T03:00:00.000Z`,
   },
 ] as const;
 
-export const seedPayments = [
+const generatedSeedDisputes = Array.from({ length: 6 }, (_, index) => {
+  const resolved = index >= 4;
+  return {
+    id: seedId('9', index + 101),
+    organizationId: seedOrganizations[0].id,
+    invoiceId: generatedSeedInvoices[index + 30]!.id,
+    category: [
+      DisputeCategory.MISSING_POD,
+      DisputeCategory.WRONG_AMOUNT,
+      DisputeCategory.ADMINISTRATIVE,
+    ][index % 3]!,
+    details: [
+      'Customer needs proof of delivery before releasing payment.',
+      'Customer requested a line-item amount reconciliation.',
+      'Invoice is waiting for vendor master data correction.',
+    ][index % 3]!,
+    status: resolved ? DisputeStatus.RESOLVED : DisputeStatus.OPEN,
+    createdById: seedUsers[index % 2]!.id,
+    createdByRole:
+      index % 2 === 0 ? MembershipRole.OWNER : MembershipRole.OPERATOR,
+    operationKey: seedId('9', index + 201),
+    resolvedById: resolved ? seedUsers[1].id : null,
+    resolvedByRole: resolved ? MembershipRole.OPERATOR : null,
+    resolvedAt: resolved
+      ? `${shiftDate(demoAsOfDate, -1)}T04:00:00.000Z`
+      : null,
+    resolutionNote: resolved
+      ? 'Synthetic exception cleared after supporting documents were matched.'
+      : null,
+    resolutionOperationKey: resolved ? seedId('9', index + 301) : null,
+    createdAt: `${shiftDate(demoAsOfDate, -(index + 5))}T03:00:00.000Z`,
+  };
+});
+
+export const seedDisputes = [
+  ...baseSeedDisputes,
+  ...generatedSeedDisputes,
+] as const;
+
+const baseSeedPayments = [
   {
     id: '40000000-0000-4000-8000-000000000001',
     organizationId: seedOrganizations[0].id,
     debtorId: seedDebtors[0].id,
-    paymentDate: '2026-07-10',
+    paymentDate: shiftDate(demoAsOfDate, -13),
     amount: '50000000.00',
     payerReference: 'Opening balance seed',
     bankReference: 'SEED-PARTIAL-001',
@@ -338,7 +537,7 @@ export const seedPayments = [
     id: '40000000-0000-4000-8000-000000000002',
     organizationId: seedOrganizations[0].id,
     debtorId: seedDebtors[0].id,
-    paymentDate: '2026-04-15',
+    paymentDate: shiftDate(demoAsOfDate, -99),
     amount: '50000000.00',
     payerReference: 'Opening balance seed',
     bankReference: 'SEED-PAID-001',
@@ -349,7 +548,7 @@ export const seedPayments = [
     id: '40000000-0000-4000-8000-000000000003',
     organizationId: seedOrganizations[0].id,
     debtorId: seedDebtors[2].id,
-    paymentDate: '2026-07-08',
+    paymentDate: shiftDate(demoAsOfDate, -15),
     amount: '10000000.00',
     payerReference: 'Opening balance seed',
     bankReference: 'SEED-REVERSED-001',
@@ -358,14 +557,50 @@ export const seedPayments = [
   },
 ] as const;
 
-export const seedAllocations = [
+const generatedPaymentFixtures = generatedSeedInvoices.flatMap(
+  (invoice, index) => {
+    const fullyPaid = index % 10 === 0;
+    const partiallyPaid = !fullyPaid && index % 6 === 0;
+    if (!fullyPaid && !partiallyPaid) return [];
+    const originalAmount = wholeMoney(invoice.originalAmount);
+    const amount = fullyPaid
+      ? originalAmount
+      : Math.floor(originalAmount * 0.4);
+    const paymentDate =
+      index % 4 === 0
+        ? shiftDate(demoAsOfDate, -(index % 6))
+        : shiftDate(demoAsOfDate, -14 - (index % 10));
+    return [{ invoice, index, amount: money(amount), paymentDate }];
+  },
+);
+
+const generatedSeedPayments = generatedPaymentFixtures.map(
+  (fixture, index) => ({
+    id: seedId('4', index + 101),
+    organizationId: seedOrganizations[0].id,
+    debtorId: fixture.invoice.debtorId,
+    paymentDate: fixture.paymentDate,
+    amount: fixture.amount,
+    payerReference: `Synthetic remittance ${String(index + 1).padStart(3, '0')}`,
+    bankReference: `DEMO-BANK-${String(index + 1).padStart(3, '0')}`,
+    isOpeningBalance: false,
+    createdById: seedUsers[index % 2]!.id,
+  }),
+);
+
+export const seedPayments = [
+  ...baseSeedPayments,
+  ...generatedSeedPayments,
+] as const;
+
+const baseSeedAllocations = [
   {
     id: '50000000-0000-4000-8000-000000000001',
     organizationId: seedOrganizations[0].id,
     paymentId: seedPayments[0].id,
     invoiceId: seedInvoices[0].id,
     amount: '50000000.00',
-    allocationDate: '2026-07-10',
+    allocationDate: shiftDate(demoAsOfDate, -13),
     createdById: seedUsers[0].id,
     reversedAt: null,
     reversalReason: null,
@@ -376,7 +611,7 @@ export const seedAllocations = [
     paymentId: seedPayments[1].id,
     invoiceId: seedInvoices[3].id,
     amount: '50000000.00',
-    allocationDate: '2026-04-15',
+    allocationDate: shiftDate(demoAsOfDate, -99),
     createdById: seedUsers[0].id,
     reversedAt: null,
     reversalReason: null,
@@ -387,9 +622,70 @@ export const seedAllocations = [
     paymentId: seedPayments[2].id,
     invoiceId: seedInvoices[4].id,
     amount: '10000000.00',
-    allocationDate: '2026-07-08',
+    allocationDate: shiftDate(demoAsOfDate, -15),
     createdById: seedUsers[0].id,
-    reversedAt: '2026-07-09T03:00:00.000Z',
+    reversedAt: `${shiftDate(demoAsOfDate, -14)}T03:00:00.000Z`,
     reversalReason: 'Synthetic correction for reconciliation coverage',
   },
 ] as const;
+
+const generatedSeedAllocations = generatedPaymentFixtures.map(
+  (fixture, index) => ({
+    id: seedId('5', index + 101),
+    organizationId: seedOrganizations[0].id,
+    paymentId: generatedSeedPayments[index]!.id,
+    invoiceId: fixture.invoice.id,
+    amount: fixture.amount,
+    allocationDate: fixture.paymentDate,
+    createdById: seedUsers[index % 2]!.id,
+    reversedAt: null,
+    reversalReason: null,
+  }),
+);
+
+export const seedAllocations = [
+  ...baseSeedAllocations,
+  ...generatedSeedAllocations,
+] as const;
+
+function validDemoDate(value: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error('DEMO_TODAY must use YYYY-MM-DD');
+  }
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== value
+  ) {
+    throw new Error('DEMO_TODAY must be a valid calendar date');
+  }
+  return value;
+}
+
+function shiftDate(value: string, days: number): string {
+  const date = new Date(`${validDemoDate(value)}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function seedId(prefix: string, sequence: number): string {
+  return `${prefix}0000000-0000-4000-8000-${String(sequence).padStart(12, '0')}`;
+}
+
+function money(value: number): string {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error('Synthetic money must be a positive safe integer');
+  }
+  return `${value}.00`;
+}
+
+function wholeMoney(value: string): number {
+  if (!/^\d+\.00$/.test(value)) {
+    throw new Error(`Expected whole synthetic money, received ${value}`);
+  }
+  const amount = Number(value.slice(0, -3));
+  if (!Number.isSafeInteger(amount)) {
+    throw new Error(`Synthetic money is outside the safe range: ${value}`);
+  }
+  return amount;
+}
