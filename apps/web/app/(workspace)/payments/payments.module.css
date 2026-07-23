@@ -1,0 +1,84 @@
+.filters,
+.filters label {
+  display: flex;
+  align-items: center;
+}
+
+.filters {
+  gap: 6px;
+}
+
+.filters label {
+  height: 30px;
+  gap: 6px;
+  padding: 0 7px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-size: 9px;
+}
+
+.filters input {
+  width: 112px;
+  border: 0;
+  outline: 0;
+  color: var(--text-soft);
+  background: transparent;
+  color-scheme: dark;
+  font: inherit;
+}
+
+.detailMain,
+.detailRail {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 14px;
+}
+
+.referenceValue {
+  overflow-wrap: anywhere;
+}
+
+.truthNote {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 13px 14px;
+  color: var(--muted);
+  background: rgb(214 171 98 / 5%);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.truthNote strong {
+  color: #e0c28d;
+  font-size: 10px;
+}
+
+@media (max-width: 1120px) {
+  .filters label span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 720px) {
+  .filters {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .filters label {
+    flex: 1 1 135px;
+  }
+
+  .filters input {
+    width: 100%;
+  }
+}
