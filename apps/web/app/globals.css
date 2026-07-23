@@ -62,12 +62,13 @@
 }
 
 @media print {
-  body:has(.report-print-page) {
+  body.report-print-active {
+    color-scheme: light;
     color: #111111;
     background: #ffffff;
   }
 
-  body:has(.report-print-page) .app-shell {
+  body.report-print-active .app-shell {
     display: block;
     width: auto;
     height: auto;
@@ -77,12 +78,12 @@
     background: #ffffff;
   }
 
-  body:has(.report-print-page) .sidebar,
-  body:has(.report-print-page) .sidebar-open-button {
+  body.report-print-active .sidebar,
+  body.report-print-active .sidebar-open-button {
     display: none !important;
   }
 
-  body:has(.report-print-page) .workspace {
+  body.report-print-active .workspace {
     height: auto;
     margin: 0;
     overflow: visible;

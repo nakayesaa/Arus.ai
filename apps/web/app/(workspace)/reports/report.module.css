@@ -951,6 +951,25 @@
   }
 
   .reportHeader,
+  .executiveSummary,
+  .summary,
+  .summary > a,
+  .summary > a:hover,
+  .agingSection,
+  .workflowSection,
+  .agingTable,
+  .agingRow,
+  .agingRow:hover,
+  .workflowList,
+  .workflowList > div,
+  .prioritySection,
+  .priorityList,
+  .priorityRow,
+  .priorityRow:hover {
+    background: #ffffff;
+  }
+
+  .reportHeader,
   .summary,
   .agingTable,
   .workflowList,

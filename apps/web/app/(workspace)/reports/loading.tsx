@@ -2,7 +2,7 @@ import styles from './report.module.css';
 
 export default function ReportsLoading() {
   return (
-    <div className={`${styles.page} report-print-page`} aria-busy="true">
+    <div className={styles.page} aria-busy="true">
       <header className={styles.pageHeader}>
         <div className={styles.pageHeading}>
           <div className={styles.pageTitleRow}>

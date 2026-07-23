@@ -68,11 +68,18 @@ test('regenerates an inclusive period and preserves exact values for print', asy
   );
   await expect(page.getByText('1 calendar day, inclusive')).toBeVisible();
 
+  const agingRow = page.getByRole('table').getByRole('row').nth(1);
+  await agingRow.hover();
   await page.emulateMedia({ media: 'print' });
   await expect(page.locator('.sidebar')).toBeHidden();
   await expect(
     page.getByRole('article', { name: 'Receivables review' }),
   ).toBeVisible();
+  await expect(page.locator('body')).toHaveCSS(
+    'background-color',
+    'rgb(255, 255, 255)',
+  );
+  await expect(agingRow).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   const endingValue = page
     .getByRole('link', { name: /^Ending receivables/u })
     .locator('strong');
