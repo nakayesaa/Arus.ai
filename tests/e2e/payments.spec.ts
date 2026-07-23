@@ -70,6 +70,17 @@ test('records a reviewed partial payment through invoice and ledger evidence', a
   await expect(success).toContainText('Remaining Rp 7.345.678');
   await expect(metrics).toContainText('Rp 5.000.000');
   await expect(metrics).toContainText('Rp 7.345.678');
+  await expect(
+    success.getByRole('link', { name: 'View payment' }),
+  ).toBeVisible();
+  await expect(
+    success.getByRole('button', { name: 'Record another' }),
+  ).toBeVisible();
+  expect(
+    await success.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
 
   const allocationRow = page
     .getByRole('row')

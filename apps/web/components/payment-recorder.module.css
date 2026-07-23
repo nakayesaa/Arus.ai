@@ -300,6 +300,22 @@
   margin-top: 13px;
 }
 
+.successPanel > div,
+.settledPanel > div {
+  min-width: 0;
+}
+
+.successPanel .actions {
+  display: grid;
+  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.successPanel .actions > * {
+  width: 100%;
+  min-width: 0;
+}
+
 .fulfilled {
   margin-top: 10px;
   border-color: rgb(112 208 173 / 14%);
