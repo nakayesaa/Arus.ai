@@ -19,6 +19,7 @@ import { createInvoiceImportRouter } from './routes/invoice-import.routes.js';
 import { createPaymentRouter } from './routes/payment.routes.js';
 import { createPromiseRouter } from './routes/promise.routes.js';
 import { createReceivablesRouter } from './routes/receivables.routes.js';
+import { createReportRouter } from './routes/report.routes.js';
 import type { AccountLifecycleServiceContract } from './services/account-lifecycle.service.js';
 import type { AuthServiceContract } from './services/auth.service.js';
 import type { CollectionQueueServiceContract } from './services/collection-queue.service.js';
@@ -29,6 +30,7 @@ import type { InvoiceImportServiceContract } from './services/invoice-import.ser
 import type { PaymentServiceContract } from './services/payment.service.js';
 import type { PromiseServiceContract } from './services/promise.service.js';
 import type { ReceivablesServiceContract } from './services/receivables.service.js';
+import type { ReportServiceContract } from './services/report.service.js';
 
 interface CreateAppOptions {
   authService: AuthServiceContract;
@@ -41,6 +43,7 @@ interface CreateAppOptions {
   promiseService?: PromiseServiceContract;
   disputeService?: DisputeServiceContract;
   paymentService?: PaymentServiceContract;
+  reportService?: ReportServiceContract;
   environment?: Environment;
   logger?: Logger;
 }
@@ -140,6 +143,15 @@ export function createApp(options: CreateAppOptions): Express {
       createPaymentRouter({
         authService: options.authService,
         paymentService: options.paymentService,
+        environment,
+      }),
+    );
+  }
+  if (options.reportService) {
+    app.use(
+      createReportRouter({
+        authService: options.authService,
+        reportService: options.reportService,
         environment,
       }),
     );
