@@ -61,6 +61,38 @@
   --sidebar-ring: #5aa6f5;
 }
 
+@media print {
+  body:has(.report-print-page) {
+    color: #111111;
+    background: #ffffff;
+  }
+
+  body:has(.report-print-page) .app-shell {
+    display: block;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    border: 0;
+    background: #ffffff;
+  }
+
+  body:has(.report-print-page) .sidebar,
+  body:has(.report-print-page) .sidebar-open-button {
+    display: none !important;
+  }
+
+  body:has(.report-print-page) .workspace {
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: #ffffff;
+    box-shadow: none;
+  }
+}
+
 * {
   box-sizing: border-box;
 }

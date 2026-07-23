@@ -43,7 +43,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const paymentsHref = `/payments?from=${report.period.from}&to=${report.period.to}`;
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} report-print-page`}>
       <header className={styles.pageHeader}>
         <div className={styles.pageHeading}>
           <div className={styles.pageTitleRow}>

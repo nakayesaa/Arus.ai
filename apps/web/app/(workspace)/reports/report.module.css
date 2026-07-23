@@ -926,36 +926,8 @@
 }
 
 @media print {
-  :global(body) {
-    color: #111111;
-    background: #ffffff;
-  }
-
-  :global(.app-shell) {
-    display: block;
-    width: auto;
-    height: auto;
-    margin: 0;
-    overflow: visible;
-    border: 0;
-    background: #ffffff;
-  }
-
-  :global(.sidebar),
-  :global(.sidebar-open-button),
-  :global(.page-header),
   .pageHeader {
     display: none !important;
-  }
-
-  :global(.workspace) {
-    height: auto;
-    margin: 0;
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: #ffffff;
-    box-shadow: none;
   }
 
   .content {
