@@ -8,10 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from './app.js';
 import { loadEnvironment, type Environment } from './config/env.js';
 import type { PrismaClient } from './generated/prisma/client.js';
-import {
-  DisputeCategory,
-  MembershipRole,
-} from './generated/prisma/enums.js';
+import { DisputeCategory, MembershipRole } from './generated/prisma/enums.js';
 import { createDatabaseClient } from './lib/database.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
 import { PrismaReportRepository } from './repositories/report.repository.js';

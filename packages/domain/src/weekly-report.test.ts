@@ -86,10 +86,7 @@ describe('calculateWeeklyReport', () => {
     });
     expect(
       Object.fromEntries(
-        report.aging.map((metric) => [
-          metric.bucket,
-          metric.outstandingAmount,
-        ]),
+        report.aging.map((metric) => [metric.bucket, metric.outstandingAmount]),
       ),
     ).toMatchObject({
       OVERDUE_1_7: '750.00',

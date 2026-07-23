@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import {
   calculateWeeklyReport,
+  addCalendarDays,
   differenceInCalendarDays,
   DomainError,
   parseBusinessDate,
@@ -34,15 +35,13 @@ export interface ReportServiceContract {
   generateWeeklyReport(input: {
     context: AuthContext;
     requestId: string;
-    from: string;
-    to: string;
+    from?: string | undefined;
+    to?: string | undefined;
   }): Promise<{ data: WeeklyReportView }>;
 }
 
 export type ReportErrorCode =
-  | 'INVALID_REPORT_PERIOD'
-  | 'REPORT_RANGE_TOO_LONG'
-  | 'REPORT_TOO_BROAD';
+  'INVALID_REPORT_PERIOD' | 'REPORT_RANGE_TOO_LONG' | 'REPORT_TOO_BROAD';
 
 export class ReportError extends Error {
   constructor(
@@ -72,10 +71,15 @@ export class ReportService implements ReportServiceContract {
   async generateWeeklyReport(input: {
     context: AuthContext;
     requestId: string;
-    from: string;
-    to: string;
+    from?: string | undefined;
+    to?: string | undefined;
   }): Promise<{ data: WeeklyReportView }> {
-    const period = validatedPeriod(input.from, input.to);
+    const generatedAt = this.clock();
+    const period = validatedPeriod(
+      input.from,
+      input.to,
+      businessDateInTimeZone(generatedAt, input.context.organization.timezone),
+    );
     const snapshot = await this.options.repository.readWeeklySnapshot({
       organizationId: input.context.organization.id,
       throughDate: period.to,
@@ -84,7 +88,6 @@ export class ReportService implements ReportServiceContract {
     });
     assertWithinProcessingLimits(snapshot);
 
-    const generatedAt = this.clock();
     const reportId = this.idFactory();
     const metrics = calculateWeeklyReport({
       from: period.from,
@@ -165,12 +168,23 @@ export class ReportService implements ReportServiceContract {
 }
 
 function validatedPeriod(
-  rawFrom: string,
-  rawTo: string,
+  rawFrom: string | undefined,
+  rawTo: string | undefined,
+  defaultTo: string,
 ): WeeklyReportView['period'] {
   try {
-    const from = parseBusinessDate(rawFrom);
-    const to = parseBusinessDate(rawTo);
+    if ((rawFrom === undefined) !== (rawTo === undefined)) {
+      throw new ReportError(
+        'INVALID_REPORT_PERIOD',
+        'Report start and end dates must be provided together',
+      );
+    }
+    const rawPeriod =
+      rawFrom && rawTo
+        ? { from: rawFrom, to: rawTo }
+        : { from: addCalendarDays(defaultTo, -6), to: defaultTo };
+    const from = parseBusinessDate(rawPeriod.from);
+    const to = parseBusinessDate(rawPeriod.to);
     const inclusiveDayCount = differenceInCalendarDays(to, from) + 1;
     if (inclusiveDayCount <= 0) {
       throw new ReportError(

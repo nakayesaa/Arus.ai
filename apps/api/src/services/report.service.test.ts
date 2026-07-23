@@ -25,6 +25,26 @@ const context: AuthContext = {
 };
 
 describe('ReportService', () => {
+  it('defaults to the current seven-day organization period', async () => {
+    const repository = repositoryDouble(reportSnapshot());
+    const service = new ReportService({
+      repository,
+      clock: () => generatedAt,
+      idFactory: () => reportId,
+    });
+
+    const result = await service.generateWeeklyReport({
+      context,
+      requestId: 'request-default-period',
+    });
+
+    expect(result.data.period).toEqual({
+      from: '2026-07-17',
+      to: '2026-07-23',
+      inclusiveDayCount: 7,
+    });
+  });
+
   it('builds a tenant-scoped report and audits non-sensitive generation data', async () => {
     const snapshot = reportSnapshot();
     const repository = repositoryDouble(snapshot);

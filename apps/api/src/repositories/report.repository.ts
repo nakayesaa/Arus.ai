@@ -180,9 +180,7 @@ type ReportPromiseSelection = Prisma.PromiseToPayGetPayload<{
   select: typeof reportPromiseSelect;
 }>;
 
-function toInvoiceRecord(
-  record: ReportInvoiceSelection,
-): ReportInvoiceRecord {
+function toInvoiceRecord(record: ReportInvoiceSelection): ReportInvoiceRecord {
   return {
     id: record.id,
     invoiceNumber: record.invoiceNumber,
@@ -198,9 +196,7 @@ function toInvoiceRecord(
   };
 }
 
-function toPromiseRecord(
-  record: ReportPromiseSelection,
-): ReportPromiseRecord {
+function toPromiseRecord(record: ReportPromiseSelection): ReportPromiseRecord {
   return {
     amount: record.amount.toFixed(2),
     promiseDate: databaseDate(record.promiseDate),
