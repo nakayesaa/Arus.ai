@@ -39,6 +39,15 @@ describe('full demo seed', () => {
     expect(demoPayments.length).toBeGreaterThanOrEqual(15);
     expect(seedPromises.length).toBeGreaterThanOrEqual(10);
     expect(seedDisputes.length).toBeGreaterThanOrEqual(6);
+
+    const debtorOrganizations = new Map(
+      seedDebtors.map((debtor) => [debtor.id, debtor.organizationId]),
+    );
+    for (const invoice of seedInvoices) {
+      expect(debtorOrganizations.get(invoice.debtorId)).toBe(
+        invoice.organizationId,
+      );
+    }
   });
 
   it('keeps every payment traceable and every invoice within its original', () => {

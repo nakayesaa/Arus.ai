@@ -7,9 +7,7 @@ import {
 } from '../apps/api/src/generated/prisma/enums.js';
 
 const configuredDemoDate = process.env.DEMO_TODAY?.trim();
-export const demoAsOfDate = validDemoDate(
-  configuredDemoDate || '2026-07-23',
-);
+export const demoAsOfDate = validDemoDate(configuredDemoDate || '2026-07-23');
 
 export const seedOrganizations = [
   {
@@ -137,6 +135,9 @@ export const seedDebtors = [
   ...baseSeedDebtors,
   ...generatedSeedDebtors,
 ] as const;
+const demoSeedDebtors = seedDebtors.filter(
+  ({ organizationId }) => organizationId === seedOrganizations[0].id,
+);
 
 const baseSeedInvoices = [
   {
@@ -212,7 +213,7 @@ const generatedDueOffsets = [
 ] as const;
 
 const generatedSeedInvoices = Array.from({ length: 75 }, (_, index) => {
-  const debtor = seedDebtors[index % 15]!;
+  const debtor = demoSeedDebtors[index % demoSeedDebtors.length]!;
   const dueDate = shiftDate(
     demoAsOfDate,
     generatedDueOffsets[index % generatedDueOffsets.length]!,
