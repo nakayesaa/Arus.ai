@@ -16,6 +16,7 @@ import { createDashboardRouter } from './routes/dashboard.routes.js';
 import { createDisputeRouter } from './routes/dispute.routes.js';
 import { healthRouter } from './routes/health.routes.js';
 import { createInvoiceImportRouter } from './routes/invoice-import.routes.js';
+import { createPaymentRouter } from './routes/payment.routes.js';
 import { createPromiseRouter } from './routes/promise.routes.js';
 import { createReceivablesRouter } from './routes/receivables.routes.js';
 import type { AccountLifecycleServiceContract } from './services/account-lifecycle.service.js';
@@ -25,6 +26,7 @@ import type { CommunicationServiceContract } from './services/communication.serv
 import type { DashboardServiceContract } from './services/dashboard.service.js';
 import type { DisputeServiceContract } from './services/dispute.service.js';
 import type { InvoiceImportServiceContract } from './services/invoice-import.service.js';
+import type { PaymentServiceContract } from './services/payment.service.js';
 import type { PromiseServiceContract } from './services/promise.service.js';
 import type { ReceivablesServiceContract } from './services/receivables.service.js';
 
@@ -38,6 +40,7 @@ interface CreateAppOptions {
   communicationService?: CommunicationServiceContract;
   promiseService?: PromiseServiceContract;
   disputeService?: DisputeServiceContract;
+  paymentService?: PaymentServiceContract;
   environment?: Environment;
   logger?: Logger;
 }
@@ -128,6 +131,15 @@ export function createApp(options: CreateAppOptions): Express {
       createDisputeRouter({
         authService: options.authService,
         disputeService: options.disputeService,
+        environment,
+      }),
+    );
+  }
+  if (options.paymentService) {
+    app.use(
+      createPaymentRouter({
+        authService: options.authService,
+        paymentService: options.paymentService,
         environment,
       }),
     );

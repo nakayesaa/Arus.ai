@@ -7,6 +7,7 @@ import { PrismaAuthRepository } from './repositories/auth.repository.js';
 import { PrismaCommunicationRepository } from './repositories/communication.repository.js';
 import { PrismaDisputeRepository } from './repositories/dispute.repository.js';
 import { PrismaInvoiceImportRepository } from './repositories/invoice-import.repository.js';
+import { PrismaPaymentRepository } from './repositories/payment.repository.js';
 import { PrismaPromiseRepository } from './repositories/promise.repository.js';
 import { PrismaAccountLifecycleRepository } from './repositories/account-lifecycle.repository.js';
 import { PrismaReceivablesRepository } from './repositories/receivables.repository.js';
@@ -17,6 +18,7 @@ import { CommunicationService } from './services/communication.service.js';
 import { DisputeService } from './services/dispute.service.js';
 import { DashboardService } from './services/dashboard.service.js';
 import { InvoiceImportService } from './services/invoice-import.service.js';
+import { PaymentService } from './services/payment.service.js';
 import { PromiseService } from './services/promise.service.js';
 import { ReceivablesService } from './services/receivables.service.js';
 
@@ -57,6 +59,9 @@ const invoiceImportService = new InvoiceImportService({
   repository: new PrismaInvoiceImportRepository(database),
   logger,
 });
+const paymentService = new PaymentService({
+  repository: new PrismaPaymentRepository(database),
+});
 const app = createApp({
   authService,
   lifecycleService,
@@ -67,6 +72,7 @@ const app = createApp({
   communicationService,
   promiseService,
   disputeService,
+  paymentService,
   environment,
   logger,
 });
