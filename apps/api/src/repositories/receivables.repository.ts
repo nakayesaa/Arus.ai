@@ -43,6 +43,7 @@ export interface InvoiceDetailRecord extends InvoiceCalculationRecord {
       id: string;
       paymentDate: string;
       amount: string;
+      payerReference: string | null;
       bankReference: string | null;
       isOpeningBalance: boolean;
     };
@@ -545,6 +546,7 @@ export class PrismaReceivablesRepository implements ReceivablesRepository {
           id: allocation.payment.id,
           paymentDate: databaseDate(allocation.payment.paymentDate),
           amount: allocation.payment.amount.toFixed(2),
+          payerReference: allocation.payment.payerReference,
           bankReference: allocation.payment.bankReference,
           isOpeningBalance: allocation.payment.isOpeningBalance,
         },
@@ -676,6 +678,7 @@ const allocationHistorySelect = {
       id: true,
       paymentDate: true,
       amount: true,
+      payerReference: true,
       bankReference: true,
       isOpeningBalance: true,
     },

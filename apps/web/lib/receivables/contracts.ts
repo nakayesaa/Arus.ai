@@ -95,6 +95,7 @@ const allocationSchema = z.object({
     id: z.uuid(),
     paymentDate: businessDateSchema,
     amount: moneySchema,
+    payerReference: nullableText(100),
     bankReference: nullableText(200),
     isOpeningBalance: z.boolean(),
   }),

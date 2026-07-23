@@ -96,6 +96,7 @@ describe('receivables contracts', () => {
               id: 'fe056d45-a08f-4c47-9bac-d94423f5070b',
               paymentDate: '2026-06-20',
               amount: '50000000.00',
+              payerReference: 'PT Nusantara transfer 20 June',
               bankReference: 'BCA-REF-1',
               isOpeningBalance: false,
             },
@@ -166,6 +167,9 @@ describe('receivables contracts', () => {
       },
     });
 
+    expect(parsed.data.allocations[0]?.payment.payerReference).toBe(
+      'PT Nusantara transfer 20 June',
+    );
     expect(parsed.data.allocations[0]?.payment.bankReference).toBe('BCA-REF-1');
     expect(parsed.data.communications[0]?.actor.role).toBe('OPERATOR');
     expect(parsed.data.promises[0]?.status).toBe('ACTIVE');
