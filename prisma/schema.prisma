@@ -319,7 +319,9 @@ model Payment {
   debtorId         String   @db.Uuid
   paymentDate      DateTime @db.Date
   amount           Decimal  @db.Decimal(18, 2)
+  payerReference   String?  @db.VarChar(100)
   bankReference    String?  @db.VarChar(100)
+  operationKey     String?  @db.Uuid
   isOpeningBalance Boolean  @default(false)
   createdById      String   @db.Uuid
   createdAt        DateTime @default(now()) @db.Timestamptz(3)
@@ -330,7 +332,8 @@ model Payment {
   createdBy    User                @relation("PaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
   allocations  PaymentAllocation[]
 
-  @@index([organizationId, paymentDate])
+  @@unique([organizationId, operationKey], map: "Payment_org_operation_key")
+  @@index([organizationId, paymentDate, id])
   @@index([organizationId, debtorId])
 }
 

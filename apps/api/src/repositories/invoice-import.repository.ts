@@ -809,6 +809,7 @@ function openingPosting(input: {
       debtorId: input.debtorId,
       paymentDate: toDatabaseDate(input.date),
       amount: input.amount,
+      payerReference: 'Opening balance from invoice import',
       bankReference: `IMPORT:${input.importJobId}:${input.rowNumber}`,
       isOpeningBalance: true,
       createdById: input.actorId,

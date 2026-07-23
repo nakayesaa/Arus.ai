@@ -216,6 +216,7 @@ async function main(): Promise<void> {
         debtorId: payment.debtorId,
         paymentDate: asDatabaseDate(payment.paymentDate),
         amount: payment.amount,
+        payerReference: payment.payerReference,
         bankReference: payment.bankReference,
         isOpeningBalance: payment.isOpeningBalance,
         createdById: payment.createdById,
