@@ -87,8 +87,8 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             <button type="submit">Generate</button>
           </form>
           <p>
-            {formatCompactNumber(report.period.inclusiveDayCount)} calendar
-            days, inclusive
+            {formatCompactNumber(report.period.inclusiveDayCount)} calendar{' '}
+            {report.period.inclusiveDayCount === 1 ? 'day' : 'days'}, inclusive
           </p>
         </section>
 

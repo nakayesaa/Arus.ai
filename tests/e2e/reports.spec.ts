@@ -20,10 +20,18 @@ test('reviews a reconciled weekly report and opens its supporting records', asyn
   });
   await expect(report).toBeVisible();
   await expect(report).toContainText('17 Jul 2026 – 23 Jul 2026');
-  await expect(report.getByText('Ending receivables')).toBeVisible();
-  await expect(report.getByText('Remaining overdue')).toBeVisible();
-  await expect(report.getByText('Collected in period')).toBeVisible();
-  await expect(report.getByText('Overdue share')).toBeVisible();
+  await expect(
+    report.getByText('Ending receivables', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    report.getByText('Remaining overdue', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    report.getByText('Collected in period', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    report.getByText('Overdue share', { exact: true }),
+  ).toBeVisible();
   await expect(report.getByRole('table')).toContainText('Current');
   await expect(report.getByRole('table')).toContainText('90+ days');
   await expect(
@@ -66,8 +74,7 @@ test('regenerates an inclusive period and preserves exact values for print', asy
     page.getByRole('article', { name: 'Receivables review' }),
   ).toBeVisible();
   const endingValue = page
-    .getByRole('link')
-    .filter({ hasText: 'Ending receivables' })
+    .getByRole('link', { name: /^Ending receivables/u })
     .locator('strong');
   await expect(endingValue).toContainText(/Rp\s/u);
   expect(
