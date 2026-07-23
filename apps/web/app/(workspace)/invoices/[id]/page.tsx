@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   Building2,
   CalendarClock,
+  CircleDollarSign,
   MessageCircle,
   MessageSquarePlus,
 } from 'lucide-react';
@@ -14,6 +15,7 @@ import { DataState } from '@/components/data-state';
 import { CollectionCaseManager } from '@/components/collection-case-manager';
 import { CommunicationComposer } from '@/components/communication-composer';
 import { PaginationNav } from '@/components/pagination-nav';
+import { PaymentRecorder } from '@/components/payment-recorder';
 import { Pill } from '@/components/table-ui';
 import { ApiClientError } from '@/lib/api-client/errors';
 import {
@@ -99,7 +101,11 @@ export default async function InvoiceDetailPage({
           <p>Balances as of {formatBusinessDate(result.meta.asOfDate)}</p>
         </div>
         <div className="page-actions">
-          <a className="primary-button" href="#log-communication">
+          <a className="primary-button" href="#record-payment">
+            <CircleDollarSign size={14} aria-hidden="true" />
+            {invoice.state === 'PAID' ? 'View settlement' : 'Record payment'}
+          </a>
+          <a className="control-button" href="#log-communication">
             <MessageSquarePlus size={14} aria-hidden="true" />
             Log contact
           </a>
@@ -270,13 +276,21 @@ export default async function InvoiceDetailPage({
                             </td>
                             <td>
                               <span className="entity-copy">
-                                <strong>
+                                <Link
+                                  className="blue-link"
+                                  href={`/payments/${allocation.payment.id}`}
+                                >
+                                  {allocation.payment.payerReference ??
+                                    (allocation.payment.isOpeningBalance
+                                      ? 'Opening balance'
+                                      : 'Payment record')}
+                                </Link>
+                                <small>
                                   {allocation.payment.bankReference ??
-                                    'No bank reference'}
-                                </strong>
-                                {allocation.payment.isOpeningBalance && (
-                                  <small>Opening balance</small>
-                                )}
+                                    (allocation.payment.isOpeningBalance
+                                      ? 'Imported opening balance'
+                                      : 'No bank reference')}
+                                </small>
                               </span>
                             </td>
                             <td>
@@ -324,6 +338,13 @@ export default async function InvoiceDetailPage({
           </div>
 
           <aside className={styles.contextRail}>
+            <PaymentRecorder
+              invoiceId={invoice.id}
+              invoiceNumber={invoice.invoiceNumber}
+              debtorName={invoice.debtor.name}
+              workflowBusinessDate={result.meta.workflowBusinessDate}
+              outstandingAmount={invoice.outstandingAmount}
+            />
             <CommunicationComposer
               invoiceId={invoice.id}
               workflowBusinessDate={result.meta.workflowBusinessDate}
