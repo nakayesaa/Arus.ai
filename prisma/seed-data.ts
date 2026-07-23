@@ -6,8 +6,9 @@ import {
   PromiseFinalStatus,
 } from '../apps/api/src/generated/prisma/enums.js';
 
+const configuredDemoDate = process.env.DEMO_TODAY?.trim();
 export const demoAsOfDate = validDemoDate(
-  process.env.DEMO_TODAY ?? '2026-07-23',
+  configuredDemoDate || '2026-07-23',
 );
 
 export const seedOrganizations = [
