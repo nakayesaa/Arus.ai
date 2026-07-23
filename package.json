@@ -29,6 +29,8 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "demo:reset": "dotenv -e .env -- env RESET_DEMO_DATA=true prisma db seed && npm run demo:verify",
+    "demo:verify": "npm run build -w @arus/domain && dotenv -e .env -- tsx scripts/verify-demo-seed.ts",
     "db:studio": "prisma studio",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",

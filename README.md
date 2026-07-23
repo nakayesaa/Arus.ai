@@ -12,7 +12,7 @@ Produk ini dibangun sebagai managed AR operations system untuk client nyata. Lih
 - pure domain package dengan Vitest;
 - Prisma/PostgreSQL identity dan tenant foundation;
 - secure invitations, password recovery, member roles, and session revocation;
-- deterministic two-organization demo seed;
+- deterministic 15-customer/~80-invoice demo portfolio plus a boundary tenant;
 - lint, format, typecheck, test, build, migration, dan local database scripts.
 
 ## Requirements
@@ -67,20 +67,28 @@ Setelah startup:
 
 ## Daily commands
 
-| Command                     | Purpose                                                        |
-| --------------------------- | -------------------------------------------------------------- |
-| `npm run dev`               | Menjalankan API dan web menggunakan root `.env`                |
-| `npm run build`             | Generate Prisma Client lalu production-build seluruh workspace |
-| `npm run lint`              | Menjalankan ESLint                                             |
-| `npm run format:check`      | Memeriksa format tanpa mengubah file                           |
-| `npm run typecheck`         | Generate Prisma Client dan typecheck seluruh workspace/seed    |
-| `npm run test:run`          | Menjalankan seluruh test satu kali                             |
-| `npm run db:up`             | Menyalakan local PostgreSQL                                    |
-| `npm run db:down`           | Menghentikan local services tanpa menghapus volume             |
-| `npm run db:migrate`        | Membuat/menerapkan development migration                       |
-| `npm run db:migrate:deploy` | Menerapkan migration yang sudah committed                      |
-| `npm run db:seed`           | Menjalankan explicit synthetic demo seed                       |
-| `npm run db:studio`         | Membuka Prisma Studio untuk local development                  |
+| Command                     | Purpose                                                         |
+| --------------------------- | --------------------------------------------------------------- |
+| `npm run dev`               | Menjalankan API dan web menggunakan root `.env`                 |
+| `npm run build`             | Generate Prisma Client lalu production-build seluruh workspace  |
+| `npm run lint`              | Menjalankan ESLint                                              |
+| `npm run format:check`      | Memeriksa format tanpa mengubah file                            |
+| `npm run typecheck`         | Generate Prisma Client dan typecheck seluruh workspace/seed     |
+| `npm run test:run`          | Menjalankan seluruh test satu kali                              |
+| `npm run db:up`             | Menyalakan local PostgreSQL                                     |
+| `npm run db:down`           | Menghentikan local services tanpa menghapus volume              |
+| `npm run db:migrate`        | Membuat/menerapkan development migration                        |
+| `npm run db:migrate:deploy` | Menerapkan migration yang sudah committed                       |
+| `npm run db:seed`           | Menjalankan explicit synthetic demo seed                        |
+| `npm run demo:reset`        | Reset known demo tenants, reseed, lalu reconcile hasilnya       |
+| `npm run demo:verify`       | Read-only verification untuk count dan financial reconciliation |
+| `npm run db:studio`         | Membuka Prisma Studio untuk local development                   |
+
+`npm run demo:reset` menghapus operational data hanya dari dua tenant
+synthetic dengan ID yang dikenal, lalu membuat ulang state demo. Jangan jalankan
+saat ingin mempertahankan perubahan manual di demo workspace. Gunakan
+`DEMO_TODAY=YYYY-MM-DD npm run demo:reset` untuk menggeser portfolio generated
+ke tanggal demo yang dipilih.
 
 ## Repository map
 

@@ -9,6 +9,7 @@ import {
   seedCommunications,
   seedDebtors,
   seedDisputes,
+  demoAsOfDate,
   seedInvoices,
   seedOrganizations,
   seedPayments,
@@ -38,7 +39,13 @@ const prisma = new PrismaClient({ adapter });
 
 async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash(demoPassword, 12);
-  const acceptedAt = new Date('2026-07-01T00:00:00.000Z');
+  const acceptedAt = new Date(
+    `${shiftDatabaseDate(demoAsOfDate, -22)}T00:00:00.000Z`,
+  );
+
+  if (process.env.RESET_DEMO_DATA === 'true') {
+    await resetDemoData();
+  }
 
   for (const organization of seedOrganizations) {
     await prisma.organization.upsert({
@@ -268,12 +275,55 @@ async function main(): Promise<void> {
   );
 }
 
+async function resetDemoData(): Promise<void> {
+  const organizationIds = seedOrganizations.map(({ id }) => id);
+  await prisma.$transaction(async (transaction) => {
+    await transaction.invoiceImportRow.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.invoiceImportJob.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.communication.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.promiseToPay.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.dispute.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.paymentAllocation.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.payment.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.invoice.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.debtor.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.auditLog.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+  });
+  console.info('Reset synthetic operational data for the known demo tenants');
+}
+
 function asDatabaseDate(value: string): Date {
   return new Date(`${value}T00:00:00.000Z`);
 }
 
 function asTimestamp(value: string | null): Date | null {
   return value ? new Date(value) : null;
+}
+
+function shiftDatabaseDate(value: string, days: number): string {
+  const date = asDatabaseDate(value);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 try {
