@@ -21,6 +21,7 @@
     "typecheck": "npm run db:generate && tsc --noEmit -p prisma/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:run": "npm run test:run --workspaces --if-present",
+    "test:integration": "dotenv -e .env -- env RUN_DATABASE_INTEGRATION_TESTS=true npm run test:integration -w @arus/api",
     "test:e2e": "playwright test",
     "db:format": "prisma format",
     "db:generate": "prisma generate",

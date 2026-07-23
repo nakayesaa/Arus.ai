@@ -10,7 +10,8 @@
     "start": "node --enable-source-maps dist/server.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:integration": "vitest run --maxWorkers=1 --no-file-parallelism"
   },
   "dependencies": {
     "@arus/domain": "0.1.0",
