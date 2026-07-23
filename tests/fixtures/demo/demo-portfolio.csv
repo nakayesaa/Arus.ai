@@ -1,0 +1,16 @@
+customer_code,customer_name,contact_name,phone_number,email,invoice_number,invoice_date,due_date,original_amount,paid_amount,outstanding_amount,notes
+CUST-001,PT Sinar Abadi Retail,Andi Saputra,+62 812 1000 0001,finance@sinar-abadi.example,DEMO-UPLOAD-001,2026-06-01,2026-07-01,48000000,0,48000000,Jakarta retail replenishment
+CUST-002,PT Cipta Pangan Indonesia,Rina Hartono,+62 812 1000 0002,ar@cipta-pangan.example,DEMO-UPLOAD-002,2026-06-08,2026-07-08,72500000,12500000,60000000,Partial remittance received
+CUST-003,PT Metro Logistik,Dimas Pratama,+62 812 1000 0003,accounting@metro-logistik.example,DEMO-UPLOAD-003,2026-06-15,2026-07-15,36000000,0,36000000,Monthly freight services
+CUST-004,PT Arunika Distribusi,Sari Wulandari,+62 812 1000 0004,finance-004@demo-customer.example,DEMO-UPLOAD-004,2026-06-18,2026-07-18,84000000,24000000,60000000,Partial payment under review
+CUST-005,CV Berkah Mandiri,Fajar Ramadhan,+62 812 1000 0005,finance-005@demo-customer.example,DEMO-UPLOAD-005,2026-06-23,2026-07-23,27500000,0,27500000,Due at demo cutoff
+CUST-006,PT Nusantara Medika,Nadia Permata,+62 812 1000 0006,finance-006@demo-customer.example,DEMO-UPLOAD-006,2026-06-26,2026-07-26,91000000,0,91000000,Medical supply order
+CUST-007,PT Karya Sentosa Teknik,Rizky Hidayat,+62 812 1000 0007,finance-007@demo-customer.example,DEMO-UPLOAD-007,2026-06-30,2026-07-30,42500000,0,42500000,Industrial components
+CUST-008,CV Lautan Pangan,Sari Wulandari,+62 812 1000 0008,finance-008@demo-customer.example,DEMO-UPLOAD-008,2026-05-01,2026-05-31,68000000,18000000,50000000,Long overdue food distribution
+CUST-009,PT Prima Kemasan,Fajar Ramadhan,+62 812 1000 0009,finance-009@demo-customer.example,DEMO-UPLOAD-009,2026-04-15,2026-05-15,115000000,15000000,100000000,Packaging materials
+CUST-010,PT Griya Furnindo,Nadia Permata,+62 812 1000 0010,finance-010@demo-customer.example,DEMO-UPLOAD-010,2026-07-01,2026-07-31,32000000,0,32000000,Furniture supply
+CUST-011,CV Tumbuh Bersama,Rizky Hidayat,+62 812 1000 0011,finance-011@demo-customer.example,DEMO-UPLOAD-011,2026-05-28,2026-06-27,56000000,0,56000000,Wholesale inventory
+CUST-012,PT Bintang Timur Niaga,Sari Wulandari,+62 812 1000 0012,finance-012@demo-customer.example,DEMO-UPLOAD-012,2026-06-05,2026-07-05,76000000,26000000,50000000,Split remittance expected
+CUST-013,PT Delta Sarana Digital,Fajar Ramadhan,+62 812 1000 0013,finance-013@demo-customer.example,DEMO-UPLOAD-013,2026-07-07,2026-08-06,22500000,0,22500000,Software services
+CUST-014,CV Sumber Makmur,Nadia Permata,+62 812 1000 0014,finance-014@demo-customer.example,DEMO-UPLOAD-014,2026-04-01,2026-05-01,98000000,38000000,60000000,Legacy overdue balance
+CUST-015,PT Wahana Konstruksi,Rizky Hidayat,+62 812 1000 0015,finance-015@demo-customer.example,DEMO-UPLOAD-015,2026-06-20,2026-07-20,135000000,35000000,100000000,Project milestone invoice

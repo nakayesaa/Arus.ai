@@ -1,0 +1,8 @@
+customer_code,customer_name,invoice_number,invoice_date,due_date,original_amount,paid_amount,outstanding_amount,notes
+CUST-001,PT Sinar Abadi Retail,DEMO-MIXED-001,2026-07-01,2026-07-31,25000000,0,25000000,Valid current invoice
+CUST-002,PT Cipta Pangan Indonesia,DEMO-MIXED-002,2026-06-01,2026-07-01,40000000,10000000,30000000,Valid partial invoice
+CUST-003,PT Metro Logistik,DEMO-MIXED-003,2026-06-10,2026-02-30,18000000,0,18000000,Invalid calendar date
+CUST-004,PT Arunika Distribusi,DEMO-MIXED-004,2026-06-15,2026-07-15,50000000,5000000,50000000,Outstanding does not reconcile
+CUST-005,CV Berkah Mandiri,DEMO-MIXED-005,2026-06-20,2026-07-20,22000000,0,22000000,First duplicate row
+CUST-005,CV Berkah Mandiri,DEMO-MIXED-005,2026-06-20,2026-07-20,22000000,0,22000000,Duplicate in same file
+,Missing Customer Code,DEMO-MIXED-006,2026-06-25,2026-07-25,15000000,0,15000000,Code omitted but name can create a debtor
