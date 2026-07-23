@@ -1,111 +1,450 @@
+import {
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  History,
+  ShieldCheck,
+} from 'lucide-react';
 import type { Metadata } from 'next';
-import { ArrowUpRight, CalendarDays, Download, Printer } from 'lucide-react';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
 
-import { PageHeader } from '@/components/page-header';
+import {
+  formatBusinessDate,
+  formatCompactNumber,
+  formatRupiah,
+  formatTimestamp,
+} from '@/lib/formatters';
+import type {
+  WeeklyReportAgingMetric,
+  WeeklyReportPriorityInvoice,
+  WeeklyReportResponse,
+} from '@/lib/reports/contracts';
+import { reportPeriodQuery } from '@/lib/reports/page-query';
+import { getWeeklyReport } from '@/lib/reports/server';
+import type { PageSearchParams } from '@/lib/url-query';
 
-export const metadata: Metadata = { title: 'Reports' };
+import { PrintReportButton } from './print-report-button';
+import styles from './report.module.css';
 
-const aging = [
-  ['Current', '31%', 'Rp 1,06 M', ''],
-  ['1–30 days', '24%', 'Rp 821 jt', ''],
-  ['31–60 days', '20%', 'Rp 684 jt', 'amber'],
-  ['61–90 days', '14%', 'Rp 479 jt', 'amber'],
-  ['90+ days', '11%', 'Rp 376 jt', 'red'],
-] as const;
+export const metadata: Metadata = { title: 'Weekly Report' };
 
-export default function ReportsPage() {
+interface ReportsPageProps {
+  searchParams: Promise<PageSearchParams>;
+}
+
+export default async function ReportsPage({ searchParams }: ReportsPageProps) {
+  const requestedPeriod = reportPeriodQuery(await searchParams);
+  const result = await getWeeklyReport(requestedPeriod);
+  const report = result.data;
+  const periodLabel = `${formatBusinessDate(report.period.from)} – ${formatBusinessDate(report.period.to)}`;
+  const invoiceHref = `/invoices?asOfDate=${report.period.to}`;
+  const queueHref = `/collection-queue?asOfDate=${report.period.to}`;
+  const paymentsHref = `/payments?from=${report.period.from}&to=${report.period.to}`;
+
   return (
-    <div className="content-page">
-      <PageHeader
-        title="Reports"
-        eyebrow="Weekly summary · 8–14 July 2026"
-        action={
-          <>
-            <button className="control-button" type="button">
-              <CalendarDays size={15} /> This week
-            </button>
-            <button className="primary-button" type="button">
-              <Download size={15} /> Export report
-            </button>
-          </>
-        }
-      />
+    <div className={styles.page}>
+      <header className={styles.pageHeader}>
+        <div className={styles.pageHeading}>
+          <div className={styles.pageTitleRow}>
+            <h1>Weekly report</h1>
+            <p className={styles.pageContext}>
+              <History size={14} aria-hidden="true" />
+              {periodLabel}
+            </p>
+          </div>
+          <p className={styles.pageDescription}>
+            A reconciled view of ending exposure, confirmed collections, and the
+            exceptions that need follow-up.
+          </p>
+        </div>
+        <PrintReportButton />
+      </header>
 
-      <section className="content-grid">
-        <article className="panel panel-span-7">
-          <h2>Receivables aging</h2>
-          <p>Rp 3,42 miliar outstanding across 80 open invoices.</p>
-          <div className="aging-bars">
-            {aging.map(([label, width, value, tone]) => (
-              <div className="aging-row" key={label}>
-                <span>{label}</span>
-                <span className="bar-track">
-                  <span className={`bar-fill ${tone}`} style={{ width }} />
-                </span>
-                <strong>{value}</strong>
+      <div className={styles.content}>
+        <section className={styles.controls} aria-label="Report period">
+          <form method="get" className={styles.periodForm}>
+            <CalendarDays size={15} aria-hidden="true" />
+            <label>
+              <span>From</span>
+              <input
+                defaultValue={report.period.from}
+                name="from"
+                type="date"
+                required
+              />
+            </label>
+            <span className={styles.periodDivider} aria-hidden="true" />
+            <label>
+              <span>To</span>
+              <input
+                defaultValue={report.period.to}
+                name="to"
+                type="date"
+                required
+              />
+            </label>
+            <button type="submit">Generate</button>
+          </form>
+          <p>
+            {formatCompactNumber(report.period.inclusiveDayCount)} calendar
+            days, inclusive
+          </p>
+        </section>
+
+        <article className={styles.sheet} aria-labelledby="report-title">
+          <header className={styles.reportHeader}>
+            <div>
+              <span className={styles.overline}>Arus weekly collection</span>
+              <h2 id="report-title">Receivables review</h2>
+              <p>{periodLabel}</p>
+            </div>
+            <dl className={styles.reportMeta}>
+              <div>
+                <dt>Generated</dt>
+                <dd>{formatTimestamp(report.generatedAt, report.timeZone)}</dd>
               </div>
-            ))}
-          </div>
-        </article>
+              <div>
+                <dt>Report ID</dt>
+                <dd title={report.reportId}>
+                  {shortReportId(report.reportId)}
+                </dd>
+              </div>
+            </dl>
+          </header>
 
-        <article className="panel panel-span-5">
-          <h2>Collection health</h2>
-          <p>Operational signals that require follow-up this week.</p>
-          <div className="mini-metrics">
-            <div className="mini-metric">
-              <span>Collected</span>
-              <strong>Rp 486 jt</strong>
-            </div>
-            <div className="mini-metric">
-              <span>Promise kept</span>
-              <strong>76%</strong>
-            </div>
-            <div className="mini-metric">
-              <span>Broken promises</span>
-              <strong>7</strong>
-            </div>
-            <div className="mini-metric">
-              <span>Open disputes</span>
-              <strong>4</strong>
-            </div>
-          </div>
-        </article>
+          <p className={styles.executiveSummary}>{executiveSummary(report)}</p>
 
-        <article className="panel panel-span-12">
-          <h2>Available reports</h2>
-          <div className="report-list">
-            {[
-              [
-                'Weekly collection summary',
-                'Cash collected, aging movement, promises, and disputes',
-              ],
-              [
-                'Debtor exposure',
-                'Total AR and overdue balance grouped by debtor',
-              ],
-              [
-                'Payment allocation audit',
-                'Trace each payment to its invoice allocation',
-              ],
-            ].map(([title, description]) => (
-              <div className="report-row" key={title}>
-                <Printer size={16} />
-                <div>
-                  <strong>{title}</strong>
-                  <span>{description}</span>
+          <nav className={styles.summary} aria-label="Report summary">
+            <ReportMetric
+              label="Ending receivables"
+              value={formatRupiah(report.summary.totalAr)}
+              detail={formatCount(
+                report.summary.openInvoiceCount,
+                'open invoice',
+              )}
+              href={invoiceHref}
+            />
+            <ReportMetric
+              label="Remaining overdue"
+              value={formatRupiah(report.summary.totalOverdue)}
+              detail={formatCount(
+                report.summary.overdueInvoiceCount,
+                'overdue invoice',
+              )}
+              href={queueHref}
+            />
+            <ReportMetric
+              label="Collected in period"
+              value={formatRupiah(report.collections.amount)}
+              detail={formatCount(
+                report.collections.allocationCount,
+                'confirmed allocation',
+              )}
+              href={paymentsHref}
+            />
+            <ReportMetric
+              label="Overdue share"
+              value={`${report.summary.overduePercent}%`}
+              detail="Of ending receivables"
+              href={queueHref}
+            />
+          </nav>
+
+          <div className={styles.reviewGrid}>
+            <section
+              className={styles.agingSection}
+              aria-labelledby="aging-title"
+            >
+              <SectionHeading
+                id="aging-title"
+                title="Ending aging"
+                description={`Point-in-time exposure as of ${formatBusinessDate(report.period.to)}.`}
+              />
+              <div className={styles.agingTable} role="table">
+                <div className={styles.agingTableHeader} role="row">
+                  <span role="columnheader">Aging bucket</span>
+                  <span role="columnheader">Invoices</span>
+                  <span role="columnheader">Outstanding</span>
                 </div>
-                <button
-                  className="icon-button"
-                  type="button"
-                  aria-label={`Open ${title}`}
-                >
-                  <ArrowUpRight size={16} />
-                </button>
+                {report.aging.map((metric) => (
+                  <AgingRow
+                    key={metric.bucket}
+                    metric={metric}
+                    totalAr={report.summary.totalAr}
+                    asOfDate={report.period.to}
+                  />
+                ))}
               </div>
-            ))}
+            </section>
+
+            <section
+              className={styles.workflowSection}
+              aria-labelledby="workflow-title"
+            >
+              <SectionHeading
+                id="workflow-title"
+                title="Commitments & exceptions"
+                description="Signals tied directly to the same receivable ledger."
+              />
+              <dl className={styles.workflowList}>
+                <WorkflowMetric
+                  label="Active promises"
+                  count={report.promises.active.count}
+                  amount={report.promises.active.amount}
+                />
+                <WorkflowMetric
+                  label="Broken promises"
+                  count={report.promises.broken.count}
+                  amount={report.promises.broken.amount}
+                />
+                <WorkflowMetric
+                  label="Promises kept"
+                  count={report.promises.keptInPeriod.count}
+                  amount={report.promises.keptInPeriod.amount}
+                  period
+                />
+                <WorkflowMetric
+                  label="Open disputes"
+                  count={report.disputes.openInvoiceCount}
+                  amount={report.disputes.outstandingAmount}
+                />
+              </dl>
+            </section>
           </div>
+
+          <section
+            className={styles.prioritySection}
+            aria-labelledby="priority-title"
+          >
+            <SectionHeading
+              id="priority-title"
+              title="Priority follow-up"
+              description="Largest remaining overdue balances at the report cutoff."
+              action={
+                report.priorityOverdue.length > 0 ? (
+                  <Link href={queueHref}>
+                    Open full queue
+                    <ArrowRight size={13} aria-hidden="true" />
+                  </Link>
+                ) : null
+              }
+            />
+            {report.priorityOverdue.length > 0 ? (
+              <div className={styles.priorityList}>
+                <div className={styles.priorityHeader} aria-hidden="true">
+                  <span>Customer / invoice</span>
+                  <span>Due date</span>
+                  <span>Position</span>
+                  <span>Outstanding</span>
+                  <span />
+                </div>
+                {report.priorityOverdue.map((invoice) => (
+                  <PriorityRow
+                    invoice={invoice}
+                    asOfDate={report.period.to}
+                    key={invoice.id}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptyState} role="status">
+                <CheckCircle2 size={18} aria-hidden="true" />
+                <div>
+                  <strong>No overdue balances at this cutoff</strong>
+                  <p>
+                    Current receivables remain included in the ending aging
+                    section.
+                  </p>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <footer className={styles.reconciliation}>
+            <ShieldCheck size={16} aria-hidden="true" />
+            <p>
+              Ending balances equal invoice originals minus allocations active
+              at the cutoff. Period collections use allocation dates, and
+              reversed allocations are excluded at their effective reversal
+              date.
+            </p>
+          </footer>
         </article>
-      </section>
+      </div>
     </div>
   );
+}
+
+function ReportMetric({
+  label,
+  value,
+  detail,
+  href,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  href: string;
+}) {
+  return (
+    <Link href={href}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+      <ArrowRight size={13} aria-hidden="true" />
+    </Link>
+  );
+}
+
+function SectionHeading({
+  id,
+  title,
+  description,
+  action,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
+  return (
+    <header className={styles.sectionHeading}>
+      <div>
+        <h3 id={id}>{title}</h3>
+        <p>{description}</p>
+      </div>
+      {action}
+    </header>
+  );
+}
+
+function AgingRow({
+  metric,
+  totalAr,
+  asOfDate,
+}: {
+  metric: WeeklyReportAgingMetric;
+  totalAr: string;
+  asOfDate: string;
+}) {
+  const share = moneyShare(metric.outstandingAmount, totalAr);
+  const href = `/invoices?asOfDate=${asOfDate}&aging=${metric.bucket}`;
+  return (
+    <Link className={styles.agingRow} href={href} role="row">
+      <span className={styles.agingIdentity} role="cell">
+        <strong>{agingLabel(metric.bucket)}</strong>
+        <span className={styles.agingTrack} aria-hidden="true">
+          <span style={{ width: `${share}%` }} />
+        </span>
+      </span>
+      <span role="cell">
+        {formatCompactNumber(metric.invoiceCount)}
+        <small>{share}%</small>
+      </span>
+      <strong role="cell">{formatRupiah(metric.outstandingAmount)}</strong>
+    </Link>
+  );
+}
+
+function WorkflowMetric({
+  label,
+  count,
+  amount,
+  period = false,
+}: {
+  label: string;
+  count: number;
+  amount: string;
+  period?: boolean;
+}) {
+  return (
+    <div>
+      <dt>
+        {label}
+        {period && <small>During period</small>}
+      </dt>
+      <dd>
+        <strong>{formatRupiah(amount)}</strong>
+        <span>{formatCount(count, 'record')}</span>
+      </dd>
+    </div>
+  );
+}
+
+function PriorityRow({
+  invoice,
+  asOfDate,
+}: {
+  invoice: WeeklyReportPriorityInvoice;
+  asOfDate: string;
+}) {
+  return (
+    <Link
+      className={styles.priorityRow}
+      href={`/invoices/${invoice.id}?asOfDate=${asOfDate}`}
+    >
+      <span>
+        <strong>{invoice.debtor.name}</strong>
+        <small>
+          {invoice.invoiceNumber}
+          {invoice.debtor.code ? ` · ${invoice.debtor.code}` : ''}
+        </small>
+      </span>
+      <span>{formatBusinessDate(invoice.dueDate)}</span>
+      <span>{formatCount(invoice.daysOverdue, 'day')} overdue</span>
+      <strong>{formatRupiah(invoice.outstandingAmount)}</strong>
+      <ArrowRight size={13} aria-hidden="true" />
+    </Link>
+  );
+}
+
+function executiveSummary(report: WeeklyReportResponse['data']): string {
+  if (report.summary.totalAr === '0.00') {
+    return report.collections.amount === '0.00'
+      ? 'No receivable exposure or confirmed collection activity was recorded for this review.'
+      : `${formatRupiah(report.collections.amount)} was confirmed during the period, with no receivable balance remaining at the cutoff.`;
+  }
+  if (report.summary.totalOverdue === '0.00') {
+    return `${formatRupiah(report.summary.totalAr)} remains open, with every balance still within terms at the cutoff.`;
+  }
+  return `${formatRupiah(report.collections.amount)} was confirmed during the period. ${formatRupiah(report.summary.totalOverdue)} remains overdue across ${formatCount(report.summary.overdueInvoiceCount, 'invoice')} and should anchor the next collection cycle.`;
+}
+
+function moneyShare(amount: string, total: string): number {
+  const amountCents = moneyToCents(amount);
+  const totalCents = moneyToCents(total);
+  if (totalCents === 0n) return 0;
+  return Number((amountCents * 1_000n) / totalCents) / 10;
+}
+
+function moneyToCents(value: string): bigint {
+  const [whole, fraction] = value.split('.');
+  if (!whole || !fraction) throw new Error(`Invalid canonical money: ${value}`);
+  return BigInt(whole) * 100n + BigInt(fraction);
+}
+
+function agingLabel(bucket: WeeklyReportAgingMetric['bucket']): string {
+  switch (bucket) {
+    case 'CURRENT':
+      return 'Current';
+    case 'OVERDUE_1_7':
+      return '1–7 days';
+    case 'OVERDUE_8_30':
+      return '8–30 days';
+    case 'OVERDUE_31_60':
+      return '31–60 days';
+    case 'OVERDUE_61_90':
+      return '61–90 days';
+    case 'OVERDUE_90_PLUS':
+      return '90+ days';
+  }
+}
+
+function formatCount(count: number, noun: string): string {
+  return `${formatCompactNumber(count)} ${noun}${count === 1 ? '' : 's'}`;
+}
+
+function shortReportId(id: string): string {
+  return id.slice(0, 8).toLocaleUpperCase('en-US');
 }
