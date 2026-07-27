@@ -7,14 +7,19 @@ import { PrismaClient } from '../apps/api/src/generated/prisma/client.js';
 import {
   seedAllocations,
   seedCommunications,
+  seedConversationThreads,
+  seedChannelMessages,
   seedDebtors,
   seedDisputes,
+  seedEvidenceReviews,
   demoAsOfDate,
   seedInvoices,
+  seedMediaAssets,
   seedOrganizations,
   seedPayments,
   seedPromises,
   seedUsers,
+  seedWhatsAppConnections,
 } from './seed-data.js';
 
 function requireEnvironment(name: string): string {
@@ -260,6 +265,76 @@ async function main(): Promise<void> {
     });
   }
 
+  for (const connection of seedWhatsAppConnections) {
+    await prisma.whatsAppConnection.upsert({
+      where: { id: connection.id },
+      update: {
+        ...connection,
+        lastWebhookAt: asTimestamp(connection.lastWebhookAt),
+        lastHealthyAt: asTimestamp(connection.lastHealthyAt),
+      },
+      create: {
+        ...connection,
+        lastWebhookAt: asTimestamp(connection.lastWebhookAt),
+        lastHealthyAt: asTimestamp(connection.lastHealthyAt),
+      },
+    });
+  }
+
+  for (const thread of seedConversationThreads) {
+    await prisma.conversationThread.upsert({
+      where: { id: thread.id },
+      update: {
+        ...thread,
+        lastMessageAt: asTimestamp(thread.lastMessageAt),
+      },
+      create: {
+        ...thread,
+        lastMessageAt: asTimestamp(thread.lastMessageAt),
+      },
+    });
+  }
+
+  for (const message of seedChannelMessages) {
+    await prisma.channelMessage.upsert({
+      where: { id: message.id },
+      update: {
+        ...message,
+        approvedAt: asTimestamp(message.approvedAt),
+        occurredAt: new Date(message.occurredAt),
+      },
+      create: {
+        ...message,
+        approvedAt: asTimestamp(message.approvedAt),
+        occurredAt: new Date(message.occurredAt),
+      },
+    });
+  }
+
+  for (const media of seedMediaAssets) {
+    await prisma.mediaAsset.upsert({
+      where: { id: media.id },
+      update: {
+        ...media,
+        processingStartedAt: asTimestamp(media.processingStartedAt),
+        processedAt: asTimestamp(media.processedAt),
+      },
+      create: {
+        ...media,
+        processingStartedAt: asTimestamp(media.processingStartedAt),
+        processedAt: asTimestamp(media.processedAt),
+      },
+    });
+  }
+
+  for (const evidence of seedEvidenceReviews) {
+    await prisma.paymentEvidenceReview.upsert({
+      where: { id: evidence.id },
+      update: evidence,
+      create: evidence,
+    });
+  }
+
   console.info(
     [
       `Seeded ${seedOrganizations.length} organizations`,
@@ -270,7 +345,9 @@ async function main(): Promise<void> {
       `${seedPromises.length} promises`,
       `${seedDisputes.length} disputes`,
       `${seedPayments.length} payments`,
-      `and ${seedAllocations.length} allocations`,
+      `${seedAllocations.length} allocations`,
+      `${seedConversationThreads.length} WhatsApp threads`,
+      `and ${seedEvidenceReviews.length} evidence reviews`,
     ].join(', '),
   );
 }
@@ -278,6 +355,27 @@ async function main(): Promise<void> {
 async function resetDemoData(): Promise<void> {
   const organizationIds = seedOrganizations.map(({ id }) => id);
   await prisma.$transaction(async (transaction) => {
+    await transaction.messageOutbox.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.paymentEvidenceReview.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.mediaAsset.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.channelMessage.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.conversationThread.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.webhookInbox.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await transaction.whatsAppConnection.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
     await transaction.invoiceImportRow.deleteMany({
       where: { organizationId: { in: organizationIds } },
     });

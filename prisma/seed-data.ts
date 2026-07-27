@@ -1,9 +1,17 @@
 import {
+  ChannelMessageDirection,
+  ChannelMessageState,
+  ChannelMessageType,
   CommunicationChannel,
+  ConversationMatchState,
   DisputeCategory,
   DisputeStatus,
+  MediaProcessingState,
   MembershipRole,
+  PaymentEvidenceState,
   PromiseFinalStatus,
+  WhatsAppConnectionState,
+  WhatsAppProvider,
 } from '../apps/api/src/generated/prisma/enums.js';
 
 const configuredDemoDate = process.env.DEMO_TODAY?.trim();
@@ -648,6 +656,113 @@ const generatedSeedAllocations = generatedPaymentFixtures.map(
 export const seedAllocations = [
   ...baseSeedAllocations,
   ...generatedSeedAllocations,
+] as const;
+
+export const seedWhatsAppConnections = [
+  {
+    id: 'a0000000-0000-4000-8000-000000000001',
+    organizationId: seedOrganizations[0].id,
+    provider: WhatsAppProvider.META,
+    providerBusinessId: 'demo-waba',
+    providerPhoneNumberId: 'demo-phone-number',
+    displayPhoneNumber: '+62 811 9000 2026',
+    state: WhatsAppConnectionState.LIVE,
+    lastWebhookAt: `${shiftDate(demoAsOfDate, 0)}T07:46:00.000Z`,
+    lastHealthyAt: `${shiftDate(demoAsOfDate, 0)}T07:46:00.000Z`,
+    lastFailureCode: null,
+  },
+] as const;
+
+export const seedConversationThreads = [
+  {
+    id: 'b0000000-0000-4000-8000-000000000001',
+    organizationId: seedOrganizations[0].id,
+    connectionId: seedWhatsAppConnections[0].id,
+    debtorId: seedDebtors[1].id,
+    currentInvoiceId: seedInvoices[1].id,
+    normalizedCustomerNumber: '+6281210000002',
+    customerDisplayName: seedDebtors[1].contactName,
+    matchState: ConversationMatchState.MATCHED,
+    lastMessageAt: `${shiftDate(demoAsOfDate, 0)}T07:45:00.000Z`,
+  },
+] as const;
+
+export const seedChannelMessages = [
+  {
+    id: 'c0000000-0000-4000-8000-000000000001',
+    organizationId: seedOrganizations[0].id,
+    connectionId: seedWhatsAppConnections[0].id,
+    threadId: seedConversationThreads[0].id,
+    invoiceId: seedInvoices[1].id,
+    direction: ChannelMessageDirection.OUTBOUND,
+    type: ChannelMessageType.TEXT,
+    state: ChannelMessageState.DELIVERED,
+    providerMessageId: 'wamid.demo.outbound.1',
+    body: `Selamat siang Ibu Rina, kami menindaklanjuti ${seedInvoices[1].invoiceNumber}. Mohon informasikan status pembayarannya.`,
+    approvedById: seedUsers[0].id,
+    approvedAt: `${shiftDate(demoAsOfDate, -1)}T03:15:00.000Z`,
+    occurredAt: `${shiftDate(demoAsOfDate, -1)}T03:16:00.000Z`,
+  },
+  {
+    id: 'c0000000-0000-4000-8000-000000000002',
+    organizationId: seedOrganizations[0].id,
+    connectionId: seedWhatsAppConnections[0].id,
+    threadId: seedConversationThreads[0].id,
+    invoiceId: seedInvoices[1].id,
+    direction: ChannelMessageDirection.INBOUND,
+    type: ChannelMessageType.TEXT,
+    state: ChannelMessageState.READY,
+    providerMessageId: 'wamid.demo.inbound.1',
+    body: 'Siang, pembayaran sudah kami proses. Bukti transfer saya kirimkan.',
+    approvedById: null,
+    approvedAt: null,
+    occurredAt: `${shiftDate(demoAsOfDate, 0)}T07:42:00.000Z`,
+  },
+  {
+    id: 'c0000000-0000-4000-8000-000000000003',
+    organizationId: seedOrganizations[0].id,
+    connectionId: seedWhatsAppConnections[0].id,
+    threadId: seedConversationThreads[0].id,
+    invoiceId: seedInvoices[1].id,
+    direction: ChannelMessageDirection.INBOUND,
+    type: ChannelMessageType.IMAGE,
+    state: ChannelMessageState.READY,
+    providerMessageId: 'wamid.demo.inbound.2',
+    body: 'Bukti transfer hari ini.',
+    approvedById: null,
+    approvedAt: null,
+    occurredAt: `${shiftDate(demoAsOfDate, 0)}T07:45:00.000Z`,
+  },
+] as const;
+
+export const seedMediaAssets = [
+  {
+    id: 'd0000000-0000-4000-8000-000000000001',
+    organizationId: seedOrganizations[0].id,
+    messageId: seedChannelMessages[2].id,
+    providerMediaId: 'media.demo.payment-proof.1',
+    objectKey: `${seedOrganizations[0].id}/evidence/d0000000-0000-4000-8000-000000000001/demo-proof.png`,
+    sha256: '0'.repeat(64),
+    detectedMime: 'image/png',
+    byteSize: 24,
+    width: 2,
+    height: 3,
+    processingState: MediaProcessingState.READY,
+    failureCode: null,
+    processingStartedAt: `${shiftDate(demoAsOfDate, 0)}T07:45:01.000Z`,
+    processedAt: `${shiftDate(demoAsOfDate, 0)}T07:45:02.000Z`,
+  },
+] as const;
+
+export const seedEvidenceReviews = [
+  {
+    id: 'e0000000-0000-4000-8000-000000000001',
+    organizationId: seedOrganizations[0].id,
+    mediaAssetId: seedMediaAssets[0].id,
+    debtorId: seedDebtors[1].id,
+    invoiceId: seedInvoices[1].id,
+    state: PaymentEvidenceState.AWAITING_REVIEW,
+  },
 ] as const;
 
 function validDemoDate(value: string): string {
