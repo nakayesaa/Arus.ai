@@ -151,39 +151,41 @@ export function WhatsAppDrawer(props: WhatsAppDrawerProps) {
             aria-modal="false"
             aria-labelledby="whatsapp-drawer-title"
           >
-            <span className={styles.channelCue} aria-hidden="true" />
-            <header className={styles.header}>
-              <div className={styles.identity}>
-                <span className={styles.whatsappMark} aria-hidden="true">
-                  <MessageCircle size={15} />
-                </span>
-                <div>
-                  <h2 id="whatsapp-drawer-title">{props.debtorName}</h2>
-                  <p>
-                    {props.invoiceNumber} ·{' '}
-                    {formatRupiah(props.outstandingAmount)}
-                  </p>
+            <div className={styles.screen}>
+              <span className={styles.channelCue} aria-hidden="true" />
+              <header className={styles.header}>
+                <div className={styles.identity}>
+                  <span className={styles.whatsappMark} aria-hidden="true">
+                    <MessageCircle size={15} />
+                  </span>
+                  <div>
+                    <h2 id="whatsapp-drawer-title">{props.debtorName}</h2>
+                    <p>
+                      {props.invoiceNumber} ·{' '}
+                      {formatRupiah(props.outstandingAmount)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <button
-                ref={closeRef}
-                className={styles.iconButton}
-                type="button"
-                onClick={close}
-                aria-label="Close WhatsApp conversation"
-              >
-                <X size={16} />
-              </button>
-            </header>
+                <button
+                  ref={closeRef}
+                  className={styles.iconButton}
+                  type="button"
+                  onClick={close}
+                  aria-label="Close WhatsApp conversation"
+                >
+                  <X size={16} />
+                </button>
+              </header>
 
-            <DrawerContent
-              loadState={loadState}
-              timeZone={props.timeZone}
-              canManageConnection={props.canManageConnection}
-              connectionPending={connectionPending}
-              onRetry={load}
-              onToggleConnection={toggleConnection}
-            />
+              <DrawerContent
+                loadState={loadState}
+                timeZone={props.timeZone}
+                canManageConnection={props.canManageConnection}
+                connectionPending={connectionPending}
+                onRetry={load}
+                onToggleConnection={toggleConnection}
+              />
+            </div>
           </aside>,
           document.body,
         )}
@@ -281,13 +283,13 @@ function DrawerContent({
             id="whatsapp-day11-message"
             rows={2}
             disabled
-            placeholder="Human-approved sending arrives in Day 12"
+            placeholder="Available with review-and-send"
           />
           <button type="button" disabled aria-label="Send WhatsApp message">
             <Send size={15} />
           </button>
         </div>
-        <p>Inbound is live. Outbound remains locked until review-and-send.</p>
+        <p>Replies appear here · Sending unlocks in review.</p>
       </footer>
     </>
   );
@@ -305,18 +307,15 @@ function ConnectionBar({
   onToggle: (connection: WhatsAppConnection) => void;
 }) {
   const state = connection.state;
+  const actionLabel = state === 'LIVE' ? 'Pause' : 'Activate';
   return (
     <div className={styles.connectionBar}>
       <span className={styles.connectionIdentity}>
-        <span
-          className={`${styles.stateDot} ${styles[`state${state}`]}`}
-          aria-hidden="true"
-        />
         <span>
-          <strong>{stateLabel(state)}</strong>
-          <small>
+          <strong>
             {connection.displayPhoneNumber ?? 'Sender not assigned'}
-          </small>
+          </strong>
+          {state !== 'LIVE' && <small>{stateLabel(state)}</small>}
         </span>
       </span>
       <button
@@ -325,9 +324,10 @@ function ConnectionBar({
         disabled={
           !canManage || pending || (state !== 'LIVE' && state !== 'PAUSED')
         }
+        aria-label={`${actionLabel} WhatsApp sender`}
         title={
           canManage
-            ? `${state === 'LIVE' ? 'Pause' : 'Activate'} this sender`
+            ? `${actionLabel} this sender`
             : 'Only organization owners can change channel state'
         }
       >
@@ -338,7 +338,6 @@ function ConnectionBar({
         ) : (
           <Check size={11} />
         )}
-        {state === 'LIVE' ? 'Pause' : 'Activate'}
       </button>
     </div>
   );
