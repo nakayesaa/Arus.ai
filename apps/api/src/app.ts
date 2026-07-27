@@ -20,6 +20,10 @@ import { createPaymentRouter } from './routes/payment.routes.js';
 import { createPromiseRouter } from './routes/promise.routes.js';
 import { createReceivablesRouter } from './routes/receivables.routes.js';
 import { createReportRouter } from './routes/report.routes.js';
+import {
+  createWhatsAppRouter,
+  createWhatsAppWebhookRouter,
+} from './routes/whatsapp.routes.js';
 import type { AccountLifecycleServiceContract } from './services/account-lifecycle.service.js';
 import type { AuthServiceContract } from './services/auth.service.js';
 import type { CollectionQueueServiceContract } from './services/collection-queue.service.js';
@@ -31,6 +35,7 @@ import type { PaymentServiceContract } from './services/payment.service.js';
 import type { PromiseServiceContract } from './services/promise.service.js';
 import type { ReceivablesServiceContract } from './services/receivables.service.js';
 import type { ReportServiceContract } from './services/report.service.js';
+import type { WhatsAppServiceContract } from './services/whatsapp.service.js';
 
 interface CreateAppOptions {
   authService: AuthServiceContract;
@@ -44,6 +49,7 @@ interface CreateAppOptions {
   disputeService?: DisputeServiceContract;
   paymentService?: PaymentServiceContract;
   reportService?: ReportServiceContract;
+  whatsappService?: WhatsAppServiceContract;
   environment?: Environment;
   logger?: Logger;
 }
@@ -66,6 +72,14 @@ export function createApp(options: CreateAppOptions): Express {
       origin: environment.APP_ORIGIN,
     }),
   );
+  if (options.whatsappService) {
+    app.use(
+      createWhatsAppWebhookRouter({
+        whatsappService: options.whatsappService,
+        environment,
+      }),
+    );
+  }
   app.use(express.json({ limit: '1mb' }));
 
   app.use(healthRouter);
@@ -161,6 +175,15 @@ export function createApp(options: CreateAppOptions): Express {
       createInvoiceImportRouter({
         authService: options.authService,
         invoiceImportService: options.invoiceImportService,
+        environment,
+      }),
+    );
+  }
+  if (options.whatsappService) {
+    app.use(
+      createWhatsAppRouter({
+        authService: options.authService,
+        whatsappService: options.whatsappService,
         environment,
       }),
     );
