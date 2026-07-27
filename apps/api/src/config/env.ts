@@ -6,6 +6,11 @@ const postgresUrl = z
     (value) => ['postgres:', 'postgresql:'].includes(new URL(value).protocol),
     'Must be a PostgreSQL connection URL',
   );
+const optionalSecret = (minimum: number) =>
+  z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(minimum).max(2_048).optional(),
+  );
 
 const environmentSchema = z
   .object({
@@ -87,6 +92,52 @@ const environmentSchema = z
       z.string().min(20).max(512).optional(),
     ),
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
+    WHATSAPP_PROVIDER_MODE: z.enum(['double', 'meta']).default('double'),
+    WHATSAPP_APP_SECRET: optionalSecret(16),
+    WHATSAPP_VERIFY_TOKEN: optionalSecret(16),
+    WHATSAPP_ACCESS_TOKEN: optionalSecret(20),
+    WHATSAPP_PHONE_NUMBER_ID: optionalSecret(3),
+    WHATSAPP_WABA_ID: optionalSecret(3),
+    WHATSAPP_GRAPH_VERSION: z
+      .string()
+      .regex(/^v\d+\.\d+$/u)
+      .default('v23.0'),
+    WHATSAPP_WEBHOOK_MAX_BYTES: z.coerce
+      .number()
+      .int()
+      .min(1_024)
+      .max(1024 * 1024)
+      .default(256 * 1024),
+    WHATSAPP_EVIDENCE_MAX_BYTES: z.coerce
+      .number()
+      .int()
+      .min(1_024)
+      .max(20 * 1024 * 1024)
+      .default(8 * 1024 * 1024),
+    WHATSAPP_WORKER_POLL_MS: z.coerce
+      .number()
+      .int()
+      .min(250)
+      .max(60_000)
+      .default(2_000),
+    WHATSAPP_WORKER_LEASE_MS: z.coerce
+      .number()
+      .int()
+      .min(5_000)
+      .max(5 * 60_000)
+      .default(30_000),
+    EVIDENCE_STORAGE_MODE: z.enum(['memory', 'supabase']).default('memory'),
+    SUPABASE_URL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.url().optional(),
+    ),
+    SUPABASE_SERVICE_ROLE_KEY: optionalSecret(20),
+    WHATSAPP_EVIDENCE_BUCKET: z
+      .string()
+      .trim()
+      .min(3)
+      .max(100)
+      .default('whatsapp-evidence'),
   })
   .superRefine((environment, context) => {
     if (
@@ -131,6 +182,47 @@ const environmentSchema = z
         code: 'custom',
         path: ['EMAIL_FROM'],
         message: 'Production sender must use a verified domain',
+      });
+    }
+
+    if (environment.WHATSAPP_PROVIDER_MODE === 'meta') {
+      for (const key of [
+        'WHATSAPP_APP_SECRET',
+        'WHATSAPP_VERIFY_TOKEN',
+        'WHATSAPP_ACCESS_TOKEN',
+        'WHATSAPP_PHONE_NUMBER_ID',
+        'WHATSAPP_WABA_ID',
+      ] as const) {
+        if (!environment[key]) {
+          context.addIssue({
+            code: 'custom',
+            path: [key],
+            message: 'Meta provider mode requires this secret',
+          });
+        }
+      }
+    }
+
+    if (
+      environment.EVIDENCE_STORAGE_MODE === 'supabase' &&
+      (!environment.SUPABASE_URL || !environment.SUPABASE_SERVICE_ROLE_KEY)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['EVIDENCE_STORAGE_MODE'],
+        message: 'Supabase storage mode requires URL and service role key',
+      });
+    }
+
+    if (
+      environment.NODE_ENV === 'production' &&
+      (environment.WHATSAPP_PROVIDER_MODE !== 'meta' ||
+        environment.EVIDENCE_STORAGE_MODE !== 'supabase')
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['WHATSAPP_PROVIDER_MODE'],
+        message: 'Production requires Meta and private Supabase storage',
       });
     }
   });

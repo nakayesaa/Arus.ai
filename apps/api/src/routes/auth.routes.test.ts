@@ -223,6 +223,15 @@ describe('authentication HTTP contract', () => {
       EMAIL_DELIVERY_MODE: 'resend',
       EMAIL_FROM: 'Arus <accounts@arus.id>',
       RESEND_API_KEY: 're_production-test-key-long-enough',
+      WHATSAPP_PROVIDER_MODE: 'meta',
+      WHATSAPP_APP_SECRET: 'production-whatsapp-app-secret',
+      WHATSAPP_VERIFY_TOKEN: 'production-whatsapp-verify-token',
+      WHATSAPP_ACCESS_TOKEN: 'production-whatsapp-access-token',
+      WHATSAPP_PHONE_NUMBER_ID: 'production-phone-id',
+      WHATSAPP_WABA_ID: 'production-waba-id',
+      EVIDENCE_STORAGE_MODE: 'supabase',
+      SUPABASE_URL: 'https://storage.arus.example',
+      SUPABASE_SERVICE_ROLE_KEY: 'production-supabase-service-role-key',
     });
 
     const response = await request(testApp(authService, productionEnvironment))

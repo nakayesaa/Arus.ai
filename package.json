@@ -13,7 +13,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "dotenv -e .env -- concurrently --names api,web --prefix-colors blue,green \"npm run dev -w @arus/api\" \"npm run dev -w @arus/web\"",
+    "dev": "dotenv -e .env -- concurrently --names api,worker,web --prefix-colors blue,magenta,green \"npm run dev -w @arus/api\" \"npm run dev:worker -w @arus/api\" \"npm run dev -w @arus/web\"",
     "build": "npm run db:generate && npm run build -w @arus/domain && npm run build -w @arus/api && npm run build -w @arus/web",
     "lint": "eslint .",
     "format": "prettier --write .",

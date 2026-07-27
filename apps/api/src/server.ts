@@ -12,6 +12,7 @@ import { PrismaPromiseRepository } from './repositories/promise.repository.js';
 import { PrismaAccountLifecycleRepository } from './repositories/account-lifecycle.repository.js';
 import { PrismaReceivablesRepository } from './repositories/receivables.repository.js';
 import { PrismaReportRepository } from './repositories/report.repository.js';
+import { PrismaWhatsAppRepository } from './repositories/whatsapp.repository.js';
 import { AccountLifecycleService } from './services/account-lifecycle.service.js';
 import { AuthService } from './services/auth.service.js';
 import { CollectionQueueService } from './services/collection-queue.service.js';
@@ -23,6 +24,8 @@ import { PaymentService } from './services/payment.service.js';
 import { PromiseService } from './services/promise.service.js';
 import { ReceivablesService } from './services/receivables.service.js';
 import { ReportService } from './services/report.service.js';
+import { WhatsAppService } from './services/whatsapp.service.js';
+import { createEvidenceStorage } from './whatsapp/storage.js';
 
 const environment = loadEnvironment();
 const logger = createLogger(environment);
@@ -67,6 +70,10 @@ const paymentService = new PaymentService({
 const reportService = new ReportService({
   repository: new PrismaReportRepository(database),
 });
+const whatsappService = new WhatsAppService({
+  repository: new PrismaWhatsAppRepository(database),
+  storage: createEvidenceStorage(environment),
+});
 const app = createApp({
   authService,
   lifecycleService,
@@ -79,6 +86,7 @@ const app = createApp({
   disputeService,
   paymentService,
   reportService,
+  whatsappService,
   environment,
   logger,
 });
