@@ -53,12 +53,21 @@ export function WhatsAppDrawer(props: WhatsAppDrawerProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const requestRef = useRef<AbortController | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>({ status: 'idle' });
   const [connectionPending, setConnectionPending] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const host = document.createElement('div');
+    host.dataset.arusPortal = 'whatsapp-drawer';
+    document.body.append(host);
+    setPortalHost(host);
+
+    return () => {
+      host.remove();
+    };
+  }, []);
   useEffect(() => () => requestRef.current?.abort(), []);
   useEffect(() => {
     if (!open) return;
@@ -142,7 +151,7 @@ export function WhatsAppDrawer(props: WhatsAppDrawerProps) {
         <MessageCircle size={14} aria-hidden="true" />
         WhatsApp
       </button>
-      {mounted &&
+      {portalHost &&
         open &&
         createPortal(
           <aside
@@ -187,7 +196,7 @@ export function WhatsAppDrawer(props: WhatsAppDrawerProps) {
               />
             </div>
           </aside>,
-          document.body,
+          portalHost,
         )}
     </>
   );
