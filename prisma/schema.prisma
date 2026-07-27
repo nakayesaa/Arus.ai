@@ -47,6 +47,77 @@ enum CommunicationChannel {
   OTHER
 }
 
+enum WhatsAppProvider {
+  META
+}
+
+enum WhatsAppConnectionState {
+  DISCONNECTED
+  LIVE
+  PAUSED
+  DEGRADED
+}
+
+enum ConversationMatchState {
+  MATCHED
+  UNMATCHED
+  AMBIGUOUS
+}
+
+enum ChannelMessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum ChannelMessageType {
+  TEXT
+  IMAGE
+}
+
+enum ChannelMessageState {
+  DRAFT
+  APPROVED
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  RECEIVED
+  PROCESSING
+  READY
+}
+
+enum MediaProcessingState {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum PaymentEvidenceState {
+  PROCESSING
+  AWAITING_REVIEW
+  ACCEPTED
+  REJECTED
+  UNAVAILABLE
+}
+
+enum WebhookInboxState {
+  PENDING
+  PROCESSING
+  COMPLETED
+  RETRY
+  FAILED
+}
+
+enum MessageOutboxState {
+  PENDING
+  PROCESSING
+  SENT
+  RETRY
+  FAILED
+}
+
 enum PromiseFinalStatus {
   FULFILLED
   CANCELLED
@@ -73,18 +144,25 @@ model Organization {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  memberships    Membership[]
-  auditLogs      AuditLog[]
-  accountTokens  AccountToken[]
-  debtors        Debtor[]
-  invoices       Invoice[]
-  payments       Payment[]
-  allocations    PaymentAllocation[]
-  communications Communication[]
-  promises       PromiseToPay[]
-  disputes       Dispute[]
-  importJobs     InvoiceImportJob[]
-  importRows     InvoiceImportRow[]
+  memberships         Membership[]
+  auditLogs           AuditLog[]
+  accountTokens       AccountToken[]
+  debtors             Debtor[]
+  invoices            Invoice[]
+  payments            Payment[]
+  allocations         PaymentAllocation[]
+  communications      Communication[]
+  promises            PromiseToPay[]
+  disputes            Dispute[]
+  importJobs          InvoiceImportJob[]
+  importRows          InvoiceImportRow[]
+  whatsappConnections WhatsAppConnection[]
+  conversationThreads ConversationThread[]
+  channelMessages     ChannelMessage[]
+  mediaAssets         MediaAsset[]
+  evidenceReviews     PaymentEvidenceReview[]
+  webhookInbox        WebhookInbox[]
+  messageOutbox       MessageOutbox[]
 }
 
 model User {
@@ -98,16 +176,18 @@ model User {
   updatedAt       DateTime @updatedAt @db.Timestamptz(3)
 
   memberships        Membership[]
-  auditLogs          AuditLog[]          @relation("AuditActor")
+  auditLogs          AuditLog[]              @relation("AuditActor")
   accountTokens      AccountToken[]
-  createdPayments    Payment[]           @relation("PaymentCreator")
-  createdAllocations PaymentAllocation[] @relation("AllocationCreator")
-  communications     Communication[]     @relation("CommunicationActor")
-  createdPromises    PromiseToPay[]      @relation("PromiseCreator")
-  cancelledPromises  PromiseToPay[]      @relation("PromiseCanceller")
-  createdDisputes    Dispute[]           @relation("DisputeCreator")
-  resolvedDisputes   Dispute[]           @relation("DisputeResolver")
-  createdImportJobs  InvoiceImportJob[]  @relation("InvoiceImportCreator")
+  createdPayments    Payment[]               @relation("PaymentCreator")
+  createdAllocations PaymentAllocation[]     @relation("AllocationCreator")
+  communications     Communication[]         @relation("CommunicationActor")
+  createdPromises    PromiseToPay[]          @relation("PromiseCreator")
+  cancelledPromises  PromiseToPay[]          @relation("PromiseCanceller")
+  createdDisputes    Dispute[]               @relation("DisputeCreator")
+  resolvedDisputes   Dispute[]               @relation("DisputeResolver")
+  createdImportJobs  InvoiceImportJob[]      @relation("InvoiceImportCreator")
+  approvedMessages   ChannelMessage[]        @relation("ChannelMessageApprover")
+  evidenceReviews    PaymentEvidenceReview[] @relation("EvidenceReviewer")
 }
 
 model Membership {
@@ -194,10 +274,12 @@ model Debtor {
   updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt      DateTime? @db.Timestamptz(3)
 
-  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  invoices     Invoice[]
-  payments     Payment[]
-  importRows   InvoiceImportRow[] @relation("ImportMatchedDebtor")
+  organization        Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  invoices            Invoice[]
+  payments            Payment[]
+  importRows          InvoiceImportRow[]      @relation("ImportMatchedDebtor")
+  conversationThreads ConversationThread[]
+  evidenceReviews     PaymentEvidenceReview[]
 
   @@index([organizationId, deletedAt])
   @@index([organizationId, name])
@@ -218,13 +300,16 @@ model Invoice {
   updatedAt               DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt               DateTime? @db.Timestamptz(3)
 
-  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  debtor         Debtor              @relation(fields: [debtorId], references: [id], onDelete: Restrict)
-  allocations    PaymentAllocation[]
-  communications Communication[]
-  promises       PromiseToPay[]
-  disputes       Dispute[]
-  importRow      InvoiceImportRow?   @relation("CommittedInvoice")
+  organization        Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  debtor              Debtor                  @relation(fields: [debtorId], references: [id], onDelete: Restrict)
+  allocations         PaymentAllocation[]
+  communications      Communication[]
+  promises            PromiseToPay[]
+  disputes            Dispute[]
+  importRow           InvoiceImportRow?       @relation("CommittedInvoice")
+  conversationThreads ConversationThread[]    @relation("CurrentInvoiceThread")
+  channelMessages     ChannelMessage[]
+  evidenceReviews     PaymentEvidenceReview[]
 
   @@index([organizationId, dueDate])
   @@index([organizationId, debtorId])
@@ -327,10 +412,11 @@ model Payment {
   createdAt        DateTime @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime @updatedAt @db.Timestamptz(3)
 
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  debtor       Debtor              @relation(fields: [debtorId], references: [id], onDelete: Restrict)
-  createdBy    User                @relation("PaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  allocations  PaymentAllocation[]
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  debtor         Debtor                 @relation(fields: [debtorId], references: [id], onDelete: Restrict)
+  createdBy      User                   @relation("PaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  allocations    PaymentAllocation[]
+  evidenceReview PaymentEvidenceReview?
 
   @@unique([organizationId, operationKey], map: "Payment_org_operation_key")
   @@index([organizationId, paymentDate, id])
@@ -410,4 +496,183 @@ model InvoiceImportRow {
   @@unique([importJobId, rowNumber])
   @@index([organizationId, importJobId, result, rowNumber])
   @@index([organizationId, matchedDebtorId])
+}
+
+model WhatsAppConnection {
+  id                    String                  @id @default(uuid()) @db.Uuid
+  organizationId        String                  @db.Uuid
+  provider              WhatsAppProvider        @default(META)
+  providerBusinessId    String?                 @db.VarChar(100)
+  providerPhoneNumberId String?                 @db.VarChar(100)
+  displayPhoneNumber    String?                 @db.VarChar(32)
+  state                 WhatsAppConnectionState @default(DISCONNECTED)
+  lastWebhookAt         DateTime?               @db.Timestamptz(3)
+  lastHealthyAt         DateTime?               @db.Timestamptz(3)
+  lastFailureCode       String?                 @db.VarChar(80)
+  createdAt             DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime                @updatedAt @db.Timestamptz(3)
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  threads      ConversationThread[]
+  messages     ChannelMessage[]
+  webhookInbox WebhookInbox[]
+
+  @@unique([organizationId, provider])
+  @@unique([provider, providerPhoneNumberId])
+  @@index([organizationId, state, createdAt])
+}
+
+model ConversationThread {
+  id                       String                 @id @default(uuid()) @db.Uuid
+  organizationId           String                 @db.Uuid
+  connectionId             String                 @db.Uuid
+  debtorId                 String?                @db.Uuid
+  currentInvoiceId         String?                @db.Uuid
+  normalizedCustomerNumber String                 @db.VarChar(32)
+  customerDisplayName      String?                @db.VarChar(200)
+  matchState               ConversationMatchState @default(UNMATCHED)
+  lastMessageAt            DateTime?              @db.Timestamptz(3)
+  createdAt                DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime               @updatedAt @db.Timestamptz(3)
+
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  connection     WhatsAppConnection @relation(fields: [connectionId], references: [id], onDelete: Restrict)
+  debtor         Debtor?            @relation(fields: [debtorId], references: [id], onDelete: Restrict)
+  currentInvoice Invoice?           @relation("CurrentInvoiceThread", fields: [currentInvoiceId], references: [id], onDelete: Restrict)
+  messages       ChannelMessage[]
+
+  @@unique([organizationId, normalizedCustomerNumber])
+  @@index([organizationId, debtorId, lastMessageAt])
+  @@index([organizationId, matchState, lastMessageAt])
+}
+
+model ChannelMessage {
+  id                String                  @id @default(uuid()) @db.Uuid
+  organizationId    String                  @db.Uuid
+  connectionId      String                  @db.Uuid
+  threadId          String                  @db.Uuid
+  invoiceId         String?                 @db.Uuid
+  direction         ChannelMessageDirection
+  type              ChannelMessageType
+  state             ChannelMessageState
+  providerMessageId String?                 @db.VarChar(160)
+  operationKey      String?                 @db.Uuid
+  body              String?                 @db.VarChar(4096)
+  safeFailureCode   String?                 @db.VarChar(80)
+  approvedById      String?                 @db.Uuid
+  approvedAt        DateTime?               @db.Timestamptz(3)
+  occurredAt        DateTime                @db.Timestamptz(3)
+  createdAt         DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime                @updatedAt @db.Timestamptz(3)
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  connection   WhatsAppConnection @relation(fields: [connectionId], references: [id], onDelete: Restrict)
+  thread       ConversationThread @relation(fields: [threadId], references: [id], onDelete: Restrict)
+  invoice      Invoice?           @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  approvedBy   User?              @relation("ChannelMessageApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  mediaAsset   MediaAsset?
+  outbox       MessageOutbox?
+
+  @@unique([connectionId, providerMessageId])
+  @@unique([organizationId, operationKey])
+  @@index([organizationId, threadId, occurredAt, id])
+  @@index([organizationId, state, createdAt])
+}
+
+model MediaAsset {
+  id                  String               @id @default(uuid()) @db.Uuid
+  organizationId      String               @db.Uuid
+  messageId           String               @unique @db.Uuid
+  providerMediaId     String?              @db.VarChar(160)
+  objectKey           String?              @unique @db.VarChar(500)
+  sha256              String?              @db.Char(64)
+  detectedMime        String?              @db.VarChar(80)
+  byteSize            Int?
+  width               Int?
+  height              Int?
+  processingState     MediaProcessingState @default(PENDING)
+  failureCode         String?              @db.VarChar(80)
+  processingStartedAt DateTime?            @db.Timestamptz(3)
+  processedAt         DateTime?            @db.Timestamptz(3)
+  createdAt           DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @db.Timestamptz(3)
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  message      ChannelMessage         @relation(fields: [messageId], references: [id], onDelete: Restrict)
+  evidence     PaymentEvidenceReview?
+
+  @@unique([organizationId, providerMediaId])
+  @@index([organizationId, processingState, createdAt])
+}
+
+model PaymentEvidenceReview {
+  id              String               @id @default(uuid()) @db.Uuid
+  organizationId  String               @db.Uuid
+  mediaAssetId    String               @unique @db.Uuid
+  debtorId        String?              @db.Uuid
+  invoiceId       String?              @db.Uuid
+  state           PaymentEvidenceState @default(PROCESSING)
+  reviewerId      String?              @db.Uuid
+  reviewedAt      DateTime?            @db.Timestamptz(3)
+  rejectionReason String?              @db.VarChar(500)
+  paymentId       String?              @unique @db.Uuid
+  operationKey    String?              @db.Uuid
+  createdAt       DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime             @updatedAt @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+  debtor       Debtor?      @relation(fields: [debtorId], references: [id], onDelete: Restrict)
+  invoice      Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  reviewer     User?        @relation("EvidenceReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+  payment      Payment?     @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, operationKey])
+  @@index([organizationId, state, createdAt])
+  @@index([organizationId, debtorId, createdAt])
+}
+
+model WebhookInbox {
+  id                  String            @id @default(uuid()) @db.Uuid
+  organizationId      String?           @db.Uuid
+  connectionId        String?           @db.Uuid
+  provider            WhatsAppProvider  @default(META)
+  providerEventId     String            @unique @db.VarChar(200)
+  payload             Json              @db.JsonB
+  signatureVerifiedAt DateTime          @db.Timestamptz(3)
+  state               WebhookInboxState @default(PENDING)
+  attemptCount        Int               @default(0)
+  nextAttemptAt       DateTime          @default(now()) @db.Timestamptz(3)
+  leaseOwner          String?           @db.VarChar(100)
+  leaseExpiresAt      DateTime?         @db.Timestamptz(3)
+  safeErrorCode       String?           @db.VarChar(80)
+  processedAt         DateTime?         @db.Timestamptz(3)
+  createdAt           DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime          @updatedAt @db.Timestamptz(3)
+
+  organization Organization?       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  connection   WhatsAppConnection? @relation(fields: [connectionId], references: [id], onDelete: Restrict)
+
+  @@index([state, nextAttemptAt, leaseExpiresAt])
+  @@index([organizationId, createdAt])
+}
+
+model MessageOutbox {
+  id               String             @id @default(uuid()) @db.Uuid
+  organizationId   String             @db.Uuid
+  channelMessageId String             @unique @db.Uuid
+  state            MessageOutboxState @default(PENDING)
+  attemptCount     Int                @default(0)
+  nextAttemptAt    DateTime           @default(now()) @db.Timestamptz(3)
+  leaseOwner       String?            @db.VarChar(100)
+  leaseExpiresAt   DateTime?          @db.Timestamptz(3)
+  safeErrorCode    String?            @db.VarChar(80)
+  sentAt           DateTime?          @db.Timestamptz(3)
+  createdAt        DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime           @updatedAt @db.Timestamptz(3)
+
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  channelMessage ChannelMessage @relation(fields: [channelMessageId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, state, nextAttemptAt, leaseExpiresAt])
 }
