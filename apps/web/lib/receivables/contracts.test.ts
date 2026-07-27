@@ -182,12 +182,13 @@ describe('receivables contracts', () => {
         search: '  Nusantara  ',
         state: 'OPEN',
         agingBucket: 'OVERDUE_8_30',
+        outstandingOnly: true,
         asOfDate: '2026-07-16',
         page: 2,
         limit: 25,
       }),
     ).toBe(
-      'search=Nusantara&asOfDate=2026-07-16&state=OPEN&agingBucket=OVERDUE_8_30&page=2&limit=25',
+      'search=Nusantara&asOfDate=2026-07-16&state=OPEN&agingBucket=OVERDUE_8_30&outstandingOnly=true&page=2&limit=25',
     );
   });
 });

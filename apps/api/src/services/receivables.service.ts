@@ -158,6 +158,7 @@ export interface ReceivablesServiceContract {
     debtorId?: string | undefined;
     state?: InvoiceState | undefined;
     agingBucket?: AgingBucket | undefined;
+    outstandingOnly?: boolean | undefined;
     asOfDate?: string | undefined;
     page: number;
     limit: number;
@@ -335,6 +336,7 @@ export class ReceivablesService implements ReceivablesServiceContract {
     debtorId?: string | undefined;
     state?: InvoiceState | undefined;
     agingBucket?: AgingBucket | undefined;
+    outstandingOnly?: boolean | undefined;
     asOfDate?: string | undefined;
     page: number;
     limit: number;
@@ -357,6 +359,10 @@ export class ReceivablesService implements ReceivablesServiceContract {
     const derived = records
       .map((record) => toInvoiceView(record, asOfDate))
       .filter((invoice) => !input.state || invoice.state === input.state)
+      .filter(
+        (invoice) =>
+          !input.outstandingOnly || invoice.state !== InvoiceState.PAID,
+      )
       .filter(
         (invoice) =>
           !input.agingBucket || invoice.aging.bucket === input.agingBucket,

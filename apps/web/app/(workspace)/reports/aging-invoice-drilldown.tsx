@@ -62,6 +62,7 @@ export function AgingInvoiceDrilldown({
     setLoadState({ status: 'loading' });
     void listInvoices({
       agingBucket: activeMetric.bucket,
+      outstandingOnly: true,
       asOfDate,
       page,
       limit: PAGE_SIZE,

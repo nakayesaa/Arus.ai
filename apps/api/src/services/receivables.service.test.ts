@@ -181,6 +181,26 @@ describe('ReceivablesService', () => {
     });
   });
 
+  it('excludes fully paid invoices from outstanding-only reads', async () => {
+    const repository = new FakeReceivablesRepository();
+    const service = testService(repository);
+
+    const result = await service.listInvoices({
+      context,
+      outstandingOnly: true,
+      page: 1,
+      limit: 25,
+    });
+
+    expect(result.data.map((invoice) => invoice.id)).toEqual([
+      partialInvoice.id,
+    ]);
+    expect(result.pagination.total).toBe(1);
+    expect(
+      result.data.every((invoice) => invoice.outstandingAmount !== '0.00'),
+    ).toBe(true);
+  });
+
   it('returns immutable communication facts with a current workflow suggestion', async () => {
     const repository = new FakeReceivablesRepository();
     repository.invoiceRecord = {

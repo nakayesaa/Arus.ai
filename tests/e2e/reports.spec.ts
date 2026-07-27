@@ -92,6 +92,45 @@ test('drills from an aging bucket into an exact invoice', async ({ page }) => {
   ).toBeVisible();
 });
 
+test('keeps fully paid invoices out of ending aging drilldowns', async ({
+  page,
+}) => {
+  const invoiceRequests: URL[] = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/api/invoices') invoiceRequests.push(url);
+  });
+
+  await page.goto(`/reports?from=${REPORT_FROM}&to=${REPORT_TO}`);
+  const currentTrigger = page.getByRole('button', {
+    name: 'View Current invoices',
+  });
+  const currentRow = page.getByRole('row').filter({ has: currentTrigger });
+  const reportInvoiceCount = (
+    await currentRow.getByRole('cell').nth(1).innerText()
+  ).split('\n')[0];
+  await currentTrigger.click();
+
+  const dialog = page.getByRole('dialog', { name: 'Current' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText(`${reportInvoiceCount} invoices`);
+  const invoiceRows = dialog.getByRole('link', { name: /^Open invoice /u });
+  await expect(invoiceRows.first()).toBeVisible();
+  await expect(dialog).not.toContainText('INV-2026-1051');
+  await expect
+    .poll(() =>
+      invoiceRequests.some(
+        (url) => url.searchParams.get('outstandingOnly') === 'true',
+      ),
+    )
+    .toBe(true);
+
+  const invoiceRowText = await invoiceRows.allTextContents();
+  expect(invoiceRowText).not.toContainEqual(
+    expect.stringMatching(/Outstanding\s*Rp\s*0(?:\D|$)/u),
+  );
+});
+
 test('regenerates an inclusive period and preserves exact values for print', async ({
   page,
 }) => {

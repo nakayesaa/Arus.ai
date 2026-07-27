@@ -9,6 +9,7 @@ import {
 
 export function listInvoices(input: {
   agingBucket: AgingBucket;
+  outstandingOnly: boolean;
   asOfDate: string;
   page: number;
   limit: number;
@@ -16,6 +17,7 @@ export function listInvoices(input: {
 }): Promise<InvoiceListResponse> {
   const query = receivablesQuery({
     agingBucket: input.agingBucket,
+    outstandingOnly: input.outstandingOnly,
     asOfDate: input.asOfDate,
     page: input.page,
     limit: input.limit,

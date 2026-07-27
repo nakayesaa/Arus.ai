@@ -156,6 +156,7 @@ export interface InvoiceListQuery extends ListQuery {
   debtorId?: string | undefined;
   state?: InvoiceState | undefined;
   agingBucket?: AgingBucket | undefined;
+  outstandingOnly?: boolean | undefined;
 }
 
 export function receivablesQuery(query: ListQuery | InvoiceListQuery): string {
@@ -171,6 +172,9 @@ export function receivablesQuery(query: ListQuery | InvoiceListQuery): string {
   }
   if ('agingBucket' in query && query.agingBucket) {
     searchParams.set('agingBucket', query.agingBucket);
+  }
+  if ('outstandingOnly' in query && query.outstandingOnly !== undefined) {
+    searchParams.set('outstandingOnly', String(query.outstandingOnly));
   }
   searchParams.set('page', String(query.page));
   searchParams.set('limit', String(query.limit));

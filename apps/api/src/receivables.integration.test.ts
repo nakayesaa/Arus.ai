@@ -515,6 +515,21 @@ integrationDescribe('receivables with PostgreSQL', () => {
     );
   });
 
+  it('returns only nonzero balances for outstanding-only reads', async () => {
+    const response = await request(app)
+      .get('/api/invoices?outstandingOnly=true&asOfDate=2026-07-16')
+      .set('Cookie', cookieA)
+      .expect(200);
+
+    expect(response.body.data).not.toHaveLength(0);
+    expect(
+      response.body.data.every(
+        (invoice: { outstandingAmount: string }) =>
+          invoice.outstandingAmount !== '0.00',
+      ),
+    ).toBe(true);
+  });
+
   it('validates calendar dates rather than accepting regex-only dates', async () => {
     const response = await request(app)
       .get('/api/invoices?asOfDate=2026-02-30')

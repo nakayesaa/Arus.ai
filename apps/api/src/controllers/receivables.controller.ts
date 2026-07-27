@@ -13,6 +13,10 @@ import {
 const pageSchema = z.coerce.number().int().min(1).default(1);
 const limitSchema = z.coerce.number().int().min(1).max(100).default(25);
 const searchSchema = z.string().trim().max(200).optional();
+const optionalBooleanQuerySchema = z
+  .enum(['true', 'false'])
+  .transform((value) => value === 'true')
+  .optional();
 const asOfDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -45,6 +49,7 @@ const invoiceListQuerySchema = z
         AgingBucket.OVERDUE_90_PLUS,
       ])
       .optional(),
+    outstandingOnly: optionalBooleanQuerySchema,
     asOfDate: asOfDateSchema,
     page: pageSchema,
     limit: limitSchema,
