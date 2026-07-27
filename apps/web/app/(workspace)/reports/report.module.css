@@ -926,6 +926,10 @@
 }
 
 @media print {
+  .page {
+    min-height: 0;
+  }
+
   .pageHeader {
     display: none !important;
   }
@@ -943,11 +947,14 @@
 
   .sheet {
     overflow: visible;
-    border: 0;
-    border-radius: 0;
+    border: 1px solid #cfcfcf;
+    border-radius: 0.625rem;
     color: #111111;
     background: #ffffff;
     box-shadow: none;
+    box-decoration-break: clone;
+    print-color-adjust: exact;
+    -webkit-box-decoration-break: clone;
   }
 
   .reportHeader,
@@ -1025,6 +1032,19 @@
     break-inside: avoid;
   }
 
+  .reportHeader,
+  .executiveSummary,
+  .summary,
+  .reconciliation {
+    break-inside: avoid-page;
+  }
+
+  .sectionHeading,
+  .agingTableHeader,
+  .priorityHeader {
+    break-after: avoid-page;
+  }
+
   .summary > a > svg,
   .sectionHeading > a,
   .priorityRow > svg {
@@ -1045,10 +1065,21 @@
     print-color-adjust: exact;
   }
 
-  .reviewGrid,
+  .reviewGrid {
+    display: block;
+    break-inside: auto;
+  }
+
+  .agingSection,
+  .workflowSection,
   .prioritySection {
     break-before: auto;
-    break-inside: avoid;
+    break-inside: auto;
+  }
+
+  .workflowSection {
+    border-top: 1px solid #d9d9d9;
+    border-left: 0;
   }
 }
 

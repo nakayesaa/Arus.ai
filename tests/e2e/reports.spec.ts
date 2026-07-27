@@ -75,11 +75,14 @@ test('regenerates an inclusive period and preserves exact values for print', asy
   await expect(
     page.getByRole('article', { name: 'Receivables review' }),
   ).toBeVisible();
+  const report = page.getByRole('article', { name: 'Receivables review' });
   await expect(page.locator('body')).toHaveCSS(
     'background-color',
     'rgb(255, 255, 255)',
   );
   await expect(agingRow).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(report).toHaveCSS('border-top-style', 'solid');
+  await expect(report).toHaveCSS('border-top-width', '1px');
   const endingValue = page
     .getByRole('link', { name: /^Ending receivables/u })
     .locator('strong');
@@ -89,6 +92,13 @@ test('regenerates an inclusive period and preserves exact values for print', asy
       (element) => element.scrollWidth <= element.clientWidth,
     ),
   ).toBe(true);
+
+  const pdf = await page.pdf({
+    format: 'A4',
+    preferCSSPageSize: true,
+    printBackground: true,
+  });
+  expect(pdfPageCount(pdf)).toBeLessThanOrEqual(2);
 });
 
 async function login(page: Page): Promise<void> {
@@ -106,4 +116,8 @@ async function login(page: Page): Promise<void> {
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/dashboard$/u);
+}
+
+function pdfPageCount(pdf: Buffer): number {
+  return pdf.toString('latin1').match(/\/Type\s*\/Page\b/gu)?.length ?? 0;
 }
