@@ -1,10 +1,17 @@
 import type { Metadata } from 'next';
-import { Building2, ChevronRight, Clock3, ShieldCheck } from 'lucide-react';
+import {
+  Building2,
+  ChevronRight,
+  Clock3,
+  MessageCircle,
+  ShieldCheck,
+} from 'lucide-react';
 import { redirect } from 'next/navigation';
 
 import { PageHeader } from '@/components/page-header';
 import { MembersManager } from '@/components/members-manager';
 import { requireServerSession } from '@/lib/auth/server';
+import { getWhatsAppConnection } from '@/lib/whatsapp/server';
 
 export const metadata: Metadata = { title: 'Settings' };
 
@@ -14,6 +21,7 @@ export default async function SettingsPage() {
   if (session.role !== 'OWNER') {
     redirect('/dashboard');
   }
+  const connection = await getWhatsAppConnection();
 
   return (
     <div className="content-page">
@@ -36,6 +44,21 @@ export default async function SettingsPage() {
               </div>
               <ChevronRight size={16} />
             </button>
+            <div className="settings-row">
+              <MessageCircle size={17} />
+              <div>
+                <strong>
+                  {connection.data?.displayPhoneNumber ??
+                    'Business sender not connected'}
+                </strong>
+                <span>
+                  WhatsApp ·{' '}
+                  {connection.data
+                    ? connection.data.state.toLocaleLowerCase('en-US')
+                    : 'secure setup required'}
+                </span>
+              </div>
+            </div>
             <button className="settings-row settings-row-button" type="button">
               <Clock3 size={17} />
               <div>

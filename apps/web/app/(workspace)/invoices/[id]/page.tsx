@@ -17,7 +17,9 @@ import { CommunicationComposer } from '@/components/communication-composer';
 import { PaginationNav } from '@/components/pagination-nav';
 import { PaymentRecorder } from '@/components/payment-recorder';
 import { Pill } from '@/components/table-ui';
+import { WhatsAppDrawer } from '@/components/whatsapp-drawer';
 import { ApiClientError } from '@/lib/api-client/errors';
+import { requireServerSession } from '@/lib/auth/server';
 import {
   formatBusinessDate,
   formatDuePosition,
@@ -58,7 +60,10 @@ export default async function InvoiceDetailPage({
   if (!parsedId.success) notFound();
 
   const asOfDate = businessDateQuery(rawSearchParams);
-  const result = await invoiceOrNotFound(parsedId.data, asOfDate);
+  const [result, session] = await Promise.all([
+    invoiceOrNotFound(parsedId.data, asOfDate),
+    requireServerSession(),
+  ]);
   const invoice = result.data;
   const allocationPage = positiveInteger(
     queryValue(rawSearchParams, 'allocationPage'),
@@ -109,6 +114,15 @@ export default async function InvoiceDetailPage({
             <MessageSquarePlus size={14} aria-hidden="true" />
             Log contact
           </a>
+          <WhatsAppDrawer
+            debtorId={invoice.debtor.id}
+            debtorName={invoice.debtor.name}
+            invoiceId={invoice.id}
+            invoiceNumber={invoice.invoiceNumber}
+            outstandingAmount={invoice.outstandingAmount}
+            timeZone={result.meta.timeZone}
+            canManageConnection={session.role === 'OWNER'}
+          />
           <Link className="control-button" href={debtorHref}>
             <Building2 size={14} aria-hidden="true" />
             {invoice.debtor.name}
