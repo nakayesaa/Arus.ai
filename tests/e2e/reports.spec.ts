@@ -54,6 +54,44 @@ test('reviews a reconciled weekly report and opens its supporting records', asyn
   );
 });
 
+test('drills from an aging bucket into an exact invoice', async ({ page }) => {
+  await page.goto(`/reports?from=${REPORT_FROM}&to=${REPORT_TO}`);
+
+  const reportUrl = page.url();
+  await page
+    .getByRole('button', { name: 'View 31–60 days overdue invoices' })
+    .click();
+
+  const dialog = page.getByRole('dialog', {
+    name: '31–60 days overdue',
+  });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('7 invoices');
+  await expect(page).toHaveURL(reportUrl);
+
+  const invoiceLink = dialog
+    .getByRole('link', { name: /^Open invoice /u })
+    .first();
+  await expect(invoiceLink).toBeVisible();
+  const href = await invoiceLink.getAttribute('href');
+  const accessibleName = await invoiceLink.getAttribute('aria-label');
+  if (!href || !accessibleName) {
+    throw new Error('Aging invoice link is missing navigation metadata');
+  }
+  expect(href).toMatch(
+    new RegExp(`/invoices/[0-9a-f-]+\\?asOfDate=${REPORT_TO}$`, 'u'),
+  );
+  expect(accessibleName).toMatch(/^Open invoice \S+/u);
+
+  await invoiceLink.click();
+  await expect(page).toHaveURL(new URL(href, reportUrl).toString());
+  await expect(
+    page.getByRole('heading', {
+      name: accessibleName.replace('Open invoice ', ''),
+    }),
+  ).toBeVisible();
+});
+
 test('regenerates an inclusive period and preserves exact values for print', async ({
   page,
 }) => {

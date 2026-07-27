@@ -16,7 +16,6 @@ import {
   formatTimestamp,
 } from '@/lib/formatters';
 import type {
-  WeeklyReportAgingMetric,
   WeeklyReportPriorityInvoice,
   WeeklyReportResponse,
 } from '@/lib/reports/contracts';
@@ -24,6 +23,7 @@ import { reportPeriodQuery } from '@/lib/reports/page-query';
 import { getWeeklyReport } from '@/lib/reports/server';
 import type { PageSearchParams } from '@/lib/url-query';
 
+import { AgingInvoiceDrilldown } from './aging-invoice-drilldown';
 import { PrintReportButton } from './print-report-button';
 import styles from './report.module.css';
 
@@ -161,21 +161,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 title="Ending aging"
                 description={`Point-in-time exposure as of ${formatBusinessDate(report.period.to)}.`}
               />
-              <div className={styles.agingTable} role="table">
-                <div className={styles.agingTableHeader} role="row">
-                  <span role="columnheader">Aging bucket</span>
-                  <span role="columnheader">Invoices</span>
-                  <span role="columnheader">Outstanding</span>
-                </div>
-                {report.aging.map((metric) => (
-                  <AgingRow
-                    key={metric.bucket}
-                    metric={metric}
-                    totalAr={report.summary.totalAr}
-                    asOfDate={report.period.to}
-                  />
-                ))}
-              </div>
+              <AgingInvoiceDrilldown
+                metrics={report.aging}
+                totalAr={report.summary.totalAr}
+                asOfDate={report.period.to}
+              />
             </section>
 
             <section
@@ -319,34 +309,6 @@ function SectionHeading({
   );
 }
 
-function AgingRow({
-  metric,
-  totalAr,
-  asOfDate,
-}: {
-  metric: WeeklyReportAgingMetric;
-  totalAr: string;
-  asOfDate: string;
-}) {
-  const share = moneyShare(metric.outstandingAmount, totalAr);
-  const href = `/invoices?asOfDate=${asOfDate}&aging=${metric.bucket}`;
-  return (
-    <Link className={styles.agingRow} href={href} role="row">
-      <span className={styles.agingIdentity} role="cell">
-        <strong>{agingLabel(metric.bucket)}</strong>
-        <span className={styles.agingTrack} aria-hidden="true">
-          <span style={{ width: `${share}%` }} />
-        </span>
-      </span>
-      <span role="cell">
-        {formatCompactNumber(metric.invoiceCount)}
-        <small>{share}%</small>
-      </span>
-      <strong role="cell">{formatRupiah(metric.outstandingAmount)}</strong>
-    </Link>
-  );
-}
-
 function WorkflowMetric({
   label,
   count,
@@ -409,36 +371,6 @@ function executiveSummary(report: WeeklyReportResponse['data']): string {
     return `${formatRupiah(report.summary.totalAr)} remains open, with every balance still within terms at the cutoff.`;
   }
   return `${formatRupiah(report.collections.amount)} was confirmed during the period. ${formatRupiah(report.summary.totalOverdue)} remains overdue across ${formatCount(report.summary.overdueInvoiceCount, 'invoice')} and should anchor the next collection cycle.`;
-}
-
-function moneyShare(amount: string, total: string): number {
-  const amountCents = moneyToCents(amount);
-  const totalCents = moneyToCents(total);
-  if (totalCents === 0n) return 0;
-  return Number((amountCents * 1_000n) / totalCents) / 10;
-}
-
-function moneyToCents(value: string): bigint {
-  const [whole, fraction] = value.split('.');
-  if (!whole || !fraction) throw new Error(`Invalid canonical money: ${value}`);
-  return BigInt(whole) * 100n + BigInt(fraction);
-}
-
-function agingLabel(bucket: WeeklyReportAgingMetric['bucket']): string {
-  switch (bucket) {
-    case 'CURRENT':
-      return 'Current';
-    case 'OVERDUE_1_7':
-      return '1–7 days';
-    case 'OVERDUE_8_30':
-      return '8–30 days';
-    case 'OVERDUE_31_60':
-      return '31–60 days';
-    case 'OVERDUE_61_90':
-      return '61–90 days';
-    case 'OVERDUE_90_PLUS':
-      return '90+ days';
-  }
 }
 
 function formatCount(count: number, noun: string): string {
