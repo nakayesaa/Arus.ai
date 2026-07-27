@@ -19,7 +19,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import type { ReactNode } from 'react';
+import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 
 import { logout } from '@/lib/auth/client';
@@ -268,7 +268,10 @@ export function AppShell({ children, session }: AppShellProps) {
         </div>
       </aside>
 
-      <main className="workspace">
+      <main
+        className="workspace"
+        onClickCapture={handleWorkspaceFragmentNavigation}
+      >
         {!sidebarOpen && (
           <button
             className="icon-button sidebar-open-button"
@@ -283,6 +286,59 @@ export function AppShell({ children, session }: AppShellProps) {
       </main>
     </div>
   );
+}
+
+function handleWorkspaceFragmentNavigation(
+  event: ReactMouseEvent<HTMLElement>,
+): void {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  ) {
+    return;
+  }
+
+  const source = event.target;
+  if (!(source instanceof Element)) return;
+
+  const anchor = source.closest<HTMLAnchorElement>('a[href^="#"]');
+  const rawHash = anchor?.getAttribute('href');
+  if (!anchor || !rawHash || rawHash === '#') return;
+
+  const targetId = decodeFragment(rawHash.slice(1));
+  const target = targetId ? document.getElementById(targetId) : null;
+  if (!target) return;
+
+  event.preventDefault();
+
+  if (window.location.hash !== rawHash) {
+    window.history.pushState(
+      null,
+      '',
+      `${window.location.pathname}${window.location.search}${rawHash}`,
+    );
+  }
+
+  const workspace = event.currentTarget;
+  const workspaceRect = workspace.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const scrollPadding =
+    Number.parseFloat(getComputedStyle(workspace).scrollPaddingBlockStart) || 0;
+  const top =
+    workspace.scrollTop + targetRect.top - workspaceRect.top - scrollPadding;
+
+  workspace.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+}
+
+function decodeFragment(fragment: string): string | null {
+  try {
+    return decodeURIComponent(fragment);
+  } catch {
+    return null;
+  }
 }
 
 interface CollapsibleRegionProps {

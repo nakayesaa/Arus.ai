@@ -723,6 +723,7 @@ svg {
   min-height: 0;
   margin: 12px;
   overflow: auto;
+  scroll-padding-block-start: 72px;
   border: 1px solid #363b3d;
   border-radius: var(--radius);
   background: var(--workspace);
@@ -3281,6 +3282,7 @@ svg {
   .workspace {
     height: auto;
     margin: 0;
+    scroll-padding-block-start: 86px;
     border: 0;
     border-radius: 0;
     box-shadow: none;

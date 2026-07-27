@@ -140,6 +140,22 @@ test('renders the seeded collection queue in exact priority order', async ({
   );
 });
 
+test('keeps the workspace frame stable for same-page dashboard links', async ({
+  page,
+}) => {
+  await page.goto(`/dashboard?asOfDate=${AS_OF_DATE}`);
+
+  const workspace = page.locator('.workspace');
+  await expect.poll(() => workspace.evaluate((node) => node.scrollTop)).toBe(0);
+
+  await page.getByRole('link', { name: /Aging coverage/u }).click();
+
+  await expect(page).toHaveURL(/#aging-distribution$/u);
+  await expect
+    .poll(() => workspace.evaluate((node) => node.scrollTop))
+    .toBeLessThanOrEqual(1);
+});
+
 test('drills from dashboard workflow signals into the exact invoice', async ({
   page,
 }) => {
