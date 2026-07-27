@@ -14,3 +14,4 @@ export * from './invoice.js';
 export * from './money.js';
 export * from './payment.js';
 export * from './weekly-report.js';
+export * from './whatsapp.js';
