@@ -7,6 +7,14 @@ import {
   validatePaymentDate,
 } from '@arus/domain';
 
+/**
+ * The payment service validates human-entered financial commands.
+ * It derives business dates in the organization's configured timezone.
+ * Ordinary entry and evidence approval share one repository transaction.
+ * Repository conflicts become stable errors without leaking database detail.
+ * No channel event can bypass amount, date, or idempotency checks.
+ */
+
 import { businessDateInTimeZone } from '../lib/business-date.js';
 import {
   PaymentRepositoryConflictError,
@@ -67,6 +75,17 @@ export interface PaymentServiceContract {
     fulfilledPromiseIds: string[];
     replayed: boolean;
   }>;
+  recordEvidencePayment(input: {
+    context: AuthContext;
+    requestId: string;
+    evidenceId: string;
+    invoiceId: string;
+    operationKey: string;
+    paymentDate: string;
+    amount: string;
+    payerReference: string;
+    bankReference: string | null;
+  }): ReturnType<PaymentServiceContract['recordInvoicePayment']>;
 }
 
 export interface PaymentPagination {
@@ -77,6 +96,7 @@ export interface PaymentPagination {
 }
 
 export type PaymentErrorCode =
+  | 'EVIDENCE_NOT_REVIEWABLE'
   | 'INVOICE_ALREADY_PAID'
   | 'INVOICE_NOT_FOUND'
   | 'INVALID_DATE_RANGE'
@@ -151,19 +171,37 @@ export class PaymentService implements PaymentServiceContract {
     amount: string;
     payerReference: string;
     bankReference: string | null;
-  }): Promise<{
-    data: PaymentView;
-    invoice: {
-      id: string;
-      invoiceNumber: string;
-      originalAmount: string;
-      allocatedAmount: string;
-      outstandingAmount: string;
-      state: 'OPEN' | 'PARTIALLY_PAID' | 'PAID';
-    };
-    fulfilledPromiseIds: string[];
-    replayed: boolean;
-  }> {
+  }): ReturnType<PaymentServiceContract['recordInvoicePayment']> {
+    return this.executePayment(input);
+  }
+
+  async recordEvidencePayment(input: {
+    context: AuthContext;
+    requestId: string;
+    evidenceId: string;
+    invoiceId: string;
+    operationKey: string;
+    paymentDate: string;
+    amount: string;
+    payerReference: string;
+    bankReference: string | null;
+  }): ReturnType<PaymentServiceContract['recordInvoicePayment']> {
+    return this.executePayment(input, input.evidenceId);
+  }
+
+  private async executePayment(
+    input: {
+      context: AuthContext;
+      requestId: string;
+      invoiceId: string;
+      operationKey: string;
+      paymentDate: string;
+      amount: string;
+      payerReference: string;
+      bankReference: string | null;
+    },
+    evidenceId?: string,
+  ): ReturnType<PaymentServiceContract['recordInvoicePayment']> {
     const occurredAt = this.clock();
     const asOfDate = businessDateInTimeZone(
       occurredAt,
@@ -184,6 +222,9 @@ export class PaymentService implements PaymentServiceContract {
         amount,
         payerReference: input.payerReference,
         bankReference: input.bankReference,
+        ...(evidenceId
+          ? { evidence: { evidenceId, actorRole: input.context.role } }
+          : {}),
       });
       if (!result) {
         throw new PaymentError('INVOICE_NOT_FOUND', 'Invoice not found');
@@ -294,5 +335,7 @@ function mapRepositoryError(error: unknown): unknown {
       return new PaymentError('PAYMENT_EXCEEDS_OUTSTANDING', error.message);
     case 'INVOICE_ALREADY_PAID':
       return new PaymentError('INVOICE_ALREADY_PAID', error.message);
+    case 'EVIDENCE_NOT_REVIEWABLE':
+      return new PaymentError('EVIDENCE_NOT_REVIEWABLE', error.message);
   }
 }

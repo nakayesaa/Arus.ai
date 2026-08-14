@@ -6,8 +6,21 @@ import {
   validatePaymentAllocation,
 } from '@arus/domain';
 
+/**
+ * Payment persistence is the single authority for invoice balance mutation.
+ * Every write locks the invoice and records payment plus allocation atomically.
+ * Evidence approval can join that transaction instead of chaining writes.
+ * Idempotency compares the complete financial command before replaying it.
+ * Promise, communication, and audit effects commit with the same payment.
+ */
+
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
-import { PromiseFinalStatus } from '../generated/prisma/enums.js';
+import {
+  CommunicationChannel,
+  type MembershipRole,
+  PaymentEvidenceState,
+  PromiseFinalStatus,
+} from '../generated/prisma/enums.js';
 import { databaseDate } from '../lib/business-date.js';
 import { lockInvoice } from '../lib/invoice-lock.js';
 
@@ -71,6 +84,7 @@ export interface PaymentRepository {
     amount: string;
     payerReference: string;
     bankReference: string | null;
+    evidence?: { evidenceId: string; actorRole: MembershipRole };
   }): Promise<PaymentWriteResult | null>;
 }
 
@@ -83,7 +97,10 @@ export class PaymentRepositoryConflictError extends Error {
 
 export class PaymentRepositoryValidationError extends Error {
   constructor(
-    readonly reason: 'AMOUNT_EXCEEDS_OUTSTANDING' | 'INVOICE_ALREADY_PAID',
+    readonly reason:
+      | 'AMOUNT_EXCEEDS_OUTSTANDING'
+      | 'INVOICE_ALREADY_PAID'
+      | 'EVIDENCE_NOT_REVIEWABLE',
     message: string,
   ) {
     super(message);
@@ -147,11 +164,34 @@ export class PrismaPaymentRepository implements PaymentRepository {
     amount: string;
     payerReference: string;
     bankReference: string | null;
+    evidence?: { evidenceId: string; actorRole: MembershipRole };
   }): Promise<PaymentWriteResult | null> {
     try {
       return await this.database.$transaction(
         async (transaction) => {
           await lockInvoice(transaction, input.invoiceId);
+
+          const evidence = input.evidence
+            ? await transaction.paymentEvidenceReview.findFirst({
+                where: {
+                  id: input.evidence.evidenceId,
+                  organizationId: input.organizationId,
+                },
+                select: {
+                  state: true,
+                  invoiceId: true,
+                  reviewerId: true,
+                  paymentId: true,
+                  operationKey: true,
+                },
+              })
+            : null;
+          if (input.evidence && !evidence) {
+            throw new PaymentRepositoryValidationError(
+              'EVIDENCE_NOT_REVIEWABLE',
+              'Payment evidence was not found',
+            );
+          }
 
           const replay = await transaction.payment.findUnique({
             where: {
@@ -164,7 +204,27 @@ export class PrismaPaymentRepository implements PaymentRepository {
           });
           if (replay) {
             assertReplayMatches(replay, input);
+            if (
+              input.evidence &&
+              (evidence?.state !== PaymentEvidenceState.ACCEPTED ||
+                evidence.paymentId !== replay.id ||
+                evidence.operationKey !== input.operationKey)
+            ) {
+              throw new PaymentRepositoryConflictError('IDEMPOTENCY_CONFLICT');
+            }
             return this.replayResult(transaction, replay);
+          }
+
+          if (
+            input.evidence &&
+            (evidence?.state !== PaymentEvidenceState.AWAITING_REVIEW ||
+              (evidence.invoiceId !== null &&
+                evidence.invoiceId !== input.invoiceId))
+          ) {
+            throw new PaymentRepositoryValidationError(
+              'EVIDENCE_NOT_REVIEWABLE',
+              'Payment evidence is not awaiting review for this invoice',
+            );
           }
 
           const invoice = await transaction.invoice.findFirst({
@@ -214,6 +274,34 @@ export class PrismaPaymentRepository implements PaymentRepository {
               createdAt: input.occurredAt,
             },
           });
+
+          if (input.evidence) {
+            await transaction.paymentEvidenceReview.update({
+              where: { id: input.evidence.evidenceId },
+              data: {
+                debtorId: invoice.debtorId,
+                invoiceId: invoice.id,
+                state: PaymentEvidenceState.ACCEPTED,
+                reviewerId: input.actorId,
+                reviewedAt: input.occurredAt,
+                rejectionReason: null,
+                paymentId: payment.id,
+                operationKey: input.operationKey,
+              },
+            });
+            await transaction.communication.create({
+              data: {
+                organizationId: input.organizationId,
+                invoiceId: input.invoiceId,
+                actorId: input.actorId,
+                actorRole: input.evidence.actorRole,
+                operationKey: input.operationKey,
+                occurredAt: input.occurredAt,
+                channel: CommunicationChannel.WHATSAPP,
+                notes: `WhatsApp evidence accepted; payment ${payment.id} recorded.`,
+              },
+            });
+          }
 
           const fulfilledPromiseIds = promisesFulfilledByPayment({
             promises: invoice.promises,
@@ -274,9 +362,33 @@ export class PrismaPaymentRepository implements PaymentRepository {
                 outstandingAfter: allocation.outstandingAfter,
                 fulfilledPromiseCount: fulfilledPromiseIds.length,
                 hasBankReference: input.bankReference !== null,
+                ...(input.evidence
+                  ? {
+                      evidenceId: input.evidence.evidenceId,
+                      source: 'WHATSAPP_EVIDENCE',
+                    }
+                  : {}),
               },
             },
           });
+
+          if (input.evidence) {
+            await transaction.auditLog.create({
+              data: {
+                organizationId: input.organizationId,
+                actorId: input.actorId,
+                action: 'PAYMENT_EVIDENCE_ACCEPTED',
+                entityType: 'PaymentEvidenceReview',
+                entityId: input.evidence.evidenceId,
+                requestId: input.requestId,
+                metadata: {
+                  paymentId: payment.id,
+                  invoiceId: input.invoiceId,
+                  operationKey: input.operationKey,
+                },
+              },
+            });
+          }
 
           const record = await transaction.payment.findUniqueOrThrow({
             where: { id: payment.id },
