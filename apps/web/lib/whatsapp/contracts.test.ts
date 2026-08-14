@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { whatsappThreadResponseSchema } from './contracts';
 
+/**
+ * Contract tests pin the browser-visible WhatsApp shape independently of Meta.
+ * Runtime parsing rejects provider payload drift before components consume it.
+ * Evidence metadata remains useful for review without exposing private object keys.
+ * Financial decisions use separate payment contracts and explicit commands.
+ * Secret-like provider fields must never survive normalization.
+ */
+
 describe('WhatsApp browser contracts', () => {
   it('parses a provider-neutral thread without accepting raw provider data', () => {
     const result = whatsappThreadResponseSchema.parse({

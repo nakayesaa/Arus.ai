@@ -1,5 +1,13 @@
 import { z } from 'zod';
 
+/**
+ * Browser contracts distrust every WhatsApp response at the network edge.
+ * Schemas expose only normalized channel, evidence, and payment-safe fields.
+ * Exact message bodies remain bounded to the same limits as the API.
+ * Signed evidence links are short-lived values, never durable application data.
+ * Shared inferred types keep the Adaptive Review UI free of duplicate models.
+ */
+
 const timestampSchema = z.iso.datetime({ offset: true });
 const nullableTimestampSchema = timestampSchema.nullable();
 const connectionStateSchema = z.enum([
@@ -26,7 +34,7 @@ export const whatsappConnectionSchema = z.object({
   lastFailureCode: z.string().max(80).nullable(),
 });
 
-const messageSchema = z.object({
+export const whatsappMessageSchema = z.object({
   id: z.uuid(),
   direction: z.enum(['INBOUND', 'OUTBOUND']),
   type: z.enum(['TEXT', 'IMAGE']),
@@ -90,7 +98,7 @@ export const whatsappThreadResponseSchema = z.object({
             dueDate: z.iso.date(),
           })
           .nullable(),
-        messages: z.array(messageSchema).max(100),
+        messages: z.array(whatsappMessageSchema).max(100),
       })
       .nullable(),
   }),
@@ -102,6 +110,44 @@ export const whatsappConnectionResponseSchema = z.object({
 export const nullableWhatsAppConnectionResponseSchema = z.object({
   data: whatsappConnectionSchema.nullable(),
 });
+export const whatsappMessageResponseSchema = z.object({
+  data: whatsappMessageSchema,
+  replayed: z.boolean(),
+});
+export const paymentEvidenceSchema = z.object({
+  id: z.uuid(),
+  state: evidenceStateSchema,
+  createdAt: timestampSchema,
+  debtor: z.object({ id: z.uuid(), name: z.string().max(200) }).nullable(),
+  invoice: z
+    .object({ id: z.uuid(), invoiceNumber: z.string().max(100) })
+    .nullable(),
+  source: z.object({
+    messageId: z.uuid(),
+    occurredAt: timestampSchema,
+    threadId: z.uuid(),
+    customerNumber: z.string().max(32),
+    customerDisplayName: z.string().max(200).nullable(),
+  }),
+  media: z.object({
+    id: z.uuid(),
+    mime: z.string().max(80).nullable(),
+    byteSize: z.number().int().nonnegative().nullable(),
+    width: z.number().int().positive().nullable(),
+    height: z.number().int().positive().nullable(),
+    processingState: z.enum(['PENDING', 'PROCESSING', 'READY', 'FAILED']),
+  }),
+});
+export const paymentEvidenceResponseSchema = z.object({
+  data: paymentEvidenceSchema,
+});
+export const evidenceDecisionResponseSchema = z.object({
+  data: paymentEvidenceSchema,
+  replayed: z.boolean(),
+});
+export const evidenceViewResponseSchema = z.object({
+  data: z.object({ url: z.url(), expiresAt: timestampSchema }),
+});
 
 export type WhatsAppConnection = z.infer<typeof whatsappConnectionSchema>;
 export type WhatsAppThreadResponse = z.infer<
@@ -111,3 +157,4 @@ export type WhatsAppThread = NonNullable<
   WhatsAppThreadResponse['data']['thread']
 >;
 export type WhatsAppMessage = WhatsAppThread['messages'][number];
+export type PaymentEvidence = z.infer<typeof paymentEvidenceSchema>;
