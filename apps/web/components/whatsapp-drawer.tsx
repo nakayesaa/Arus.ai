@@ -1,5 +1,13 @@
 'use client';
 
+/**
+ * The focused drawer preserves invoice context while exposing one WhatsApp thread.
+ * Foreground polling refreshes provider state without introducing realtime infrastructure.
+ * Human sends pause on an exact-text review before durable outbox submission.
+ * Selecting image evidence expands a desktop review panel beside the conversation.
+ * Focus, cancellation, and reduced-motion behavior keep the overlay predictable.
+ */
+
 import {
   AlertCircle,
   Check,
@@ -22,15 +30,18 @@ import { ApiClientError } from '@/lib/api-client/errors';
 import { formatRupiah, formatTimestamp } from '@/lib/formatters';
 import {
   getWhatsAppThread,
+  sendWhatsAppMessage,
   updateWhatsAppConnectionState,
 } from '@/lib/whatsapp/client';
 import type {
   WhatsAppConnection,
   WhatsAppMessage,
+  WhatsAppThread,
   WhatsAppThreadResponse,
 } from '@/lib/whatsapp/contracts';
 
 import styles from './whatsapp-drawer.module.css';
+import { WhatsAppEvidenceReview } from './whatsapp-evidence-review';
 
 interface WhatsAppDrawerProps {
   debtorId: string;
@@ -57,6 +68,9 @@ export function WhatsAppDrawer(props: WhatsAppDrawerProps) {
   const [open, setOpen] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>({ status: 'idle' });
   const [connectionPending, setConnectionPending] = useState(false);
+  const [selectedEvidenceId, setSelectedEvidenceId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     const host = document.createElement('div');
@@ -78,12 +92,29 @@ export function WhatsAppDrawer(props: WhatsAppDrawerProps) {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = () => {
+      timer = setTimeout(
+        () => {
+          load(true);
+          poll();
+        },
+        document.visibilityState === 'visible' ? 3_000 : 15_000,
+      );
+    };
+    poll();
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [open]);
 
-  function load() {
+  function load(silent = false) {
     requestRef.current?.abort();
     const controller = new AbortController();
     requestRef.current = controller;
-    setLoadState({ status: 'loading' });
+    if (!silent) setLoadState({ status: 'loading' });
     void getWhatsAppThread({
       debtorId: props.debtorId,
       invoiceId: props.invoiceId,
@@ -115,6 +146,7 @@ export function WhatsAppDrawer(props: WhatsAppDrawerProps) {
   function close() {
     requestRef.current?.abort();
     setOpen(false);
+    setSelectedEvidenceId(null);
     triggerRef.current?.focus();
   }
 
@@ -155,46 +187,65 @@ export function WhatsAppDrawer(props: WhatsAppDrawerProps) {
         open &&
         createPortal(
           <aside
-            className={styles.drawer}
+            className={`${styles.drawer} ${selectedEvidenceId ? styles.drawerReviewing : ''}`}
             role="dialog"
             aria-modal="false"
             aria-labelledby="whatsapp-drawer-title"
           >
-            <div className={styles.screen}>
-              <span className={styles.channelCue} aria-hidden="true" />
-              <header className={styles.header}>
-                <div className={styles.identity}>
-                  <span className={styles.whatsappMark} aria-hidden="true">
-                    <MessageCircle size={15} />
-                  </span>
-                  <div>
-                    <h2 id="whatsapp-drawer-title">{props.debtorName}</h2>
-                    <p>
-                      {props.invoiceNumber} ·{' '}
-                      {formatRupiah(props.outstandingAmount)}
-                    </p>
+            <div className={styles.device}>
+              <div className={styles.screen}>
+                <span className={styles.channelCue} aria-hidden="true" />
+                <header className={styles.header}>
+                  <div className={styles.identity}>
+                    <span className={styles.whatsappMark} aria-hidden="true">
+                      <MessageCircle size={15} />
+                    </span>
+                    <div>
+                      <h2 id="whatsapp-drawer-title">{props.debtorName}</h2>
+                      <p>
+                        {props.invoiceNumber} ·{' '}
+                        {formatRupiah(props.outstandingAmount)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <button
-                  ref={closeRef}
-                  className={styles.iconButton}
-                  type="button"
-                  onClick={close}
-                  aria-label="Close WhatsApp conversation"
-                >
-                  <X size={16} />
-                </button>
-              </header>
+                  <button
+                    ref={closeRef}
+                    className={styles.iconButton}
+                    type="button"
+                    onClick={close}
+                    aria-label="Close WhatsApp conversation"
+                  >
+                    <X size={16} />
+                  </button>
+                </header>
 
-              <DrawerContent
-                loadState={loadState}
-                timeZone={props.timeZone}
-                canManageConnection={props.canManageConnection}
-                connectionPending={connectionPending}
-                onRetry={load}
-                onToggleConnection={toggleConnection}
-              />
+                <DrawerContent
+                  loadState={loadState}
+                  timeZone={props.timeZone}
+                  canManageConnection={props.canManageConnection}
+                  connectionPending={connectionPending}
+                  onRetry={load}
+                  onToggleConnection={toggleConnection}
+                  invoiceId={props.invoiceId}
+                  onEvidenceSelect={setSelectedEvidenceId}
+                  onSent={() => load(true)}
+                />
+              </div>
             </div>
+            {selectedEvidenceId && (
+              <WhatsAppEvidenceReview
+                evidenceId={selectedEvidenceId}
+                invoiceId={props.invoiceId}
+                invoiceNumber={props.invoiceNumber}
+                outstandingAmount={props.outstandingAmount}
+                timeZone={props.timeZone}
+                onClose={() => setSelectedEvidenceId(null)}
+                onCompleted={() => {
+                  load(true);
+                  router.refresh();
+                }}
+              />
+            )}
           </aside>,
           portalHost,
         )}
@@ -209,6 +260,9 @@ function DrawerContent({
   connectionPending,
   onRetry,
   onToggleConnection,
+  invoiceId,
+  onEvidenceSelect,
+  onSent,
 }: {
   loadState: LoadState;
   timeZone: string;
@@ -216,6 +270,9 @@ function DrawerContent({
   connectionPending: boolean;
   onRetry: () => void;
   onToggleConnection: (connection: WhatsAppConnection) => void;
+  invoiceId: string;
+  onEvidenceSelect: (evidenceId: string) => void;
+  onSent: () => void;
 }) {
   if (loadState.status === 'idle' || loadState.status === 'loading') {
     return <ConversationSkeleton />;
@@ -271,6 +328,7 @@ function DrawerContent({
                 key={message.id}
                 message={message}
                 timeZone={timeZone}
+                onEvidenceSelect={onEvidenceSelect}
               />
             ))}
           </ol>
@@ -285,22 +343,124 @@ function DrawerContent({
           </p>
         </div>
       )}
-      <footer className={styles.composer}>
-        <label htmlFor="whatsapp-day11-message">Message</label>
-        <div>
-          <textarea
-            id="whatsapp-day11-message"
-            rows={2}
-            disabled
-            placeholder="Available with review-and-send"
-          />
-          <button type="button" disabled aria-label="Send WhatsApp message">
-            <Send size={15} />
-          </button>
-        </div>
-        <p>Replies appear here · Sending unlocks in review.</p>
-      </footer>
+      <MessageComposer
+        connection={connection}
+        thread={thread}
+        invoiceId={invoiceId}
+        onSent={onSent}
+      />
     </>
+  );
+}
+
+function MessageComposer({
+  connection,
+  thread,
+  invoiceId,
+  onSent,
+}: {
+  connection: WhatsAppConnection;
+  thread: WhatsAppThread | null;
+  invoiceId: string;
+  onSent: () => void;
+}) {
+  const [body, setBody] = useState('');
+  const [reviewing, setReviewing] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const canSend = connection.state === 'LIVE' && Boolean(thread?.debtor);
+
+  async function send() {
+    if (!thread?.debtor || pending) return;
+    setPending(true);
+    setError(null);
+    try {
+      await sendWhatsAppMessage({
+        debtorId: thread.debtor.id,
+        invoiceId,
+        body: body.trim(),
+      });
+      setBody('');
+      setReviewing(false);
+      onSent();
+    } catch (caught) {
+      setError(
+        caught instanceof ApiClientError
+          ? caught.message
+          : 'Message could not be queued. Try again.',
+      );
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <footer className={styles.composer}>
+      {reviewing ? (
+        <div
+          className={styles.sendReview}
+          role="group"
+          aria-label="Review WhatsApp message"
+        >
+          <span>Review exact customer-visible text</span>
+          <p>{body.trim()}</p>
+          <small>
+            To {thread?.customerNumber ?? 'unmatched number'} · From{' '}
+            {connection.displayPhoneNumber ?? 'approved sender'}
+          </small>
+          <div>
+            <button type="button" onClick={() => setReviewing(false)}>
+              Keep editing
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void send()}
+            >
+              {pending ? (
+                <LoaderCircle className={styles.spin} size={14} />
+              ) : (
+                <Send size={14} />
+              )}
+              Approve and send
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <label htmlFor="whatsapp-message">Message</label>
+          <div>
+            <textarea
+              id="whatsapp-message"
+              rows={2}
+              maxLength={4_096}
+              value={body}
+              disabled={!canSend}
+              placeholder={
+                connection.state !== 'LIVE'
+                  ? 'Activate the sender before messaging'
+                  : 'Write the exact message the customer will receive'
+              }
+              onChange={(event) => setBody(event.target.value)}
+            />
+            <button
+              type="button"
+              disabled={!canSend || !body.trim()}
+              onClick={() => setReviewing(true)}
+              aria-label="Review WhatsApp message before sending"
+            >
+              <Send size={15} />
+            </button>
+          </div>
+          <p>Every send requires review · Replies refresh automatically.</p>
+        </>
+      )}
+      {error && (
+        <p className={styles.composerError} role="alert">
+          {error}
+        </p>
+      )}
+    </footer>
   );
 }
 
@@ -355,15 +515,19 @@ function ConnectionBar({
 function MessageRow({
   message,
   timeZone,
+  onEvidenceSelect,
 }: {
   message: WhatsAppMessage;
   timeZone: string;
+  onEvidenceSelect: (evidenceId: string) => void;
 }) {
   const outbound = message.direction === 'OUTBOUND';
   return (
     <li className={outbound ? styles.outbound : styles.inbound}>
       <div className={styles.bubble}>
-        {message.type === 'IMAGE' && <EvidenceCard message={message} />}
+        {message.type === 'IMAGE' && (
+          <EvidenceCard message={message} onSelect={onEvidenceSelect} />
+        )}
         {message.body && <p>{message.body}</p>}
         <footer>
           <time dateTime={message.occurredAt}>
@@ -376,14 +540,23 @@ function MessageRow({
   );
 }
 
-function EvidenceCard({ message }: { message: WhatsAppMessage }) {
+function EvidenceCard({
+  message,
+  onSelect,
+}: {
+  message: WhatsAppMessage;
+  onSelect: (evidenceId: string) => void;
+}) {
   const evidence = message.media?.evidence;
   const state = evidence?.state ?? 'PROCESSING';
   return (
-    <div
+    <button
+      type="button"
       className={`${styles.evidence} ${
         state === 'AWAITING_REVIEW' ? styles.evidenceAwaiting : ''
       }`}
+      disabled={!evidence || state !== 'AWAITING_REVIEW'}
+      onClick={() => evidence && onSelect(evidence.id)}
     >
       <span aria-hidden="true">
         {message.media?.processingState === 'FAILED' ? (
@@ -402,7 +575,7 @@ function EvidenceCard({ message }: { message: WhatsAppMessage }) {
             : 'Validating private media'}
         </small>
       </div>
-    </div>
+    </button>
   );
 }
 
