@@ -21,10 +21,20 @@ import {
 } from './generated/prisma/enums.js';
 import { createDatabaseClient } from './lib/database.js';
 import { PrismaAuthRepository } from './repositories/auth.repository.js';
+import { PrismaPaymentRepository } from './repositories/payment.repository.js';
 import { PrismaWhatsAppRepository } from './repositories/whatsapp.repository.js';
 import { AuthService } from './services/auth.service.js';
+import { PaymentService } from './services/payment.service.js';
 import { WhatsAppService } from './services/whatsapp.service.js';
 import { MemoryEvidenceStorage } from './whatsapp/storage.js';
+
+/**
+ * This integration suite proves WhatsApp commands against a real PostgreSQL boundary.
+ * Two synthetic organizations make tenant leakage observable for every private read.
+ * Outbound approval, evidence decisions, payment allocation, and audit commit durably.
+ * Idempotency replays the same command while conflicting payloads are rejected.
+ * Cleanup removes financial children before tenant fixtures to preserve constraints.
+ */
 
 const integrationDescribe = describe.runIf(
   process.env.RUN_DATABASE_INTEGRATION_TESTS === 'true',
@@ -249,9 +259,18 @@ integrationDescribe('WhatsApp channel with PostgreSQL', () => {
       environment,
       logger,
     });
+    const paymentService = new PaymentService({
+      repository: new PrismaPaymentRepository(database),
+      clock: () => new Date('2026-07-28T08:00:00.000Z'),
+    });
     app = createApp({
       authService,
-      whatsappService: new WhatsAppService({ repository, storage }),
+      paymentService,
+      whatsappService: new WhatsAppService({
+        repository,
+        storage,
+        paymentService,
+      }),
       environment,
       logger,
     });
@@ -283,6 +302,15 @@ integrationDescribe('WhatsApp channel with PostgreSQL', () => {
       where: { organizationId: { in: organizationIds } },
     });
     await database.auditLog.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await database.communication.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await database.paymentAllocation.deleteMany({
+      where: { organizationId: { in: organizationIds } },
+    });
+    await database.payment.deleteMany({
       where: { organizationId: { in: organizationIds } },
     });
     await database.invoice.deleteMany({
@@ -348,6 +376,134 @@ integrationDescribe('WhatsApp channel with PostgreSQL', () => {
       .set('Cookie', cookieB)
       .send({})
       .expect(404);
+  });
+
+  it('persists exact approved text with one transactional outbox entry', async () => {
+    const operationKey = randomUUID();
+    const endpoint = `/api/debtors/${debtorAId}/whatsapp-messages`;
+    const command = {
+      invoiceId: invoiceAId,
+      body: 'Please confirm the transfer status.',
+    };
+    const first = await request(app)
+      .post(endpoint)
+      .set('Origin', environment.APP_ORIGIN)
+      .set('Cookie', cookieA)
+      .set('Idempotency-Key', operationKey)
+      .send(command)
+      .expect(202);
+    await request(app)
+      .post(endpoint)
+      .set('Origin', environment.APP_ORIGIN)
+      .set('Cookie', cookieA)
+      .set('Idempotency-Key', operationKey)
+      .send(command)
+      .expect(200);
+
+    expect(first.body.data).toMatchObject({
+      direction: 'OUTBOUND',
+      state: 'QUEUED',
+      body: command.body,
+    });
+    await expect(
+      database.messageOutbox.count({
+        where: { channelMessageId: first.body.data.id },
+      }),
+    ).resolves.toBe(1);
+    await expect(
+      database.communication.count({
+        where: { organizationId: organizationAId, operationKey },
+      }),
+    ).resolves.toBe(1);
+  });
+
+  it('accepts evidence only through the atomic single-invoice payment transaction', async () => {
+    const operationKey = randomUUID();
+    const response = await request(app)
+      .post(`/api/payment-evidence/${evidenceAId}/confirm-payment`)
+      .set('Origin', environment.APP_ORIGIN)
+      .set('Cookie', cookieA)
+      .set('Idempotency-Key', operationKey)
+      .send({
+        invoiceId: invoiceAId,
+        paymentDate: '2026-07-28',
+        amount: '5000000.00',
+        payerReference: 'PT WhatsApp Debtor A',
+        bankReference: 'BANK-WA-001',
+      })
+      .expect(201);
+    expect(response.body.invoice).toMatchObject({
+      id: invoiceAId,
+      outstandingAmount: '310000000.00',
+      state: 'PARTIALLY_PAID',
+    });
+    await expect(
+      database.paymentEvidenceReview.findUniqueOrThrow({
+        where: { id: evidenceAId },
+        select: { state: true, paymentId: true, operationKey: true },
+      }),
+    ).resolves.toMatchObject({
+      state: PaymentEvidenceState.ACCEPTED,
+      paymentId: response.body.data.id,
+      operationKey,
+    });
+  });
+
+  it('records a reasoned evidence rejection without creating a payment', async () => {
+    const evidenceId = randomUUID();
+    await database.channelMessage.create({
+      data: {
+        organizationId: organizationAId,
+        connectionId: connectionAId,
+        threadId: threadAId,
+        invoiceId: invoiceAId,
+        direction: ChannelMessageDirection.INBOUND,
+        type: ChannelMessageType.IMAGE,
+        state: ChannelMessageState.READY,
+        providerMessageId: `wamid.reject.${randomUUID()}`,
+        occurredAt: new Date('2026-07-28T09:00:00.000Z'),
+        mediaAsset: {
+          create: {
+            organizationId: organizationAId,
+            providerMediaId: `media-reject-${randomUUID()}`,
+            objectKey: `${organizationAId}/evidence/reject-${randomUUID()}.png`,
+            detectedMime: 'image/png',
+            processingState: MediaProcessingState.READY,
+            evidence: {
+              create: {
+                id: evidenceId,
+                organizationId: organizationAId,
+                debtorId: debtorAId,
+                invoiceId: invoiceAId,
+                state: PaymentEvidenceState.AWAITING_REVIEW,
+              },
+            },
+          },
+        },
+      },
+    });
+    const paymentCount = await database.payment.count({
+      where: { organizationId: organizationAId },
+    });
+    await request(app)
+      .post(`/api/payment-evidence/${evidenceId}/reject`)
+      .set('Origin', environment.APP_ORIGIN)
+      .set('Cookie', cookieA)
+      .set('Idempotency-Key', randomUUID())
+      .send({ reason: 'The transfer reference is unreadable.' })
+      .expect(200);
+    await expect(
+      database.paymentEvidenceReview.findUniqueOrThrow({
+        where: { id: evidenceId },
+        select: { state: true, rejectionReason: true },
+      }),
+    ).resolves.toEqual({
+      state: PaymentEvidenceState.REJECTED,
+      rejectionReason: 'The transfer reference is unreadable.',
+    });
+    await expect(
+      database.payment.count({ where: { organizationId: organizationAId } }),
+    ).resolves.toBe(paymentCount);
   });
 
   it('captures duplicate signed webhook deliveries exactly once', async () => {
