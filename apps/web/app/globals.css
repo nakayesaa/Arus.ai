@@ -732,6 +732,63 @@ svg {
     inset 0 1px 0 rgb(255 255 255 / 5%);
 }
 
+/*
+ * Workspace readability is intentionally larger than the navigation chrome.
+ * The sidebar stays dense while operational controls gain clearer type and targets.
+ * Values follow a compact product scale rather than applying browser zoom.
+ * Financial numerals keep tabular alignment as rows become slightly taller.
+ * Responsive rules below may still simplify structure without shrinking core text.
+ */
+.workspace {
+  --workspace-caption: 0.75rem;
+  --workspace-body: 0.8125rem;
+  --workspace-subheading: 0.9375rem;
+  --workspace-heading: 1.25rem;
+}
+
+.workspace :is(.page-heading h1, .data-title-line h1, .record-title-line h1) {
+  font-size: var(--workspace-heading);
+}
+
+.workspace
+  :is(.page-description, .page-context, .record-topbar p, .record-back-link) {
+  font-size: var(--workspace-caption);
+}
+
+.workspace :is(.control-button, .primary-button, .button, .chip) {
+  min-height: 36px;
+  font-size: var(--workspace-body);
+}
+
+.workspace
+  :is(.data-table, .dataset-select select, .data-state p, .pagination-nav) {
+  font-size: var(--workspace-body);
+}
+
+.workspace .data-table :is(th, td) {
+  height: 49px;
+}
+
+.workspace .data-table th {
+  height: 44px;
+}
+
+.workspace .entity-copy > small,
+.workspace .record-metrics span,
+.workspace .record-panel-header p,
+.workspace .record-note span {
+  font-size: var(--workspace-caption);
+}
+
+.workspace .record-metrics strong {
+  font-size: 1.125rem;
+}
+
+.workspace
+  :is(.record-panel-header h2, .record-properties > div, .record-note p) {
+  font-size: var(--workspace-body);
+}
+
 /* Keep collection surfaces scrollable without persistent position chrome. */
 .app-shell
   :is(
