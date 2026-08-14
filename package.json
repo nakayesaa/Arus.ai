@@ -36,7 +36,10 @@
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
     "smoke": "tsx scripts/smoke-test.ts",
-    "backup": "./scripts/backup.sh"
+    "backup": "./scripts/backup.sh",
+    "restore:isolated": "./scripts/restore-backup.sh",
+    "evidence:inventory": "dotenv -e .env -- tsx scripts/evidence-inventory.ts",
+    "day12:check": "dotenv -e .env -- tsx scripts/verify-day12-readiness.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
