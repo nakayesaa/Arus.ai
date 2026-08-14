@@ -40,6 +40,9 @@ try {
         ? 'LIVE_META'
         : 'SIMULATED_PROVIDER_DOUBLE',
     storage: environment.EVIDENCE_STORAGE_MODE,
+    externalWiringReady:
+      environment.WHATSAPP_PROVIDER_MODE === 'meta' &&
+      environment.EVIDENCE_STORAGE_MODE === 'supabase',
     connections,
     queues: { failedInbox, pendingInbox, failedOutbox, pendingOutbox },
     awaitingEvidence,

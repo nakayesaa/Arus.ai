@@ -18,8 +18,9 @@ try {
     select: { organizationId: true, objectKey: true, processingState: true },
     orderBy: [{ organizationId: 'asc' }, { id: 'asc' }],
   });
-  let missing = 0;
+  let missing: number | null = null;
   if (environment.EVIDENCE_STORAGE_MODE === 'supabase') {
+    missing = 0;
     for (const row of rows) {
       if (!row.objectKey) continue;
       const response = await fetch(
@@ -31,13 +32,14 @@ try {
   }
   const summary = {
     storageMode: environment.EVIDENCE_STORAGE_MODE,
+    objectPresenceChecked: missing !== null,
     referencedObjects: rows.length,
     readyReferences: rows.filter((row) => row.processingState === 'READY')
       .length,
     missingObjects: missing,
   };
   console.info(JSON.stringify(summary));
-  if (missing > 0) process.exitCode = 1;
+  if (missing !== null && missing > 0) process.exitCode = 1;
 } finally {
   await database.$disconnect();
 }
