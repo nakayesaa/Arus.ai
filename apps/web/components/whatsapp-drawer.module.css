@@ -1,10 +1,33 @@
+/**
+ * The overlay uses a compact channel artifact until evidence needs desktop review.
+ * Its phone frame stays 330px while the review panel expands beside it.
+ * Spacing follows the app's 4px rhythm and surfaces use existing neutral tokens.
+ * Responsive rules preserve core decisions without squeezing the payment form.
+ * Motion is brief, stateful, and removed for reduced-motion preferences.
+ */
+
 .drawer {
   position: fixed;
   z-index: 30;
   top: max(72px, 6vh);
   right: max(24px, 2vw);
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
   width: min(330px, calc(100vw - 32px));
   height: min(760px, 88vh);
+  animation: drawer-enter 190ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.drawerReviewing {
+  width: min(850px, calc(100vw - 48px));
+}
+
+.device {
+  position: relative;
+  width: 330px;
+  min-width: 330px;
+  height: 100%;
   padding: 7px;
   border: 1px solid #747d81;
   border-radius: 38px;
@@ -14,17 +37,16 @@
     inset 0 1px 0 rgb(255 255 255 / 18%),
     inset 0 -1px 0 rgb(0 0 0 / 38%),
     0 8px 8px rgb(0 0 0 / 42%);
-  animation: drawer-enter 190ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.drawer::before,
-.drawer::after {
+.device::before,
+.device::after {
   position: absolute;
   content: '';
   background: #626a6e;
 }
 
-.drawer::before {
+.device::before {
   top: 112px;
   left: -4px;
   width: 3px;
@@ -35,7 +57,7 @@
     0 96px 0 #626a6e;
 }
 
-.drawer::after {
+.device::after {
   top: 150px;
   right: -4px;
   width: 3px;
@@ -116,7 +138,7 @@
 
 .identity h2 {
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 680;
   letter-spacing: -0.01em;
 }
@@ -124,7 +146,7 @@
 .identity p {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -178,14 +200,14 @@
 
 .connectionIdentity strong {
   color: var(--text-soft);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 
 .connectionIdentity small {
   margin-top: 1px;
   color: var(--muted-dark);
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .connectionBar > button {
@@ -258,7 +280,7 @@
 .bubble > p {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.52;
   white-space: pre-wrap;
 }
@@ -270,12 +292,13 @@
   gap: 4px;
   margin-top: 5px;
   color: var(--muted-dark);
-  font-size: 8px;
+  font-size: 9px;
   font-variant-numeric: tabular-nums;
 }
 
 .evidence {
   gap: 9px;
+  width: 100%;
   min-height: 58px;
   margin-bottom: 8px;
   padding: 9px;
@@ -283,6 +306,11 @@
   border-radius: 7px;
   color: var(--muted);
   background: #101314;
+  text-align: left;
+}
+
+.evidence:disabled {
+  cursor: default;
 }
 
 .evidenceAwaiting {
@@ -309,14 +337,14 @@
 
 .evidence strong {
   color: var(--text-soft);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 650;
   line-height: 1.35;
 }
 
 .evidence small {
   color: var(--muted-dark);
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .matchWarning {
@@ -325,7 +353,7 @@
   gap: 7px;
   padding: 8px 14px;
   color: var(--warning);
-  font-size: 9px;
+  font-size: 10px;
   background: rgb(229 174 88 / 7%);
 }
 
@@ -339,7 +367,7 @@
   display: block;
   margin-bottom: 5px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 620;
 }
 
@@ -358,7 +386,7 @@
   padding: 8px 9px;
   color: var(--muted);
   font: inherit;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.45;
   background: #0d1011;
 }
@@ -377,7 +405,301 @@
 .composer p {
   margin: 6px 0 0;
   color: var(--muted-dark);
-  font-size: 8px;
+  font-size: 9px;
+}
+
+.composerError {
+  color: var(--red) !important;
+}
+
+.sendReview {
+  display: grid;
+  gap: 7px;
+}
+
+.sendReview > span {
+  color: var(--warning);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.sendReview > p {
+  max-height: 92px;
+  margin: 0;
+  overflow: auto;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.sendReview > small {
+  color: var(--muted-dark);
+  font-size: 10px;
+}
+
+.sendReview > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.sendReview button,
+.reviewHeader button,
+.reviewTabs button,
+.rejectForm button {
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-soft);
+  background: var(--surface);
+}
+
+.sendReview button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  font-size: 10px;
+}
+
+.sendReview button:last-child {
+  color: #0b0d0d;
+  border-color: #edf0ef;
+  background: #edf0ef;
+  font-weight: 650;
+}
+
+.reviewPanel {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid #3a4042;
+  border-radius: 14px;
+  background: #0d1011;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 44%);
+}
+
+.reviewHeader {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.reviewHeader span {
+  color: var(--warning);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.reviewHeader h2 {
+  margin: 3px 0 0;
+  color: var(--text);
+  font-size: 16px;
+  letter-spacing: -0.015em;
+}
+
+.reviewHeader button {
+  display: grid;
+  width: 34px;
+  padding: 0;
+  place-items: center;
+}
+
+.reviewBody {
+  height: calc(100% - 72px);
+  padding: 16px;
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.reviewState {
+  display: grid;
+  height: calc(100% - 72px);
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.reviewState p {
+  max-width: 38ch;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.evidencePreview {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #080a0b;
+}
+
+.evidencePreview img {
+  display: block;
+  width: 100%;
+  height: 190px;
+  object-fit: contain;
+}
+
+.evidencePreview figcaption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border-soft);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.reviewContext {
+  display: grid;
+  margin: 12px 0 0;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+}
+
+.reviewContext > div {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.reviewContext > div:nth-child(odd) {
+  border-right: 1px solid var(--border-soft);
+}
+.reviewContext > div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+.reviewContext dt {
+  color: var(--muted);
+  font-size: 10px;
+}
+.reviewContext dd {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.reviewTabs {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 3px;
+  grid-template-columns: 1fr 1fr;
+  border-radius: 8px;
+  background: #111516;
+}
+
+.reviewTabs button {
+  border-color: transparent;
+  font-size: 11px;
+}
+.reviewTabs button[aria-selected='true'] {
+  border-color: var(--border);
+  background: var(--surface-raised);
+}
+
+.paymentForm,
+.rejectForm {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.paymentForm label,
+.rejectForm label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.paymentForm label span {
+  color: var(--muted-dark);
+  font-weight: 450;
+}
+.paymentForm input,
+.rejectForm textarea {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  background: #0b0e0f;
+  font-size: 13px;
+}
+
+.rejectForm textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.financialEffect {
+  padding: 11px 12px;
+  border-left: 2px solid var(--warning);
+  background: rgb(229 174 88 / 6%);
+}
+
+.financialEffect span,
+.financialEffect strong {
+  display: block;
+}
+.financialEffect span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.financialEffect strong {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.financialEffect p,
+.rejectForm > p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.confirmPayment {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #edf0ef;
+  border-radius: 7px;
+  color: #090b0c;
+  background: #edf0ef;
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.rejectForm button {
+  justify-self: end;
+  padding: 0 11px;
+  color: var(--red);
+}
+.reviewFeedback {
+  margin: 10px 0 0;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .statePanel,
@@ -399,14 +721,14 @@
 .statePanel strong,
 .emptyConversation strong {
   color: var(--text-soft);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .statePanel p,
 .emptyConversation p {
   max-width: 38ch;
   margin: 0;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -474,6 +796,11 @@
     width: min(330px, calc(100vw - 24px));
     height: auto;
   }
+
+  .drawerReviewing {
+    left: 12px;
+    width: auto;
+  }
 }
 
 @media (max-width: 520px) {
@@ -487,8 +814,8 @@
     box-shadow: none;
   }
 
-  .drawer::before,
-  .drawer::after,
+  .device::before,
+  .device::after,
   .channelCue {
     display: none;
   }
@@ -499,6 +826,23 @@
     box-shadow: none;
   }
 
+  .device {
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .drawerReviewing .device {
+    display: none;
+  }
+
+  .reviewPanel {
+    border-radius: 0;
+  }
+
   .header {
     padding-top: 15px;
   }
@@ -506,6 +850,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .drawer,
+  .drawerReviewing,
   .evidenceAwaiting,
   .skeleton span {
     animation: none;
