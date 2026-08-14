@@ -3,11 +3,20 @@ import { describe, expect, it } from 'vitest';
 import { DomainError } from './errors.js';
 import {
   assertEvidenceTransition,
+  canAdvanceOutboundState,
   canEnqueueOutbound,
   normalizeE164PhoneNumber,
   retryDelayMs,
   validateEvidenceImage,
 } from './whatsapp.js';
+
+/**
+ * Domain tests pin provider-neutral WhatsApp rules as pure deterministic behavior.
+ * Phone normalization never guesses country context or accepts local ambiguity.
+ * Evidence and delivery states move forward through explicit legal transitions.
+ * Retry delays remain bounded so external failure cannot create a hot loop.
+ * Image signature checks reject forged or oversized customer evidence.
+ */
 
 describe('WhatsApp domain rules', () => {
   it('normalizes explicit E.164 numbers without guessing a country', () => {
@@ -24,6 +33,14 @@ describe('WhatsApp domain rules', () => {
     expect(canEnqueueOutbound('PAUSED')).toBe(false);
     expect(canEnqueueOutbound('DEGRADED')).toBe(false);
     expect(canEnqueueOutbound('DISCONNECTED')).toBe(false);
+  });
+
+  it('advances delivery monotonically and keeps late receipts harmless', () => {
+    expect(canAdvanceOutboundState('QUEUED', 'SENT')).toBe(true);
+    expect(canAdvanceOutboundState('SENT', 'DELIVERED')).toBe(true);
+    expect(canAdvanceOutboundState('DELIVERED', 'READ')).toBe(true);
+    expect(canAdvanceOutboundState('READ', 'DELIVERED')).toBe(false);
+    expect(canAdvanceOutboundState('READ', 'FAILED')).toBe(false);
   });
 
   it('keeps evidence terminal decisions immutable', () => {

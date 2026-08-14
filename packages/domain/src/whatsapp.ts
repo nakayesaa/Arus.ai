@@ -1,5 +1,13 @@
 import { DomainError } from './errors.js';
 
+/**
+ * WhatsApp domain rules keep provider behavior away from financial authority.
+ * They validate channel inputs and make state transitions explicit.
+ * Evidence can become reviewable here, but it never changes an invoice.
+ * Application services remain responsible for actor and tenant authorization.
+ * These pure functions are shared by API commands, workers, and tests.
+ */
+
 export const whatsappConnectionStates = [
   'DISCONNECTED',
   'LIVE',
@@ -51,6 +59,18 @@ export function normalizeE164PhoneNumber(value: string): string {
 
 export function canEnqueueOutbound(state: WhatsAppConnectionState): boolean {
   return state === 'LIVE';
+}
+
+export function canAdvanceOutboundState(
+  current: string,
+  next: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED',
+): boolean {
+  if (next === 'FAILED') {
+    return ['APPROVED', 'QUEUED', 'SENT'].includes(current);
+  }
+  const rank = { APPROVED: 0, QUEUED: 1, SENT: 2, DELIVERED: 3, READ: 4 };
+  const currentRank = rank[current as keyof typeof rank];
+  return currentRank !== undefined && rank[next] > currentRank;
 }
 
 export function assertEvidenceTransition(

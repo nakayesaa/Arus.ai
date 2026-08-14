@@ -2,7 +2,15 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
 import { z } from 'zod';
 
-import type { InboundMessageEvent } from './contracts.js';
+import type { InboundMessageEvent, OutboundStatusEvent } from './contracts.js';
+
+/**
+ * This module reduces Meta webhooks to bounded, provider-neutral events.
+ * Raw bytes are verified before any parser in this file is called.
+ * Unknown message types are ignored while malformed envelopes are rejected.
+ * Delivery errors are converted to safe codes instead of retained verbatim.
+ * The durable inbox lets parsing and processing retry outside the HTTP request.
+ */
 
 const metadataSchema = z.object({
   phone_number_id: z.string().min(1).max(100),
@@ -25,11 +33,21 @@ const messageSchema = z.object({
     })
     .optional(),
 });
+const statusSchema = z.object({
+  id: z.string().min(1).max(160),
+  status: z.enum(['sent', 'delivered', 'read', 'failed']),
+  timestamp: z.string().regex(/^\d{1,16}$/u),
+  errors: z
+    .array(z.object({ code: z.number().int().optional() }))
+    .max(20)
+    .optional(),
+});
 const valueSchema = z.object({
   messaging_product: z.literal('whatsapp'),
   metadata: metadataSchema,
   contacts: z.array(contactSchema).max(1_000).optional(),
   messages: z.array(messageSchema).max(1_000).optional(),
+  statuses: z.array(statusSchema).max(1_000).optional(),
 });
 const payloadSchema = z
   .object({
@@ -132,6 +150,31 @@ export function inboundMessages(
             caption: message.image.caption ?? null,
           });
         }
+      }
+    }
+  }
+  return events;
+}
+
+export function outboundStatuses(
+  payload: MetaWebhookPayload,
+): OutboundStatusEvent[] {
+  const events: OutboundStatusEvent[] = [];
+  for (const entry of payload.entry) {
+    for (const change of entry.changes) {
+      for (const status of change.value.statuses ?? []) {
+        const occurredAt = new Date(Number(status.timestamp) * 1_000);
+        if (Number.isNaN(occurredAt.getTime())) continue;
+        events.push({
+          providerMessageId: status.id,
+          providerPhoneNumberId: change.value.metadata.phone_number_id,
+          state: status.status.toUpperCase() as OutboundStatusEvent['state'],
+          occurredAt,
+          safeFailureCode:
+            status.status === 'failed'
+              ? `META_${status.errors?.[0]?.code ?? 'DELIVERY_FAILED'}`
+              : null,
+        });
       }
     }
   }

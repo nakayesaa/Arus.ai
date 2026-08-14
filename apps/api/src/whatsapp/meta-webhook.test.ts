@@ -4,11 +4,20 @@ import { describe, expect, it } from 'vitest';
 
 import {
   inboundMessages,
+  outboundStatuses,
   parseMetaWebhookPayload,
   verifyMetaSignature,
   verifyWebhookToken,
   webhookEventIdentity,
 } from './meta-webhook.js';
+
+/**
+ * Webhook boundary tests protect signature, identity, and event normalization.
+ * Fixtures contain only synthetic provider identifiers and customer numbers.
+ * Supported messages become typed inbound work while unknown types are ignored.
+ * Delivery statuses advance through safe values without retaining provider text.
+ * Raw-body changes must always invalidate the original signature.
+ */
 
 const payload = {
   object: 'whatsapp_business_account',
@@ -94,5 +103,35 @@ describe('Meta webhook boundary', () => {
       kind: 'image',
       providerMediaId: 'media-1',
     });
+  });
+
+  it('maps delivery receipts and reduces provider failures to safe codes', () => {
+    const statusPayload = structuredClone(payload);
+    const value = statusPayload.entry[0]!.changes[0]!.value as Record<
+      string,
+      unknown
+    >;
+    delete value.messages;
+    value.statuses = [
+      { id: 'wamid.sent', status: 'delivered', timestamp: '1785146500' },
+      {
+        id: 'wamid.failed',
+        status: 'failed',
+        timestamp: '1785146501',
+        errors: [{ code: 131026 }],
+      },
+    ];
+    expect(outboundStatuses(parseMetaWebhookPayload(statusPayload))).toEqual([
+      expect.objectContaining({
+        providerMessageId: 'wamid.sent',
+        state: 'DELIVERED',
+        safeFailureCode: null,
+      }),
+      expect.objectContaining({
+        providerMessageId: 'wamid.failed',
+        state: 'FAILED',
+        safeFailureCode: 'META_131026',
+      }),
+    ]);
   });
 });
