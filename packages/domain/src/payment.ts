@@ -5,6 +5,14 @@ import {
 import { DomainError } from './errors.js';
 import { formatMoney, parseMoney } from './money.js';
 
+/**
+ * Payment rules calculate the only allocation result the database may persist.
+ * Money is parsed as integer minor units so subtraction never uses floating point.
+ * A payment must be positive, target an open balance, and never exceed outstanding.
+ * Dates are compared as business dates rather than server-local timestamps.
+ * These pure rules stay independent from HTTP, Prisma, WhatsApp, and UI concerns.
+ */
+
 export interface ValidatedPaymentAllocation {
   amount: string;
   outstandingBefore: string;

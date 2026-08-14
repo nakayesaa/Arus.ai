@@ -1,8 +1,11 @@
 import type { Prisma } from '../generated/prisma/client.js';
 
 /**
- * Serializes financial/workflow decisions for one invoice across services.
- * Day 9 payment allocation must use the same lock before checking balances.
+ * This transaction-scoped advisory lock serializes decisions for one invoice.
+ * Every payment path acquires it before reading the balance it intends to change.
+ * Competing requests wait, then recalculate against the newly committed allocation.
+ * PostgreSQL releases the lock automatically on transaction commit or rollback.
+ * Using the invoice UUID hash keeps all application services on one lock identity.
  */
 export async function lockInvoice(
   transaction: Prisma.TransactionClient,
