@@ -18,6 +18,14 @@ import type { AuthServiceContract } from '../services/auth.service.js';
 import type { WhatsAppServiceContract } from '../services/whatsapp.service.js';
 import { MembershipRole } from '../generated/prisma/enums.js';
 
+/**
+ * WhatsApp routes separate the public verified webhook from session commands.
+ * Browser mutations require trusted origin, JSON, authentication, and role checks.
+ * Read responses disable caching because they can contain private evidence state.
+ * Operators may send and review; only owners can change the sender state.
+ * Request limits are applied before untrusted payloads reach application code.
+ */
+
 export function createWhatsAppWebhookRouter(options: {
   whatsappService: WhatsAppServiceContract;
   environment: Environment;
@@ -69,6 +77,22 @@ export function createWhatsAppRouter(options: {
     authenticate,
     controller.getConnection,
   );
+  router.post(
+    '/api/debtors/:id/whatsapp-messages',
+    noStore,
+    requireTrustedOrigin(options.environment),
+    requireJsonBody(),
+    authenticate,
+    controller.sendMessage,
+  );
+  router.post(
+    '/api/whatsapp/threads/:id/link',
+    noStore,
+    requireTrustedOrigin(options.environment),
+    requireJsonBody(),
+    authenticate,
+    controller.linkThread,
+  );
   router.patch(
     '/api/whatsapp/connection/state',
     noStore,
@@ -97,6 +121,22 @@ export function createWhatsAppRouter(options: {
     requireJsonBody(),
     authenticate,
     controller.createEvidenceView,
+  );
+  router.post(
+    '/api/payment-evidence/:id/reject',
+    noStore,
+    requireTrustedOrigin(options.environment),
+    requireJsonBody(),
+    authenticate,
+    controller.rejectEvidence,
+  );
+  router.post(
+    '/api/payment-evidence/:id/confirm-payment',
+    noStore,
+    requireTrustedOrigin(options.environment),
+    requireJsonBody(),
+    authenticate,
+    controller.confirmEvidencePayment,
   );
   return router;
 }

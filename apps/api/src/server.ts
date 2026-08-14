@@ -27,6 +27,14 @@ import { ReportService } from './services/report.service.js';
 import { WhatsAppService } from './services/whatsapp.service.js';
 import { createEvidenceStorage } from './whatsapp/storage.js';
 
+/**
+ * The API composition root wires one modular monolith from explicit adapters.
+ * Shared repositories keep payment and WhatsApp commands on the same database.
+ * Secrets are loaded once and passed only to server-side infrastructure.
+ * HTTP shutdown stops new work before disconnecting persistent resources.
+ * Worker delivery remains a separate process with the same durable contracts.
+ */
+
 const environment = loadEnvironment();
 const logger = createLogger(environment);
 const database = createDatabaseClient(environment);
@@ -64,15 +72,15 @@ const invoiceImportService = new InvoiceImportService({
   repository: new PrismaInvoiceImportRepository(database),
   logger,
 });
-const paymentService = new PaymentService({
-  repository: new PrismaPaymentRepository(database),
-});
+const paymentRepository = new PrismaPaymentRepository(database);
+const paymentService = new PaymentService({ repository: paymentRepository });
 const reportService = new ReportService({
   repository: new PrismaReportRepository(database),
 });
 const whatsappService = new WhatsAppService({
   repository: new PrismaWhatsAppRepository(database),
   storage: createEvidenceStorage(environment),
+  paymentService,
 });
 const app = createApp({
   authService,

@@ -5,12 +5,17 @@ import type {
   WhatsAppConnectionState,
   WhatsAppProvider,
 } from '../generated/prisma/enums.js';
-import type {
-  EvidenceRecord,
-  PrismaWhatsAppRepository,
-  ThreadRecord,
-  WhatsAppConnectionRecord,
+import {
+  WhatsAppRepositoryError,
+  type EvidenceRecord,
+  type PrismaWhatsAppRepository,
+  type ThreadRecord,
+  type WhatsAppConnectionRecord,
 } from '../repositories/whatsapp.repository.js';
+import {
+  PaymentError,
+  type PaymentServiceContract,
+} from './payment.service.js';
 import type { AuthContext } from './auth.service.js';
 import type { EvidenceStorage } from '../whatsapp/contracts.js';
 import {
@@ -18,6 +23,14 @@ import {
   parseMetaWebhookPayload,
   webhookEventIdentity,
 } from '../whatsapp/meta-webhook.js';
+
+/**
+ * The WhatsApp service orchestrates authenticated channel commands.
+ * It maps durable records into browser-safe views and signed preview grants.
+ * Human-approved text is persisted before the provider worker can send it.
+ * Evidence rejection and linking never mutate invoice financials.
+ * Acceptance delegates to the payment service's atomic transaction boundary.
+ */
 
 export interface WhatsAppConnectionView {
   id: string;
@@ -123,6 +136,43 @@ export interface WhatsAppServiceContract {
     context: AuthContext;
     evidenceId: string;
   }): Promise<{ data: { url: string; expiresAt: string } }>;
+  sendMessage?(input: {
+    context: AuthContext;
+    requestId: string;
+    debtorId: string;
+    invoiceId: string;
+    operationKey: string;
+    body: string;
+  }): Promise<{
+    data: WhatsAppThreadView['messages'][number];
+    replayed: boolean;
+  }>;
+  linkThread?(input: {
+    context: AuthContext;
+    requestId: string;
+    threadId: string;
+    debtorId: string;
+    invoiceId: string;
+    operationKey: string;
+  }): Promise<{ data: WhatsAppThreadView }>;
+  rejectEvidence?(input: {
+    context: AuthContext;
+    requestId: string;
+    evidenceId: string;
+    operationKey: string;
+    reason: string;
+  }): Promise<{ data: PaymentEvidenceView; replayed: boolean }>;
+  confirmEvidencePayment?(input: {
+    context: AuthContext;
+    requestId: string;
+    evidenceId: string;
+    invoiceId: string;
+    operationKey: string;
+    paymentDate: string;
+    amount: string;
+    payerReference: string;
+    bankReference: string | null;
+  }): ReturnType<PaymentServiceContract['recordEvidencePayment']>;
 }
 
 export class WhatsAppService implements WhatsAppServiceContract {
@@ -135,8 +185,15 @@ export class WhatsAppService implements WhatsAppServiceContract {
         | 'updateConnectionState'
         | 'getThread'
         | 'getEvidence'
-      >;
+      > &
+        Partial<
+          Pick<
+            PrismaWhatsAppRepository,
+            'createOutboundMessage' | 'linkThread' | 'rejectEvidence'
+          >
+        >;
       storage: EvidenceStorage;
+      paymentService?: Pick<PaymentServiceContract, 'recordEvidencePayment'>;
       clock?: () => Date;
     },
   ) {}
@@ -259,6 +316,132 @@ export class WhatsAppService implements WhatsAppServiceContract {
     };
   }
 
+  async sendMessage(input: {
+    context: AuthContext;
+    requestId: string;
+    debtorId: string;
+    invoiceId: string;
+    operationKey: string;
+    body: string;
+  }): Promise<{
+    data: WhatsAppThreadView['messages'][number];
+    replayed: boolean;
+  }> {
+    try {
+      const command = this.options.repository.createOutboundMessage;
+      if (!command)
+        throw new WhatsAppError('CHANNEL_NOT_LIVE', 'Sending is unavailable');
+      const result = await command.call(this.options.repository, {
+        organizationId: input.context.organization.id,
+        debtorId: input.debtorId,
+        invoiceId: input.invoiceId,
+        actorId: input.context.user.id,
+        actorRole: input.context.role,
+        operationKey: input.operationKey,
+        requestId: input.requestId,
+        body: input.body,
+        occurredAt: this.now(),
+      });
+      if (!result) {
+        throw new WhatsAppError(
+          'THREAD_NOT_FOUND',
+          'Invoice conversation was not found',
+        );
+      }
+      return { data: toMessageView(result.record), replayed: result.replayed };
+    } catch (error) {
+      throw mapRepositoryError(error);
+    }
+  }
+
+  async linkThread(input: {
+    context: AuthContext;
+    requestId: string;
+    threadId: string;
+    debtorId: string;
+    invoiceId: string;
+    operationKey: string;
+  }): Promise<{ data: WhatsAppThreadView }> {
+    const command = this.options.repository.linkThread;
+    if (!command)
+      throw new WhatsAppError('THREAD_NOT_FOUND', 'Linking is unavailable');
+    const record = await command.call(this.options.repository, {
+      organizationId: input.context.organization.id,
+      threadId: input.threadId,
+      debtorId: input.debtorId,
+      invoiceId: input.invoiceId,
+      actorId: input.context.user.id,
+      operationKey: input.operationKey,
+      requestId: input.requestId,
+      occurredAt: this.now(),
+    });
+    if (!record)
+      throw new WhatsAppError('THREAD_NOT_FOUND', 'Conversation was not found');
+    return { data: toThreadView(record) };
+  }
+
+  async rejectEvidence(input: {
+    context: AuthContext;
+    requestId: string;
+    evidenceId: string;
+    operationKey: string;
+    reason: string;
+  }): Promise<{ data: PaymentEvidenceView; replayed: boolean }> {
+    try {
+      const command = this.options.repository.rejectEvidence;
+      if (!command)
+        throw new WhatsAppError(
+          'EVIDENCE_NOT_REVIEWABLE',
+          'Review is unavailable',
+        );
+      const result = await command.call(this.options.repository, {
+        organizationId: input.context.organization.id,
+        evidenceId: input.evidenceId,
+        actorId: input.context.user.id,
+        operationKey: input.operationKey,
+        requestId: input.requestId,
+        reason: input.reason,
+        occurredAt: this.now(),
+      });
+      if (!result)
+        throw new WhatsAppError('EVIDENCE_NOT_FOUND', 'Evidence not found');
+      return { data: toEvidenceView(result.record), replayed: result.replayed };
+    } catch (error) {
+      throw mapRepositoryError(error);
+    }
+  }
+
+  async confirmEvidencePayment(input: {
+    context: AuthContext;
+    requestId: string;
+    evidenceId: string;
+    invoiceId: string;
+    operationKey: string;
+    paymentDate: string;
+    amount: string;
+    payerReference: string;
+    bankReference: string | null;
+  }): ReturnType<PaymentServiceContract['recordEvidencePayment']> {
+    if (!this.options.paymentService) {
+      throw new WhatsAppError(
+        'PAYMENT_UNAVAILABLE',
+        'Payment recording is unavailable',
+      );
+    }
+    try {
+      return await this.options.paymentService.recordEvidencePayment(input);
+    } catch (error) {
+      if (error instanceof PaymentError) {
+        throw new WhatsAppError('PAYMENT_REJECTED', error.message, error.code);
+      }
+      throw error;
+    }
+  }
+
+  private now(): Date {
+    return this.options.clock?.() ?? new Date();
+  }
+
   private async evidenceOrThrow(
     organizationId: string,
     evidenceId: string,
@@ -278,12 +461,19 @@ export type WhatsAppErrorCode =
   | 'CONNECTION_NOT_FOUND'
   | 'EVIDENCE_NOT_FOUND'
   | 'EVIDENCE_NOT_READY'
+  | 'CHANNEL_NOT_LIVE'
+  | 'IDEMPOTENCY_CONFLICT'
+  | 'PAYMENT_REJECTED'
+  | 'PAYMENT_UNAVAILABLE'
+  | 'RECIPIENT_MISSING'
+  | 'EVIDENCE_NOT_REVIEWABLE'
   | 'THREAD_NOT_FOUND';
 
 export class WhatsAppError extends Error {
   constructor(
     readonly code: WhatsAppErrorCode,
     message: string,
+    readonly causeCode?: string,
   ) {
     super(message);
     this.name = 'WhatsAppError';
@@ -314,27 +504,33 @@ function toThreadView(record: ThreadRecord): WhatsAppThreadView {
           dueDate: record.currentInvoice.dueDate.toISOString().slice(0, 10),
         }
       : null,
-    messages: record.messages.map((message) => ({
-      id: message.id,
-      direction: message.direction,
-      type: message.type,
-      state: message.state,
-      body: message.body,
-      occurredAt: message.occurredAt.toISOString(),
-      safeFailureCode: message.safeFailureCode,
-      media: message.mediaAsset
-        ? {
-            id: message.mediaAsset.id,
-            mime: message.mediaAsset.detectedMime,
-            byteSize: message.mediaAsset.byteSize,
-            width: message.mediaAsset.width,
-            height: message.mediaAsset.height,
-            processingState: message.mediaAsset.processingState,
-            failureCode: message.mediaAsset.failureCode,
-            evidence: message.mediaAsset.evidence,
-          }
-        : null,
-    })),
+    messages: record.messages.map(toMessageView),
+  };
+}
+
+function toMessageView(
+  message: ThreadRecord['messages'][number],
+): WhatsAppThreadView['messages'][number] {
+  return {
+    id: message.id,
+    direction: message.direction,
+    type: message.type,
+    state: message.state,
+    body: message.body,
+    occurredAt: message.occurredAt.toISOString(),
+    safeFailureCode: message.safeFailureCode,
+    media: message.mediaAsset
+      ? {
+          id: message.mediaAsset.id,
+          mime: message.mediaAsset.detectedMime,
+          byteSize: message.mediaAsset.byteSize,
+          width: message.mediaAsset.width,
+          height: message.mediaAsset.height,
+          processingState: message.mediaAsset.processingState,
+          failureCode: message.mediaAsset.failureCode,
+          evidence: message.mediaAsset.evidence,
+        }
+      : null,
   };
 }
 
@@ -361,4 +557,34 @@ function toEvidenceView(record: EvidenceRecord): PaymentEvidenceView {
       processingState: record.mediaAsset.processingState,
     },
   };
+}
+
+function mapRepositoryError(error: unknown): unknown {
+  if (!(error instanceof WhatsAppRepositoryError)) return error;
+  switch (error.code) {
+    case 'CHANNEL_NOT_LIVE':
+    case 'SENDER_NOT_CONFIGURED':
+      return new WhatsAppError(
+        'CHANNEL_NOT_LIVE',
+        'WhatsApp must be live with an approved sender before sending',
+      );
+    case 'RECIPIENT_MISSING':
+      return new WhatsAppError(
+        'RECIPIENT_MISSING',
+        'Customer needs a valid international WhatsApp number',
+      );
+    case 'IDEMPOTENCY_CONFLICT':
+      return new WhatsAppError(
+        'IDEMPOTENCY_CONFLICT',
+        'This operation key was already used for another action',
+      );
+    case 'EVIDENCE_NOT_REVIEWABLE':
+      return new WhatsAppError(
+        'EVIDENCE_NOT_REVIEWABLE',
+        'Evidence is no longer awaiting review',
+      );
+    case 'UNKNOWN_CONNECTION':
+    case 'MATCH_SCOPE_TOO_LARGE':
+      return error;
+  }
 }
