@@ -10,9 +10,21 @@ import {
   type PrismaWhatsAppRepository,
 } from '../repositories/whatsapp.repository.js';
 import type { EvidenceStorage, WhatsAppProviderAdapter } from './contracts.js';
-import { inboundMessages, parseMetaWebhookPayload } from './meta-webhook.js';
+import {
+  inboundMessages,
+  outboundStatuses,
+  parseMetaWebhookPayload,
+} from './meta-webhook.js';
 import { ProviderError } from './provider.js';
 import { StorageError } from './storage.js';
+
+/**
+ * The WhatsApp worker drains verified inbound events and approved outbound work.
+ * Database leases allow process restarts without concurrent duplicate handling.
+ * Media work is bounded and stored privately before evidence becomes reviewable.
+ * Provider delivery webhooks advance message state monotonically.
+ * Ambiguous send failures stop safely instead of blindly messaging twice.
+ */
 
 export class WhatsAppWorker {
   readonly id: string;
@@ -27,7 +39,16 @@ export class WhatsAppWorker {
         | 'failMedia'
         | 'completeInbox'
         | 'retryInbox'
-      >;
+      > &
+        Partial<
+          Pick<
+            PrismaWhatsAppRepository,
+            | 'leaseOutbox'
+            | 'completeOutbox'
+            | 'retryOutbox'
+            | 'applyOutboundStatus'
+          >
+        >;
       provider: WhatsAppProviderAdapter;
       storage: EvidenceStorage;
       environment: Pick<
@@ -43,6 +64,12 @@ export class WhatsAppWorker {
   }
 
   async runOnce(): Promise<boolean> {
+    const inboundWorked = await this.runInboundOnce();
+    if (inboundWorked) return true;
+    return this.runOutboundOnce();
+  }
+
+  private async runInboundOnce(): Promise<boolean> {
     const now = this.clock();
     const lease = await this.options.repository.leaseInbox({
       workerId: this.id,
@@ -65,6 +92,9 @@ export class WhatsAppWorker {
         activeMedia = ingested.media;
         if (activeMedia) await this.processMedia(activeMedia);
         activeMedia = null;
+      }
+      for (const status of outboundStatuses(payload)) {
+        await this.options.repository.applyOutboundStatus?.(status);
       }
       await this.options.repository.completeInbox(lease.id, this.clock());
     } catch (error) {
@@ -92,6 +122,53 @@ export class WhatsAppWorker {
           terminal: failure.terminal,
         },
         'WhatsApp inbox processing failed',
+      );
+    }
+    return true;
+  }
+
+  private async runOutboundOnce(): Promise<boolean> {
+    const { leaseOutbox, completeOutbox, retryOutbox } =
+      this.options.repository;
+    const sendText = this.options.provider.sendText;
+    if (!leaseOutbox || !completeOutbox || !retryOutbox || !sendText)
+      return false;
+    const now = this.clock();
+    const lease = await leaseOutbox.call(this.options.repository, {
+      workerId: this.id,
+      now,
+      leaseExpiresAt: new Date(
+        now.getTime() + this.options.environment.WHATSAPP_WORKER_LEASE_MS,
+      ),
+    });
+    if (!lease) return false;
+    try {
+      const sent = await sendText.call(this.options.provider, {
+        providerPhoneNumberId: lease.message.providerPhoneNumberId,
+        recipient: lease.message.recipient,
+        body: lease.message.body,
+      });
+      await completeOutbox.call(this.options.repository, {
+        id: lease.id,
+        providerMessageId: sent.providerMessageId,
+        sentAt: this.clock(),
+      });
+    } catch (error) {
+      const knownRejection = error instanceof ProviderError;
+      const terminal = !knownRejection || lease.attemptCount >= 5;
+      const code = knownRejection ? error.code : 'MESSAGE_SEND_UNCERTAIN';
+      const failedAt = this.clock();
+      await retryOutbox.call(this.options.repository, {
+        id: lease.id,
+        safeErrorCode: code,
+        terminal,
+        nextAttemptAt: new Date(
+          failedAt.getTime() + retryDelayMs(lease.attemptCount),
+        ),
+      });
+      this.options.logger.warn(
+        { outboxId: lease.id, code, terminal },
+        'WhatsApp outbox processing failed',
       );
     }
     return true;

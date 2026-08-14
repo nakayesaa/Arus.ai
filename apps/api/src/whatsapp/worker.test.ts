@@ -5,6 +5,14 @@ import { DeterministicWhatsAppProvider } from './provider.js';
 import { MemoryEvidenceStorage } from './storage.js';
 import { WhatsAppWorker } from './worker.js';
 
+/**
+ * Worker tests exercise durable handoffs without reaching Meta or Supabase.
+ * Inbound fixtures prove bounded evidence is stored before inbox completion.
+ * Malformed payloads terminate safely without creating partial channel records.
+ * Outbound fixtures prove an approved lease records provider acceptance once.
+ * Idle workers must avoid writes so polling remains inexpensive.
+ */
+
 const validPayload = {
   object: 'whatsapp_business_account',
   entry: [
@@ -132,5 +140,41 @@ describe('WhatsAppWorker', () => {
 
     await expect(worker(repo).runOnce()).resolves.toBe(false);
     expect(repo.completed).toHaveLength(0);
+  });
+
+  it('sends one approved outbox lease and records provider acceptance', async () => {
+    const repo = repository() as ReturnType<typeof repository> & {
+      leaseOutbox: () => Promise<unknown>;
+      completeOutbox: (input: {
+        id: string;
+        providerMessageId: string;
+      }) => Promise<void>;
+      retryOutbox: () => Promise<void>;
+      sent: Array<{ id: string; providerMessageId: string }>;
+    };
+    repo.leaseAvailable = false;
+    repo.sent = [];
+    repo.leaseOutbox = async () => ({
+      id: 'outbox-1',
+      attemptCount: 1,
+      message: {
+        id: 'message-1',
+        body: 'Exact approved text',
+        recipient: '+6281210000002',
+        providerPhoneNumberId: 'phone-1',
+      },
+    });
+    repo.completeOutbox = async (input) => {
+      repo.sent.push(input);
+    };
+    repo.retryOutbox = async () => undefined;
+
+    await expect(worker(repo).runOnce()).resolves.toBe(true);
+    expect(repo.sent).toEqual([
+      expect.objectContaining({
+        id: 'outbox-1',
+        providerMessageId: expect.stringMatching(/^double-/u),
+      }),
+    ]);
   });
 });
